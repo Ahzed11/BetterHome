@@ -149,7 +149,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0022 · Golden and accessibility baseline for existing screens
 
 * Status: in-review
-* Issue / PR: #15 / PR_NUMBER
+* Issue / PR: #15 / 47
 * Depends on: T-0015
 * Spec: AGENTS §5.2, spec §8
 * Acceptance criteria: Golden tests (light mode, Linux per ADR 0012) for design-system widgets and the households, chores and leaderboard screens. Accessibility checks: 44 px touch targets, text contrast, semantic labels, 200% text scaling without overflow, in FR and EN.
