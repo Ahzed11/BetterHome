@@ -19,7 +19,11 @@ public final class InternalDtos {
     public record InternalSettingsResponse(
             String timezone,
             int reminderDaysBefore,
-            @Schema(type = SchemaType.STRING, format = "time", example = "08:00:00")
+            @Schema(
+                            type = SchemaType.STRING,
+                            format = "partial-time",
+                            pattern = "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",
+                            example = "08:00:00")
                     LocalTime reminderTime) {
 
         public static InternalSettingsResponse from(Household household) {
