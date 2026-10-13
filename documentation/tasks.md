@@ -50,7 +50,13 @@ Shared memory for agents and humans. Read before starting; update before finishi
 
 ## In progress
 
-_(none)_
+### T-0011 · Phase 4 automation (recurrence, scheduler, outbox, reminders)
+
+* Status: in-progress
+* Issue / PR: —
+* Depends on: T-0007, T-0009
+* Spec: §3.1–3.3 Spawning/assignment, §5, §10 Phase 4
+* Acceptance criteria: Admin configures template recurrence (RRULE + assignment mode); Quarkus scheduler claims due rows (`SKIP LOCKED`), spawns occurrence and supersedes previous open recurrence task in one transaction; fixed/round-robin with away fallback and `nobody_available`; transactional outbox + `PushSender` for assigned/superseded/due reminder; Flutter FR/EN recurrence controls; tests with controllable clock.
 
 ## Todo
 
