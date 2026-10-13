@@ -17,6 +17,7 @@ public class ScoringExceptionMapper implements ExceptionMapper<ScoringException>
                     case ScoringException.NotFound ignored -> 404;
                     case ScoringException.Conflict ignored -> 409;
                     case ScoringException.BadRequest ignored -> 400;
+                    case ScoringException.ServiceUnavailable ignored -> 503;
                     default -> 500;
                 };
         return Response.status(status)

@@ -37,6 +37,12 @@ public abstract class ScoringException extends RuntimeException {
         }
     }
 
+    public static final class ServiceUnavailable extends ScoringException {
+        public ServiceUnavailable(String message) {
+            super("service_unavailable", message);
+        }
+    }
+
     public static final class Unauthorized extends ScoringException {
         public Unauthorized(String message) {
             super("unauthorized", message);

@@ -97,6 +97,7 @@ class ScoringPhase3Test {
                                 HOUSEHOLD,
                                 task1,
                                 MEMBER_USER,
+                                ADMIN_USER,
                                 5,
                                 "Wrong person",
                                 ReversionResultingStatus.open));
@@ -104,19 +105,17 @@ class ScoringPhase3Test {
         int memberSum = PointTransaction.sumForUser(HOUSEHOLD, MEMBER_USER);
         assertEquals(2, memberSum);
 
-        asUser(
-                MEMBER_SUBJECT,
+        assertThrows(
+                ScoringException.Forbidden.class,
                 () ->
-                        assertThrows(
-                                ScoringException.Forbidden.class,
-                                () ->
-                                        ledgerService.reverse(
-                                                HOUSEHOLD,
-                                                task2,
-                                                MEMBER_USER,
-                                                2,
-                                                "Nope",
-                                                ReversionResultingStatus.reverted)));
+                        ledgerService.reverse(
+                                HOUSEHOLD,
+                                task2,
+                                MEMBER_USER,
+                                MEMBER_USER,
+                                2,
+                                "Nope",
+                                ReversionResultingStatus.reverted));
 
         asUser(
                 ADMIN_SUBJECT,
