@@ -11,3 +11,9 @@ tasks-service authenticates to Keycloak with its own client (`betterhome-tasks-s
 ## Consequences
 
 The service account can read any household's members, so only trusted services may hold the `service` role and tasks must only pass household IDs it has authorized. Forwarding the user's token was rejected: it does not work in background jobs and would need two code paths. If households-service is unreachable, tasks answers 503 rather than treating the household as empty. Other services (scoring, T-0010) reuse the same pattern with their own clients.
+
+## Addendum (T-0010): scoring
+
+Scoring has its own client (`betterhome-scoring-service`) and asks households-service for members the same way tasks does. In the other direction, tasks calls scoring's `POST /v1/households/{id}/points/award` and `/reverse` with its existing service token; both methods require the `service` role, so household admins and members are refused on them. The ledger is written only by tasks-service, which has already authorized the acting user, so scoring no longer checks household membership for these two calls. Because the caller is no longer the admin, the reverse request carries `adminUserId`, and scoring still verifies through households that this user is an active admin before recording the reversion. User-facing scoring endpoints (scoreboard, winners, adjust, celebrations) keep user tokens and membership checks.
+
+Failure policy: any failed call to scoring (outage, rejected token, dropped connection) makes the tasks operation fail with 503. The ledger call is the last step inside the task's transaction, so a failed award rolls the completion back and a failed reversal leaves the task `done`. If scoring commits and tasks then fails to commit, points exist without a done task; closing that gap needs idempotent awards or an outbox (follow-up T-0040).

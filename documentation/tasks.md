@@ -306,11 +306,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0010 · HTTP PointsLedgerClient and scoring MembershipGateway
 
-* Status: todo
-* Issue / PR: #4
+* Status: in-review
+* Issue / PR: #4 / PR_NUMBER
 * Depends on: T-0009
 * Spec: §7 service boundaries, §3.4
-* Acceptance criteria: tasks-service calls scoring-service award/reverse over REST with service or user token; scoring-service resolves membership via households-service HTTP client; keep in-memory doubles for Quarkus tests.
+* Summary: tasks-service writes the ledger through `HttpPointsLedgerClient` (REST to scoring award/reverse with its service token); scoring-service resolves membership through `HttpMembershipGateway` (households internal members endpoint with its own service token). The in-memory doubles moved to `src/test` as `@Alternative @Priority(1)` beans. New Keycloak client `betterhome-scoring-service` (service role) in the realm export; secret via `OIDC_SERVICE_CLIENT_SECRET`, local-dev placeholder only in `%dev`/realm. Scoring contract regenerated (`adminUserId`, 503); scoring coverage floor raised 0.62 to 0.75.
+* Decisions and deviations: Award and reverse now require the `service` role (ADR 0014 addendum); household admins and members get 403 there, and award no longer checks membership because tasks authorizes the user first. Reverse carries `adminUserId` (the caller is no longer the admin) and scoring verifies via households that it is an active admin. Any scoring failure maps to `TaskException.ServiceUnavailable` (503), or Conflict on a 409; the call is the last step of the task transaction, so a failed award rolls the completion back and a failed reversal leaves the task done. Known gap: scoring commits before tasks commits, so a failed local commit leaves points without a done task (T-0040).
+* Verification: `make test-backend` (all services green, JaCoCo floors met, spotless and checkstyle clean); `make openapi` regenerated scoring only. Live run with real Keycloak 26, Postgres 16 and households/tasks/scoring in dev mode: bob completes a task and the real scoreboard shows 5 points; a user token calling award directly gets 403 (also for the admin); alice reverts it and the scoreboard returns to 0; with scoring stopped, completion answers 503 `service_unavailable` and the task stays open with no done tasks. Not run: Flutter, `make e2e`, households-down live case (covered by tests only).
+* Follow-ups: T-0040.
 
 ### T-0012 · Dismiss open tasks when a future-dated away period starts
 
@@ -379,3 +382,11 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0005
 * Spec: AGENTS §5.1 (API contract)
 * Acceptance criteria: Quarkus tests validate every real response (status, headers, body) against `documentation/api/<service>-openapi.yaml` with a request/response validator and fail when an answer has a field or status the document does not declare; additional properties are forbidden in schemas. T-0005 keeps the document equal to the code; this keeps the answers equal to the document.
+
+### T-0040 · Make ledger awards idempotent per task
+
+* Status: todo
+* Issue / PR: #33
+* Depends on: T-0010
+* Spec: AGENTS §7 (points ledger, completion)
+* Acceptance criteria: Awarding the same task and reason twice appends one row (unique constraint plus idempotent endpoint), or tasks writes awards through an outbox in the same transaction. A commit failure in tasks after scoring committed can no longer leave points for an open task or double-award on retry. Tests cover the retry.
