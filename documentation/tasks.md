@@ -78,13 +78,17 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ## Todo
 
-### T-0015 · Developer toolchain: Flutter, Android emulator, OpenShift Local
+### T-0015 · Developer toolchain: Flutter and the Android emulator
 
-* Status: todo
-* Issue / PR: #8
+* Status: in-review
+* Issue / PR: #8 / PR to be linked
 * Depends on: —
 * Spec: AGENTS §5.3, §6
 * Acceptance criteria: Install and pin the Flutter SDK and the Android SDK with a headless emulator image on the development machine. OpenShift Local and `oc` are not needed: there is no cluster for now and Podman Compose is the target platform (see T-0004). Document versions and setup in README. Add `make doctor` that fails when a required tool or version is missing (JDK 21 via jbang, Podman and its socket, `podman compose` provider, Flutter, emulator).
+* Summary: `tooling/versions.env` pins Flutter 3.47.7 (Dart 3.13.5), Android command-line tools 13114758, platform android-35, build-tools 35.0.0, the `google_apis` x86_64 image and the `betterhome-test` AVD, with SHA-256 checksums for both downloads. `tooling/install-dev-tools.sh` installs them idempotently under `$HOME` (uses `sudo dnf` only when system packages are missing, accepts the Android SDK licenses). `tooling/dev-env.sh` puts them on `PATH`; `make doctor` (`tooling/doctor.sh`) fails on anything missing; the Makefile now finds jbang, Flutter and the Android tools by itself. `tooling/start-emulator.sh` starts the headless AVD. README documents the setup. A second commit adopts the `pubspec.lock` and `analysis_options.yaml` changes that Flutter 3.47.7 writes on first use.
+* Decisions and deviations: OpenShift Local / `oc` dropped from scope (decision of 2026-10-13). Installed with the `claude` account's sudo authorization granted by the product owner for this purpose; the script itself never stores a password. The emulator is installed and the AVD created, but the emulator process does NOT yet stay up on this VM: see T-0045. Lockfile and analyzer excludes are tool-written consequences of pinning the SDK, committed separately so they can be reviewed apart.
+* Verification: `make doctor` passes (13 checks) and fails with exit 1 and six `MISSING` lines when the SDK path is wrong. `flutter pub get`, `dart format --set-exit-if-changed .`, `flutter analyze` (no issues) and `flutter test` (13 tests) pass with Flutter 3.47.7 from `app/`. NOT verified: an emulator boot (crashes, T-0045), `make test-app`/`make check` as a whole, e2e, CI.
+* Follow-ups: T-0045 (emulator crash).
 
 ### T-0016 · `make up` and `make seed` run the full local stack
 
@@ -402,3 +406,11 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0016, T-0018
 * Spec: AGENTS §5.3
 * Acceptance criteria: `make check` / CI builds the five images from the packaged jars and runs `make smoke`; the Dockerfiles' `EXPOSE 8080` matches the real service ports (8081-8085).
+
+### T-0045 · Headless Android emulator crashes on the development VM
+
+* Status: todo
+* Issue / PR: #35
+* Depends on: T-0015
+* Spec: AGENTS §6.2
+* Acceptance criteria: `tooling/start-emulator.sh` boots the AVD to `sys.boot_completed=1` on the dev VM, or the e2e job is moved to CI with a documented reason, and `make doctor` gains a boot check. Observed: SIGSEGV in `qemu-system-x86_64-headless` about 25-30 s after start, when the guest `media` service starts (guest kernel boots fine); emulator 37.2.12, Android 35 google_apis x86_64, AMD Ryzen 7 5800X VM on Fedora 44. Same result with `-gpu swiftshader_indirect`, `-gpu guest`, `-feature -Vulkan`, `-accel off`, cameras off and `-feature -HardwareDecoder`. Not yet tried: another emulator build, another system image (API 34, non-google_apis), a gdb backtrace, an AVD without audio hardware.

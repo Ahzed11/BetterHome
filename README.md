@@ -13,8 +13,14 @@ See [documentation/project-specification.md](documentation/project-specification
 ## Prerequisites
 
 - JDK 21 (`jbang jdk install 21` works)
-- Podman (Compose)
-- Flutter (stable) for the app module
+- Podman with a compose provider, and its API socket: `systemctl --user enable --now podman.socket`
+- Flutter, the Android SDK and an emulator image for the app module
+
+Versions are pinned in [tooling/versions.env](tooling/versions.env). On Fedora, `tooling/install-dev-tools.sh`
+installs Flutter, the Android SDK, the emulator image and a `betterhome-test` AVD under your home directory
+(it uses `sudo dnf` only if system packages are missing and accepts the Android SDK licenses).
+`make doctor` reports anything missing. `source tooling/dev-env.sh` puts the tools on your shell `PATH`;
+the Makefile does this on its own. OpenShift Local is not needed: Podman Compose is the target platform for now.
 
 ## Quick start
 

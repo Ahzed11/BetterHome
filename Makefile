@@ -3,6 +3,10 @@ SHELL := /bin/bash
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BACKEND := $(ROOT)/backend
 COMPOSE := podman compose -f $(ROOT)/deploy/podman-compose.yml
+# Tool locations match tooling/dev-env.sh (installed by tooling/install-dev-tools.sh)
+DEV_TOOLS_DIR ?= $(HOME)/dev-tools
+export ANDROID_SDK_ROOT ?= $(HOME)/Android/Sdk
+export PATH := $(HOME)/.jbang/bin:$(DEV_TOOLS_DIR)/flutter/bin:$(ANDROID_SDK_ROOT)/cmdline-tools/latest/bin:$(ANDROID_SDK_ROOT)/platform-tools:$(ANDROID_SDK_ROOT)/emulator:$(PATH)
 JAVA_HOME ?= $(shell jbang jdk home 21 2>/dev/null)
 export JAVA_HOME
 export PATH := $(JAVA_HOME)/bin:$(PATH)
@@ -10,7 +14,10 @@ export PATH := $(JAVA_HOME)/bin:$(PATH)
 export DOCKER_HOST ?= unix://$(XDG_RUNTIME_DIR)/podman/podman.sock
 export TESTCONTAINERS_RYUK_DISABLED ?= true
 
-.PHONY: up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-guard e2e check update-goldens
+.PHONY: doctor up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-guard e2e check update-goldens
+
+doctor: ## Check the pinned toolchain (JDK, Podman, Flutter, Android) is installed
+	@bash $(ROOT)/tooling/doctor.sh
 
 up: ## Build the services and start Postgres, Keycloak, migrations and the five services
 	cd $(BACKEND) && ./mvnw -B -q -DskipTests package
