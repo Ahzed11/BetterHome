@@ -22,8 +22,8 @@ down: ## Stop and remove local Compose stack
 migrate: ## Apply Flyway SQL to all service databases
 	@bash $(ROOT)/deploy/migrate.sh
 
-seed: ## Load demo data (Phase 1+)
-	@echo "seed: not implemented until Phase 1 (households)"
+seed: ## Load demo data (optional local helpers)
+	@echo "seed: use deploy/keycloak/README.md for a demo Keycloak user; DB seed TBD"
 
 test-backend: ## Format check placeholder, unit and Quarkus tests
 	cd $(BACKEND) && ./mvnw -B verify

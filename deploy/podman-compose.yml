@@ -13,7 +13,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./postgres/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro
+      # :Z relabels for rootless Podman/SELinux so the entrypoint can read the script
+      - ./postgres/init-databases.sql:/docker-entrypoint-initdb.d/01-init-databases.sql:ro,Z
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U betterhome"]
       interval: 5s
@@ -31,7 +32,7 @@ services:
     ports:
       - "8180:8180"
     volumes:
-      - ./keycloak/realm-betterhome.json:/opt/keycloak/data/import/realm-betterhome.json:ro
+      - ./keycloak/realm-betterhome.json:/opt/keycloak/data/import/realm-betterhome.json:ro,Z
     depends_on:
       postgres:
         condition: service_healthy
