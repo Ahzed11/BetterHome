@@ -338,8 +338,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0036 · Real Keycloak roles are not mapped in tasks, scoring, lists and notifications
 
-* Status: todo
+* Status: dismissed (premise was wrong: Quarkus OIDC already reads Keycloak's `realm_access.roles` by default)
 * Issue / PR: #29
 * Depends on: T-0013
 * Spec: §2, AGENTS §8
 * Acceptance criteria: Only households-service sets `quarkus.oidc.roles.role-claim-path=realm_access/roles`. In the other four services `/v1/meta` is `@RolesAllowed({"member","admin"})`, so a real Keycloak token (roles under `realm_access.roles`) would get 403 there. Set the claim path in one shared place next to the verifier config (T-0013) or drop the role requirement from `/v1/meta`; add a `RealTokenAuthTest` assertion that fails first.
+* Summary: The suspected 403 does not happen. `RealOidcTestResource` tokens now carry roles only under `realm_access.roles`, as Keycloak issues them (the `groups` claim was removed), and `RealTokenAuthTest` still returns 200 in all five services; households also passes with its own `role-claim-path` removed (temporary experiment, reverted).
+* Decisions and deviations: No production change. The stricter fixture stays, so the five tests now prove role mapping from `realm_access.roles`. The households `role-claim-path` line is redundant but harmless and was left alone (not made obsolete by this task); drop it in a later cleanup if desired.
+* Verification: `./mvnw -B verify` in `backend/` on JDK 21 (all services pass). Gotcha: a stale `common-domain` test-jar in `~/.m2` can hide fixture changes; use `verify` (reactor jar), not `test`, when changing the fixture.
+* Follow-ups: none.

@@ -45,7 +45,8 @@ public class RealOidcTestResource implements QuarkusTestResourceLifecycleManager
         keyPair = null;
     }
 
-    /** A signed access token for a member whose Keycloak subject differs from their username. */
+    /** A signed access token for a member, shaped like Keycloak's: the subject differs from the
+     * username and roles sit only under {@code realm_access.roles}. */
     public static String token(UUID subject, String preferredUsername) {
         Instant now = Instant.now();
         String header = "{\"alg\":\"RS256\",\"typ\":\"JWT\"}";
@@ -55,7 +56,6 @@ public class RealOidcTestResource implements QuarkusTestResourceLifecycleManager
                         + "\"preferred_username\":\"" + preferredUsername + "\","
                         + "\"iat\":" + now.getEpochSecond() + ","
                         + "\"exp\":" + now.plusSeconds(300).getEpochSecond() + ","
-                        + "\"groups\":[\"member\"],"
                         + "\"realm_access\":{\"roles\":[\"member\"]}}";
         String signingInput = encode(header) + "." + encode(claims);
         return signingInput + "." + URL.encodeToString(sign(signingInput));
