@@ -48,15 +48,20 @@ Shared memory for agents and humans. Read before starting; update before finishi
 * Verification: `make test-docs`; `make test-backend` (ScoringPhase3Test, TaskPhase3ScoringWireTest); `make test-app` (leaderboard widgets EN/FR, scoring repository tests). Emulator e2e against Keycloak not run.
 * Follow-ups: T-0010 (HTTP PointsLedgerClient + scoring MembershipGateway); month-end Quartz job; household-TZ period windows.
 
-## In progress
-
 ### T-0011 · Phase 4 automation (recurrence, scheduler, outbox, reminders)
 
-* Status: in-progress
-* Issue / PR: —
+* Status: done
+* Issue / PR: — / on `master`
 * Depends on: T-0007, T-0009
 * Spec: §3.1–3.3 Spawning/assignment, §5, §10 Phase 4
-* Acceptance criteria: Admin configures template recurrence (RRULE + assignment mode); Quarkus scheduler claims due rows (`SKIP LOCKED`), spawns occurrence and supersedes previous open recurrence task in one transaction; fixed/round-robin with away fallback and `nobody_available`; transactional outbox + `PushSender` for assigned/superseded/due reminder; Flutter FR/EN recurrence controls; tests with controllable clock.
+* Summary: tasks-service V3 (`task_recurrence`, `notification_outbox`); `RruleEngine` (daily/weekly/monthly + DST); Quarkus scheduler claims due rows with `FOR UPDATE SKIP LOCKED`, catch-up spawn + supersede in one transaction; fixed/RR with away fallback and `nobody_available`; outbox drained via `PushSender`; due reminders from household settings. Flutter admin “Make recurring” + demo spawn. OpenAPI updated.
+* Decisions and deviations: Lightweight in-repo RRULE subset (no ical4j). Scheduler disabled in `%test`. HTTP `runDue` not exposed (scheduler owns prod spawning; Fake repo supports demo spawn). Real FCM/APNs gateway still `NoOpPushSender`.
+* Verification: `make test-docs`; `make test-backend` (RruleEngineTest, TaskPhase4AutomationTest); `make test-app` (recurrence widget + repository tests). Emulator e2e / Keycloak not run.
+* Follow-ups: overdue push type; richer RRULE UI; wire real PushSender.
+
+## In progress
+
+_(none)_
 
 ## Todo
 

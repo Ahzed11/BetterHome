@@ -109,6 +109,61 @@ class ChoreTask {
   }
 }
 
+enum AssignmentMode { fixed, roundRobin }
+
+class TaskRecurrence {
+  const TaskRecurrence({
+    required this.id,
+    required this.householdId,
+    required this.templateId,
+    required this.rrule,
+    required this.assignmentMode,
+    this.fixedAssigneeId,
+    required this.timezone,
+    required this.startsAt,
+    this.endsAt,
+    this.lastGeneratedAt,
+    this.nextRunAt,
+  });
+
+  final String id;
+  final String householdId;
+  final String templateId;
+  final String rrule;
+  final AssignmentMode assignmentMode;
+  final String? fixedAssigneeId;
+  final String timezone;
+  final DateTime startsAt;
+  final DateTime? endsAt;
+  final DateTime? lastGeneratedAt;
+  final DateTime? nextRunAt;
+
+  factory TaskRecurrence.fromJson(Map<String, dynamic> json) {
+    final mode = json['assignmentMode'] as String;
+    return TaskRecurrence(
+      id: json['id'] as String,
+      householdId: json['householdId'] as String,
+      templateId: json['templateId'] as String,
+      rrule: json['rrule'] as String,
+      assignmentMode: mode == 'fixed'
+          ? AssignmentMode.fixed
+          : AssignmentMode.roundRobin,
+      fixedAssigneeId: json['fixedAssigneeId'] as String?,
+      timezone: json['timezone'] as String,
+      startsAt: DateTime.parse(json['startsAt'] as String),
+      endsAt: json['endsAt'] == null
+          ? null
+          : DateTime.parse(json['endsAt'] as String),
+      lastGeneratedAt: json['lastGeneratedAt'] == null
+          ? null
+          : DateTime.parse(json['lastGeneratedAt'] as String),
+      nextRunAt: json['nextRunAt'] == null
+          ? null
+          : DateTime.parse(json['nextRunAt'] as String),
+    );
+  }
+}
+
 abstract class TasksRepository {
   Future<List<TaskTemplate>> listTemplates(String householdId);
 
@@ -148,6 +203,20 @@ abstract class TasksRepository {
     String taskId, {
     required String reason,
   });
+
+  Future<TaskRecurrence?> getRecurrence(String householdId, String templateId);
+
+  Future<TaskRecurrence> upsertRecurrence({
+    required String householdId,
+    required String templateId,
+    required String rrule,
+    required AssignmentMode assignmentMode,
+    String? fixedAssigneeId,
+    DateTime? startsAt,
+  });
+
+  /// Demo/ops: process due recurrences (fake) or no-op for HTTP (scheduler owns it).
+  Future<int> runDueRecurrences(String householdId);
 }
 
 class HttpTasksRepository implements TasksRepository {
@@ -302,6 +371,50 @@ class HttpTasksRepository implements TasksRepository {
     );
     return ChoreTask.fromJson(await _json(response));
   }
+
+  @override
+  Future<TaskRecurrence?> getRecurrence(
+    String householdId,
+    String templateId,
+  ) async {
+    final response = await _client.get(
+      _uri('/v1/households/$householdId/templates/$templateId/recurrence'),
+      headers: _headers,
+    );
+    if (response.statusCode == 404) {
+      return null;
+    }
+    return TaskRecurrence.fromJson(await _json(response));
+  }
+
+  @override
+  Future<TaskRecurrence> upsertRecurrence({
+    required String householdId,
+    required String templateId,
+    required String rrule,
+    required AssignmentMode assignmentMode,
+    String? fixedAssigneeId,
+    DateTime? startsAt,
+  }) async {
+    final response = await _client.put(
+      _uri('/v1/households/$householdId/templates/$templateId/recurrence'),
+      headers: _headers,
+      body: jsonEncode({
+        'rrule': rrule,
+        'assignmentMode': assignmentMode == AssignmentMode.fixed
+            ? 'fixed'
+            : 'round_robin',
+        'fixedAssigneeId': fixedAssigneeId,
+        'startsAt': (startsAt ?? DateTime.now().toUtc()).toIso8601String(),
+      }),
+    );
+    return TaskRecurrence.fromJson(await _json(response));
+  }
+
+  @override
+  Future<int> runDueRecurrences(String householdId) async {
+    return 0;
+  }
 }
 
 class FakeTasksRepository implements TasksRepository {
@@ -310,6 +423,7 @@ class FakeTasksRepository implements TasksRepository {
   final String currentUserId;
   final Map<String, List<TaskTemplate>> _templates = {};
   final Map<String, List<ChoreTask>> _tasks = {};
+  final Map<String, TaskRecurrence> _recurrences = {};
 
   @override
   Future<List<TaskTemplate>> listTemplates(String householdId) async =>
@@ -504,6 +618,108 @@ class FakeTasksRepository implements TasksRepository {
         dueAt: t.dueAt,
       );
     });
+  }
+
+  @override
+  Future<TaskRecurrence?> getRecurrence(
+    String householdId,
+    String templateId,
+  ) async => _recurrences['$householdId|$templateId'];
+
+  @override
+  Future<TaskRecurrence> upsertRecurrence({
+    required String householdId,
+    required String templateId,
+    required String rrule,
+    required AssignmentMode assignmentMode,
+    String? fixedAssigneeId,
+    DateTime? startsAt,
+  }) async {
+    final key = '$householdId|$templateId';
+    final recurrence = TaskRecurrence(
+      id: 'rec-${_recurrences.length + 1}',
+      householdId: householdId,
+      templateId: templateId,
+      rrule: rrule,
+      assignmentMode: assignmentMode,
+      fixedAssigneeId: fixedAssigneeId,
+      timezone: 'UTC',
+      startsAt: startsAt ?? DateTime.now().toUtc(),
+      nextRunAt: DateTime.now().toUtc().subtract(const Duration(minutes: 1)),
+    );
+    _recurrences[key] = recurrence;
+    return recurrence;
+  }
+
+  @override
+  Future<int> runDueRecurrences(String householdId) async {
+    var spawned = 0;
+    final due = _recurrences.values
+        .where(
+          (r) =>
+              r.householdId == householdId &&
+              r.nextRunAt != null &&
+              !r.nextRunAt!.isAfter(DateTime.now().toUtc()),
+        )
+        .toList();
+    for (final recurrence in due) {
+      final templates = _templates[householdId] ?? const <TaskTemplate>[];
+      final matches = templates.where((t) => t.id == recurrence.templateId);
+      if (matches.isEmpty) {
+        continue;
+      }
+      final template = matches.first;
+      final tasks = _tasks.putIfAbsent(householdId, () => []);
+      for (var i = 0; i < tasks.length; i++) {
+        final t = tasks[i];
+        if (t.templateId == template.id &&
+            t.origin == TaskOrigin.recurrence &&
+            t.status == TaskStatus.open) {
+          tasks[i] = ChoreTask(
+            id: t.id,
+            householdId: t.householdId,
+            templateId: t.templateId,
+            origin: t.origin,
+            title: t.title,
+            emoji: t.emoji,
+            points: t.points,
+            latePoints: t.latePoints,
+            status: TaskStatus.dismissed,
+            assigneeId: t.assigneeId,
+            dueAt: t.dueAt,
+          );
+        }
+      }
+      final task = ChoreTask(
+        id: 'task-${DateTime.now().microsecondsSinceEpoch}-$spawned',
+        householdId: householdId,
+        templateId: template.id,
+        origin: TaskOrigin.recurrence,
+        title: template.title,
+        emoji: template.emoji,
+        points: template.points,
+        latePoints: template.latePoints,
+        status: TaskStatus.open,
+        assigneeId: currentUserId,
+        dueAt: DateTime.now().toUtc().add(const Duration(days: 1)),
+      );
+      tasks.add(task);
+      _recurrences['$householdId|${template.id}'] = TaskRecurrence(
+        id: recurrence.id,
+        householdId: recurrence.householdId,
+        templateId: recurrence.templateId,
+        rrule: recurrence.rrule,
+        assignmentMode: recurrence.assignmentMode,
+        fixedAssigneeId: recurrence.fixedAssigneeId,
+        timezone: recurrence.timezone,
+        startsAt: recurrence.startsAt,
+        endsAt: recurrence.endsAt,
+        lastGeneratedAt: DateTime.now().toUtc(),
+        nextRunAt: DateTime.now().toUtc().add(const Duration(days: 1)),
+      );
+      spawned++;
+    }
+    return spawned;
   }
 
   ChoreTask _replace(

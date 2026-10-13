@@ -151,6 +151,84 @@ class _ChoresScreenState extends State<ChoresScreen>
     setState(_reload);
   }
 
+  Future<void> _makeRecurring() async {
+    final l10n = AppLocalizations.of(context);
+    var templates = await widget.session.tasksRepository.listTemplates(
+      widget.householdId,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (templates.isEmpty) {
+      await widget.session.tasksRepository.createTemplate(
+        householdId: widget.householdId,
+        title: 'Chore',
+        points: 5,
+        latePoints: 2,
+      );
+      templates = await widget.session.tasksRepository.listTemplates(
+        widget.householdId,
+      );
+    }
+    if (!mounted || templates.isEmpty) {
+      return;
+    }
+    final templateId = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l10n.makeRecurring),
+        children: templates
+            .map(
+              (t) => SimpleDialogOption(
+                onPressed: () => Navigator.pop(context, t.id),
+                child: Text('${t.emoji ?? ''} ${t.title}'.trim()),
+              ),
+            )
+            .toList(),
+      ),
+    );
+    if (templateId == null || !mounted) {
+      return;
+    }
+    final rrule = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(l10n.makeRecurring),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'FREQ=DAILY'),
+            child: Text(l10n.recurrenceDaily),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'FREQ=WEEKLY;BYDAY=MO'),
+            child: Text(l10n.recurrenceWeekly),
+          ),
+          SimpleDialogOption(
+            onPressed: () =>
+                Navigator.pop(context, 'FREQ=MONTHLY;BYMONTHDAY=1'),
+            child: Text(l10n.recurrenceMonthly),
+          ),
+        ],
+      ),
+    );
+    if (rrule == null || !mounted) {
+      return;
+    }
+    await widget.session.tasksRepository.upsertRecurrence(
+      householdId: widget.householdId,
+      templateId: templateId,
+      rrule: rrule,
+      assignmentMode: AssignmentMode.roundRobin,
+      startsAt: DateTime.now().toUtc().subtract(const Duration(minutes: 1)),
+    );
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.recurrenceSet)));
+  }
+
   Future<void> _revert(ChoreTask task) async {
     final l10n = AppLocalizations.of(context);
     final reasonController = TextEditingController();
@@ -208,6 +286,34 @@ class _ChoresScreenState extends State<ChoresScreen>
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.choresTitle),
+        actions: [
+          if (_isAdmin)
+            PopupMenuButton<String>(
+              onSelected: (value) async {
+                if (value == 'recurring') {
+                  await _makeRecurring();
+                } else if (value == 'spawn') {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final count = await widget.session.tasksRepository
+                      .runDueRecurrences(widget.householdId);
+                  if (!mounted) {
+                    return;
+                  }
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(l10n.spawnedCount(count))),
+                  );
+                  setState(_reload);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'recurring',
+                  child: Text(l10n.makeRecurring),
+                ),
+                PopupMenuItem(value: 'spawn', child: Text(l10n.runDueNow)),
+              ],
+            ),
+        ],
         bottom: TabBar(
           controller: _tabs,
           onTap: (_) => setState(_reload),

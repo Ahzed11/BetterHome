@@ -66,5 +66,17 @@
   "revertTask": "Annuler",
   "revertConfirmTitle": "Annuler cette validation ?",
   "revertConfirmBody": "Les points seront retirés. Indiquez une raison.",
-  "revertReason": "Raison"
+  "revertReason": "Raison",
+  "makeRecurring": "Rendre récurrente",
+  "recurrenceDaily": "Quotidien",
+  "recurrenceWeekly": "Hebdomadaire",
+  "recurrenceMonthly": "Mensuel",
+  "runDueNow": "Générer les tâches dues",
+  "recurrenceSet": "Récurrence enregistrée",
+  "spawnedCount": "{count} tâche(s) générée(s)",
+  "@spawnedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }

@@ -120,6 +120,33 @@ void main() {
     expect(find.text('Hall of winners'), findsOneWidget);
   });
 
+  testWidgets('admin sets daily recurrence from chores menu', (tester) async {
+    final session = AppSession(repository: FakeHouseholdsRepository());
+    await tester.pumpWidget(
+      BetterHomeApp(session: session, initialLocale: const Locale('en')),
+    );
+    await tester.tap(find.text('Continue with demo data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create household'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Flat');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flat'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open chores'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Make recurring'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chore'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Daily'));
+    await tester.pumpAndSettle();
+    expect(find.text('Recurrence saved'), findsOneWidget);
+  });
+
   testWidgets('French leaderboard labels', (tester) async {
     final session = AppSession(repository: FakeHouseholdsRepository());
     await tester.pumpWidget(

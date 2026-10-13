@@ -71,5 +71,17 @@
   "revertTask": "Revert",
   "revertConfirmTitle": "Revert this completion?",
   "revertConfirmBody": "Points will be reversed. Please give a reason.",
-  "revertReason": "Reason"
+  "revertReason": "Reason",
+  "makeRecurring": "Make recurring",
+  "recurrenceDaily": "Daily",
+  "recurrenceWeekly": "Weekly",
+  "recurrenceMonthly": "Monthly",
+  "runDueNow": "Spawn due chores",
+  "recurrenceSet": "Recurrence saved",
+  "spawnedCount": "Spawned {count} chore(s)",
+  "@spawnedCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }

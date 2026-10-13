@@ -469,6 +469,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reason'**
   String get revertReason;
+
+  /// No description provided for @makeRecurring.
+  ///
+  /// In en, this message translates to:
+  /// **'Make recurring'**
+  String get makeRecurring;
+
+  /// No description provided for @recurrenceDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get recurrenceDaily;
+
+  /// No description provided for @recurrenceWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get recurrenceWeekly;
+
+  /// No description provided for @recurrenceMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get recurrenceMonthly;
+
+  /// No description provided for @runDueNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Spawn due chores'**
+  String get runDueNow;
+
+  /// No description provided for @recurrenceSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Recurrence saved'**
+  String get recurrenceSet;
+
+  /// No description provided for @spawnedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Spawned {count} chore(s)'**
+  String spawnedCount(int count);
 }
 
 class _AppLocalizationsDelegate

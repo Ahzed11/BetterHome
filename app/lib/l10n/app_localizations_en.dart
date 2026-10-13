@@ -200,4 +200,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get revertReason => 'Reason';
+
+  @override
+  String get makeRecurring => 'Make recurring';
+
+  @override
+  String get recurrenceDaily => 'Daily';
+
+  @override
+  String get recurrenceWeekly => 'Weekly';
+
+  @override
+  String get recurrenceMonthly => 'Monthly';
+
+  @override
+  String get runDueNow => 'Spawn due chores';
+
+  @override
+  String get recurrenceSet => 'Recurrence saved';
+
+  @override
+  String spawnedCount(int count) {
+    return 'Spawned $count chore(s)';
+  }
 }
