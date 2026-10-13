@@ -1,6 +1,19 @@
-# Local stack for Phase 0 foundations (Postgres + Keycloak).
-# Usage: podman compose -f deploy/podman-compose.yml up -d
+# Local stack: Postgres, Keycloak and the five Quarkus services (prod profile).
+# Use `make up`: it builds the jars (the Dockerfile.jvm files copy target/quarkus-app),
+# starts Postgres and Keycloak, runs the Flyway one-shot jobs, then starts the services.
 name: betterhome
+
+# Shared by the five services. Migrations never run at startup (the prod profile keeps
+# quarkus.flyway.migrate-at-start=false); `make migrate` runs Flyway as one-shot containers.
+x-service: &service
+  depends_on:
+    keycloak:
+      condition: service_healthy
+
+x-service-env: &service-env
+  DB_USER: betterhome
+  DB_PASSWORD: betterhome
+  OIDC_AUTH_SERVER_URL: http://keycloak:8180/realms/betterhome
 
 services:
   postgres:
@@ -29,13 +42,85 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HTTP_PORT: 8180
       KC_HEALTH_ENABLED: "true"
+      # One issuer for everyone: tokens fetched from the host (localhost:8180) and
+      # services reaching Keycloak as keycloak:8180 must agree on `iss`. The frontend URL is
+      # pinned and back-channel endpoints (jwks_uri, token) follow the request host.
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
     ports:
       - "8180:8180"
     volumes:
       - ./keycloak/realm-betterhome.json:/opt/keycloak/data/import/realm-betterhome.json:ro,Z
+    healthcheck:
+      # The image has no curl; probe the management port (9000) with bash
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
     depends_on:
       postgres:
         condition: service_healthy
+
+  households-service:
+    <<: *service
+    build:
+      context: ../backend/services/households-service
+      dockerfile: src/main/docker/Dockerfile.jvm
+    environment:
+      <<: *service-env
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_households
+      TASKS_SERVICE_URL: http://tasks-service:8082
+    ports:
+      - "8081:8081"
+
+  tasks-service:
+    <<: *service
+    build:
+      context: ../backend/services/tasks-service
+      dockerfile: src/main/docker/Dockerfile.jvm
+    environment:
+      <<: *service-env
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_tasks
+      HOUSEHOLDS_SERVICE_URL: http://households-service:8081
+      OIDC_SERVICE_CLIENT_ID: betterhome-tasks-service
+      # Local-dev placeholder, same value as the secret in realm-betterhome.json
+      OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
+    ports:
+      - "8082:8082"
+
+  scoring-service:
+    <<: *service
+    build:
+      context: ../backend/services/scoring-service
+      dockerfile: src/main/docker/Dockerfile.jvm
+    environment:
+      <<: *service-env
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_scoring
+    ports:
+      - "8083:8083"
+
+  lists-service:
+    <<: *service
+    build:
+      context: ../backend/services/lists-service
+      dockerfile: src/main/docker/Dockerfile.jvm
+    environment:
+      <<: *service-env
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_lists
+    ports:
+      - "8084:8084"
+
+  notifications-service:
+    <<: *service
+    build:
+      context: ../backend/services/notifications-service
+      dockerfile: src/main/docker/Dockerfile.jvm
+    environment:
+      <<: *service-env
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_notifications
+    ports:
+      - "8085:8085"
 
 volumes:
   postgres-data:
