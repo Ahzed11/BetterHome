@@ -1,0 +1,51 @@
+# Runs `make check` (docs, backend, app) on every pull request and on master.
+# Not yet here: the e2e job (T-0021), image builds (T-0046) and the OWASP dependency audit (T-0038).
+name: check
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      # Hosted runners have Docker, not Podman: Testcontainers / Dev Services use its socket.
+      DOCKER_HOST: unix:///var/run/docker.sock
+      TESTCONTAINERS_RYUK_DISABLED: "true"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # tooling/versions.env stays the single source of truth for pinned versions.
+      - name: Read pinned versions
+        run: |
+          set -euo pipefail
+          . tooling/versions.env
+          echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> "$GITHUB_ENV"
+          echo "JAVA_MAJOR=$JAVA_MAJOR" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_MAJOR }}
+          cache: maven
+          cache-dependency-path: backend/**/pom.xml
+
+      # Third-party, justified in documentation/tasks.md (T-0018): installs the exact Flutter version and caches pub.
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: make check
+        run: make check
