@@ -28,7 +28,13 @@ Shared memory for agents and humans. Read before starting; update before finishi
 
 ## In progress
 
-_(none)_
+### T-0007 · Phase 2 tasks domain (templates, quick-log, complete, dismiss, reassign)
+
+* Status: in-progress
+* Issue / PR: —
+* Depends on: T-0002
+* Spec: §3.1–3.3 (except scheduler spawning / reversion), §10 Phase 2
+* Acceptance criteria: Admin templates (CRUD/archive); members quick-log manual tasks; complete (on-time/late); dismiss with confirmation; admin reassign via round-robin among eligible members; Flutter FR/EN chores surfaces; tests at service and widget levels. Recurrence scheduler and scoring ledger are Phase 4 / 3.
 
 ## Todo
 
