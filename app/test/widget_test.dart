@@ -1,30 +1,76 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:betterhome/app.dart';
+import 'package:betterhome/data/households_repository.dart';
+import 'package:betterhome/l10n/app_localizations.dart';
+import 'package:betterhome/state/app_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:betterhome/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('English empty households after demo sync', (tester) async {
+    final session = AppSession(repository: FakeHouseholdsRepository());
+    await tester.pumpWidget(
+      BetterHomeApp(session: session, initialLocale: const Locale('en')),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Your profile'), findsOneWidget);
+    await tester.tap(find.text('Continue with demo data'));
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    expect(find.text('Your households'), findsOneWidget);
+    expect(find.textContaining('No households yet'), findsOneWidget);
+  });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  testWidgets('French create household flow', (tester) async {
+    final session = AppSession(repository: FakeHouseholdsRepository());
+    await tester.pumpWidget(
+      BetterHomeApp(session: session, initialLocale: const Locale('fr')),
+    );
+
+    await tester.tap(find.text('Continuer avec des données de démo'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Vos foyers'), findsOneWidget);
+    await tester.tap(find.text('Créer un foyer'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, 'Coloc');
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Coloc'), findsOneWidget);
+  });
+
+  testWidgets('Invite and mark away on detail screen', (tester) async {
+    final repo = FakeHouseholdsRepository();
+    final session = AppSession(repository: repo);
+    await session.syncProfile(email: 'admin@example.com', givenName: 'Ada');
+    await repo.createHousehold(name: 'Flat', timezone: 'UTC');
+
+    await tester.pumpWidget(
+      BetterHomeApp(session: session, initialLocale: const Locale('en')),
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flat'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Members'), findsOneWidget);
+    await tester.tap(find.byTooltip('Invite'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'friend@example.com');
+    await tester.tap(find.text('Send invitation'));
+    await tester.pumpAndSettle();
+    expect(find.text('Invitation created'), findsOneWidget);
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Mark away'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Away'), findsWidgets);
+  });
+
+  test('localizations include both languages', () {
+    expect(AppLocalizations.supportedLocales, contains(const Locale('en')));
+    expect(AppLocalizations.supportedLocales, contains(const Locale('fr')));
   });
 }

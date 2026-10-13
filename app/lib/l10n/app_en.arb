@@ -1,0 +1,41 @@
+{
+  "@@locale": "en",
+  "appTitle": "BetterHome",
+  "householdsTitle": "Your households",
+  "householdsEmpty": "No households yet. Create one to get started.",
+  "createHousehold": "Create household",
+  "householdName": "Household name",
+  "timezone": "Timezone",
+  "save": "Save",
+  "cancel": "Cancel",
+  "members": "Members",
+  "invite": "Invite",
+  "inviteEmail": "Email to invite",
+  "roleMember": "Member",
+  "roleAdmin": "Admin",
+  "sendInvite": "Send invitation",
+  "inviteCreated": "Invitation created",
+  "copyToken": "Token: {token}",
+  "@copyToken": {
+    "placeholders": {
+      "token": {"type": "String"}
+    }
+  },
+  "acceptInvite": "Accept invitation",
+  "inviteToken": "Invitation token",
+  "leaveHousehold": "Leave household",
+  "setAway": "Mark away",
+  "clearAway": "Clear away",
+  "away": "Away",
+  "syncProfileTitle": "Your profile",
+  "syncProfileSubtitle": "Sync your account with BetterHome before joining a household.",
+  "email": "Email",
+  "givenName": "First name",
+  "familyName": "Last name",
+  "language": "Language",
+  "continueLabel": "Continue",
+  "errorGeneric": "Something went wrong",
+  "retry": "Retry",
+  "useDemoData": "Continue with demo data",
+  "loading": "Loading…"
+}
