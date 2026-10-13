@@ -23,16 +23,29 @@ Shared memory for agents and humans. Read before starting; update before finishi
 * Verification: (fill on completion)
 * Follow-ups: (fill on completion)
 
-## Todo
+## In review
 
 ### T-0002 · Phase 1 households domain (users, memberships, invitations, away)
 
-* Status: todo
+* Status: in-review
 * Issue / PR: —
 * Depends on: T-0001
 * Spec: §2, §10 Phase 1
-* Acceptance criteria: registration/join flows, household CRUD, roles, invitations, away reassignment hooks as specified.
+* Summary: households-service now syncs users from the auth subject (`PUT /v1/me`), creates/lists/updates/soft-deletes households, manages memberships (roles, leave with last-admin guard), invitations (create/list/accept with email match), and away status. Authorization is membership-based, not Keycloak realm roles.
+* Decisions and deviations: Local user rows are upserted via `PUT /v1/me` (email/names from the client after Keycloak login) rather than reading JWT claims in the verifier. Invitation TTL defaults to 7 days (not specified). Away does not trigger task reassignment here (tasks-service owns that).
+* Verification: `make test-docs`; `make test-backend` (households Phase 1 tests + other services). e2e / app launch not run.
+* Follow-ups: T-0003 (away → open-task reassignment in tasks-service).
+
+## Todo
+
+_(none)_
 
 ## Discovered
 
-_(none yet)_
+### T-0003 · Reassign open tasks when a member is marked away
+
+* Status: todo
+* Issue / PR: —
+* Depends on: T-0002, Phase 2 tasks domain
+* Spec: §2 Away, §3.3 Reassignment
+* Acceptance criteria: Admin sets away in households-service; open tasks for that assignee are reassigned round-robin (tasks-service), with notification outbox later.
