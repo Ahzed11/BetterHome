@@ -39,7 +39,13 @@ Shared memory for agents and humans. Read before starting; update before finishi
 
 ## In progress
 
-_(none)_
+### T-0009 · Phase 3 scoring (ledger, reversions, scoreboard)
+
+* Status: in-progress
+* Issue / PR: —
+* Depends on: T-0007
+* Spec: §3.3 Reversion, §3.4, §10 Phase 3
+* Acceptance criteria: Append-only point ledger; award on task completion; admin revert with reason (task status + negative ledger); scoreboard week/month/year/all-time with podium and effort bar; hall of past winners; Flutter FR/EN leaderboard; tests.
 
 ## Todo
 
