@@ -370,7 +370,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0037 · Unit tests for common-domain seams
 
 * Status: in-review
-* Issue / PR: #30 / PR_NUM
+* Issue / PR: #30 / #39
 * Depends on: T-0017
 * Spec: AGENTS §5.1, §5.3
 * Acceptance criteria: common-domain line coverage is 9% (only `SystemClock`); `OidcAuthVerifier`, `NoOpPushSender` and the other seams are exercised only through the services' tests. Add direct unit tests for them and raise the `jacoco.line.minimum` floor in `common-domain/pom.xml`.
