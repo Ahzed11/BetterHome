@@ -63,9 +63,188 @@ Shared memory for agents and humans. Read before starting; update before finishi
 
 _(none)_
 
+## Roadmap
+
+Milestones in delivery order (vertical slice first). A milestone is reached when its exit criterion holds and its tasks are `done`. T-0003 and T-0008 are in review and close before M1.
+
+* **M1 · Real sign-in works** — T-0013, T-0014. Exit: A Keycloak user can call every service, and invitations work over HTTP.
+* **M2 · Toolchain, local stack, gates, CI** — T-0015, T-0016, T-0017, T-0005, T-0018. Exit: `make up` runs all five services; `make check` enforces AGENTS §5.3 and runs in CI on every pull request.
+* **M3 · Services wired for real** — T-0010, T-0019. Exit: No in-memory gateway or ledger client left in main code; one app contract describes every endpoint.
+* **M4 · App vertical slice on the real stack** — T-0020, T-0006, T-0021, T-0022. Exit: The app signs in through Keycloak and runs households, chores and leaderboard against `make up`; `make e2e` runs in CI.
+* **M5 · Lists (spec Phase 5)** — T-0023, T-0024. Exit: The Groceries tab journey passes end to end.
+* **M6 · Notifications** — T-0025, T-0026, T-0027, T-0028, T-0012. Exit: Every notification type in spec §5 reaches a fake push gateway in the user's language, honoring preferences.
+* **M7 · Spec completeness and polish (spec Phase 6)** — T-0029, T-0030, T-0031, T-0032, T-0033. Exit: Every rule in spec §2–§9 is implemented and covered by an end-to-end journey.
+* **M8 · Deploy and launch** — T-0004, T-0034, T-0035. Exit: The stack runs on OpenShift with migrations as Jobs, and signed store builds are produced.
+
 ## Todo
 
-_(none)_
+### T-0015 · Developer toolchain: Flutter, Android emulator, OpenShift Local
+
+* Status: todo
+* Issue / PR: #8
+* Depends on: —
+* Spec: AGENTS §5.3, §6
+* Acceptance criteria: Install and pin the Flutter SDK, Android SDK with a headless emulator image, and CRC/`oc` on the development machine. Document versions and setup in README. Add `make doctor` that fails when a required tool or version is missing (JDK 21 via jbang, Podman socket, Flutter, emulator, `oc`).
+
+### T-0016 · `make up` and `make seed` run the full local stack
+
+* Status: todo
+* Issue / PR: #9
+* Depends on: T-0013, T-0014, T-0015
+* Spec: §7, AGENTS §6.1, ADR 0003
+* Acceptance criteria: Podman Compose starts Postgres, Keycloak (realm import) and all five services as containers built with the Quarkus container extension; services get their DB URL, OIDC settings and service-account secrets from environment variables (no committed secrets: realm secrets injected at import). `make migrate` runs Flyway per service as one-shot containers. `make seed` creates a demo household with two members and sample templates through the public APIs. `make down` cleans everything. Verified by a scripted smoke check.
+
+### T-0017 · Backend quality gates: format, lint, coverage
+
+* Status: todo
+* Issue / PR: #10
+* Depends on: T-0015
+* Spec: AGENTS §5.3
+* Acceptance criteria: `make test-backend` runs spotless check, checkstyle (or PMD/SpotBugs) and JaCoCo with a coverage floor that cannot drop, then the Quarkus tests. Existing violations are fixed in the same change, no suppressions. Gate failures fail `make check`.
+
+### T-0018 · CI: run `make check` on every pull request
+
+* Status: todo
+* Issue / PR: #11
+* Depends on: T-0016, T-0017
+* Spec: AGENTS §6.2
+* Acceptance criteria: GitHub Actions workflow with pinned tool versions runs `make check` (docs, backend, app, policy, guard) on pull requests and on `master`. Podman or Docker available for Testcontainers. The e2e job is added by T-0021.
+
+### T-0019 · One app contract: merge per-service OpenAPI files
+
+* Status: todo
+* Issue / PR: #12
+* Depends on: T-0010
+* Spec: §7 API style, ADR 0006, ADR 0007
+* Acceptance criteria: `documentation/api/openapi.yaml` describes every app-facing endpoint of all services (households, tasks, scoring, later lists and notifications) with full schemas; per-service files are either generated from it or removed. Internal endpoints stay in separate internal documents. The drift check of T-0005 runs against it.
+
+### T-0020 · Generated Dart client replaces hand-written repositories
+
+* Status: todo
+* Issue / PR: #13
+* Depends on: T-0019, T-0005
+* Spec: ADR 0006, AGENTS §2, §5.2
+* Acceptance criteria: Generate the Dart client from `openapi.yaml` into the gitignored `generated/` folder; app repositories use it with bearer headers. Remove hand-written JSON parsing and `dynamic`. Repository tests run against a fake server built from the contract, not hand-built JSON. `make test-guard` proves generation fails when the document or client is broken.
+
+### T-0021 · `make e2e`: real app on an emulator against the real stack
+
+* Status: todo
+* Issue / PR: #14
+* Depends on: T-0006, T-0016, T-0015
+* Spec: AGENTS §6.2
+* Acceptance criteria: `make e2e` boots the stack, applies migrations, launches the app on a headless Android emulator, signs in through Keycloak and runs `integration_test` journeys. Adds a controllable clock exposed only in the test environment and a fake push gateway endpoint. CI job added to the T-0018 workflow. Each later feature task adds its journey here.
+
+### T-0022 · Golden and accessibility baseline for existing screens
+
+* Status: todo
+* Issue / PR: #15
+* Depends on: T-0015
+* Spec: AGENTS §5.2, spec §8
+* Acceptance criteria: Golden tests (light mode, Linux per ADR 0012) for design-system widgets and the households, chores and leaderboard screens. Accessibility checks: 44 px touch targets, text contrast, semantic labels, 200% text scaling without overflow, in FR and EN.
+
+### T-0023 · lists-service: checklists, items and bulk reset
+
+* Status: todo
+* Issue / PR: #16
+* Depends on: T-0008, T-0016
+* Spec: §4, §2 permissions, §6.2 LIST/ITEM
+* Acceptance criteria: Flyway schema for LIST and ITEM with constraints; admins create, rename and archive lists; any member adds, edits, checks, unchecks and soft-deletes items (who and when); bulk reset unchecks all items. Membership through households internal endpoints with a service account (ADR 0014). Authorization matrix tests for every endpoint (admin, member, non-member, left member, other household). OpenAPI updated.
+
+### T-0024 · App: Groceries tab
+
+* Status: todo
+* Issue / PR: #17
+* Depends on: T-0023, T-0020
+* Spec: §4, §8.2
+* Acceptance criteria: Fourth bottom tab with list overview and item screen: create, check, uncheck, delete, reset (admin actions hidden for members). FR/EN strings, loading/empty/error/populated widget tests, goldens. e2e journey "checklist create, check, delete, reset".
+
+### T-0025 · notifications-service core: inbox, preferences, rendering
+
+* Status: todo
+* Issue / PR: #18
+* Depends on: T-0016
+* Spec: §5, §6.2 NOTIFICATION/PREFERENCE
+* Acceptance criteria: notifications-service owns NOTIFICATION and PREFERENCE. Internal ingest endpoint (service role) accepts typed events with an idempotency key; it renders FR/EN text server-side in the recipient's language, applies per-type preferences, stores the notification and hands it to `PushSender`. App-facing API: list notifications, mark read, read/update preferences. ADR records the event contract and ownership.
+
+### T-0026 · Outbox relays into notifications-service
+
+* Status: todo
+* Issue / PR: #19
+* Depends on: T-0025
+* Spec: §5, AGENTS §3 Push
+* Acceptance criteria: tasks-service relays its outbox to notifications-service instead of calling `PushSender` directly; households-service gets an outbox for marked-away and invitation events. Relays claim rows with SKIP LOCKED, deliver at least once, and are idempotent on the receiving side. Tests cover retries and duplicate delivery.
+
+### T-0027 · Real push delivery: FCM and APNs
+
+* Status: todo
+* Issue / PR: #20
+* Depends on: T-0025
+* Spec: §5, AGENTS §8
+* Acceptance criteria: Device-token registration API, FCM/APNs implementation of `PushSender` in notifications-service, minimal payloads (IDs and short text), invalid-token cleanup. Tests use an in-memory fake of the vendor boundary; e2e uses the fake push endpoint from T-0021.
+
+### T-0028 · App: notification inbox, preferences and push registration
+
+* Status: todo
+* Issue / PR: #21
+* Depends on: T-0025, T-0027, T-0020
+* Spec: §5
+* Acceptance criteria: Inbox screen with read state, per-type preference toggles, push permission prompt and token registration. FR/EN, widget and golden tests, e2e journey.
+
+### T-0029 · Scoring in household time and automated month end
+
+* Status: todo
+* Issue / PR: #22
+* Depends on: T-0010
+* Spec: §3.4, §5
+* Acceptance criteria: Week/month/year windows computed in the household timezone; a scheduled job closes each month at the household's local boundary (SKIP LOCKED, one transaction per household) and records the winner. App shows the recap and confetti once per user. Clock-controlled tests across timezones and DST.
+
+### T-0030 · Scheduler concurrency and invariant tests
+
+* Status: todo
+* Issue / PR: #23
+* Depends on: T-0017
+* Spec: AGENTS §5.1
+* Acceptance criteria: Concurrency tests with several scheduler instances prove no double spawn or double close. jqwik property tests: round robin never picks an ineligible member, ledger sum equals awarded minus reversed points, scores never go negative. Pitest run on tasks and scoring documented.
+
+### T-0031 · App UX per spec §8: switcher, quick-log undo, overdue tone
+
+* Status: todo
+* Issue / PR: #24
+* Depends on: T-0020
+* Spec: §8.1, §8.2, §3.3
+* Acceptance criteria: Household switcher at the top; "+ I just did…" quick-log with single-tap logging and 5-second undo; overdue shown in soft coral with "still +N"; reverted tasks show their reason to the assignee. Widget, golden and e2e coverage (quick-log and undo, revert seen by assignee, household switcher with two households).
+
+### T-0032 · Account deletion and anonymization
+
+* Status: todo
+* Issue / PR: #25
+* Depends on: T-0016, T-0025
+* Spec: §9 Privacy, AGENTS §8
+* Acceptance criteria: Deleting an account removes or anonymizes the user in Keycloak through the Admin REST API and anonymizes their data in every service while keeping the ledger consistent. Last-admin rule enforced. Tests in each service plus an e2e journey.
+
+### T-0033 · Activity log
+
+* Status: todo
+* Issue / PR: #26
+* Depends on: —
+* Spec: §6.1, §6.2 ACTIVITY_LOG
+* Acceptance criteria: Blocked: the spec lists ACTIVITY_LOG but does not say which service owns it, which actions are logged, or where users see it. Needs a product decision and a spec update before implementation.
+
+### T-0034 · Observability: tracing and request IDs
+
+* Status: todo
+* Issue / PR: #27
+* Depends on: T-0016
+* Spec: §7, AGENTS §8
+* Acceptance criteria: OpenTelemetry tracing across services and outgoing REST calls, request IDs in MDC and JSON logs, no tokens, emails or message content in logs. Verified on the local stack.
+
+### T-0035 · Release pipeline and store listings
+
+* Status: todo
+* Issue / PR: #28
+* Depends on: T-0021, T-0004
+* Spec: §1, §10 Phase 6
+* Acceptance criteria: Signed Android and iOS builds from CI, store listings in FR and EN. Blocked on the pricing and monetization decision (spec §1).
 
 ## Discovered
 
@@ -84,7 +263,7 @@ _(none)_
 ### T-0004 · OpenShift / CRC deploy manifests for microservices
 
 * Status: todo
-* Issue / PR: —
+* Issue / PR: #1
 * Depends on: T-0001
 * Spec: §7, ADR 0003
 * Acceptance criteria: Deployments, Routes, ConfigMaps/Secrets, health probes, and migration Jobs for each service on OpenShift Local or a cluster.
@@ -92,7 +271,7 @@ _(none)_
 ### T-0005 · OWASP dependency-check and OpenAPI client drift guard
 
 * Status: todo
-* Issue / PR: —
+* Issue / PR: #2
 * Depends on: T-0001
 * Spec: AGENTS §5.3, ADR 0006 / 0007
 * Acceptance criteria: `make test-policy` and `make test-guard` fail closed when advisories or OpenAPI/client drift cannot be verified.
@@ -100,7 +279,7 @@ _(none)_
 ### T-0006 · Keycloak AppAuth in Flutter and e2e household journeys
 
 * Status: todo
-* Issue / PR: —
+* Issue / PR: #3
 * Depends on: T-0002
 * Spec: §2, §9, AGENTS §6.2
 * Acceptance criteria: App authenticates via Keycloak (PKCE); e2e covers sign-up/create household/invite/join against the real stack.
@@ -120,7 +299,7 @@ _(none)_
 ### T-0010 · HTTP PointsLedgerClient and scoring MembershipGateway
 
 * Status: todo
-* Issue / PR: —
+* Issue / PR: #4
 * Depends on: T-0009
 * Spec: §7 service boundaries, §3.4
 * Acceptance criteria: tasks-service calls scoring-service award/reverse over REST with service or user token; scoring-service resolves membership via households-service HTTP client; keep in-memory doubles for Quarkus tests.
@@ -128,7 +307,7 @@ _(none)_
 ### T-0012 · Dismiss open tasks when a future-dated away period starts
 
 * Status: todo
-* Issue / PR: —
+* Issue / PR: #5
 * Depends on: T-0003
 * Spec: §2 Away, §3.3 Away
 * Acceptance criteria: A member marked away with a future `away_from` has their open tasks dismissed (`assignee_away`) when that instant arrives. Needs a households scheduler (claims due rows with `FOR UPDATE SKIP LOCKED`, one transaction per job) and a way to call tasks-service without a user token, which means a write-capable service role that ADR 0014 does not grant yet; decide that first. The job must also mark what it has handled so a restart does not repeat it.
@@ -136,7 +315,7 @@ _(none)_
 ### T-0013 · Services reject every real Keycloak user: principal is not the `sub` UUID
 
 * Status: todo
-* Issue / PR: —
+* Issue / PR: #6
 * Depends on: T-0001
 * Spec: §2, §9 (auth), AGENTS §3 (Auth)
 * Acceptance criteria: `OidcAuthVerifier` expects the principal name to be the Keycloak `sub` UUID, but quarkus-oidc defaults to `preferred_username`, so with a real token every service answers 401 "Authentication required". Set `quarkus.oidc.token.principal-claim=sub` in each service (found during T-0008; reproduced with the demo user from `deploy/keycloak/README.md` and fixed at runtime only), and add a test that fails without it.
@@ -144,7 +323,7 @@ _(none)_
 ### T-0014 · Invitation endpoints return 404 on a running server
 
 * Status: todo
-* Issue / PR: —
+* Issue / PR: #7
 * Depends on: T-0002
 * Spec: §2 (invitations)
 * Acceptance criteria: `POST/GET /v1/households/{id}/invitations` answer 404 "Resource Not Found" when the service runs, although they are listed in the route table and the service-level tests pass. `InvitationResource` is rooted at `@Path("/v1")` and appears to lose to `HouseholdResource` at `/v1/households`. Add an HTTP-level test that fails today (create then accept an invitation through REST) and fix the routing.
