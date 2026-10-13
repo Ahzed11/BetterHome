@@ -6,7 +6,7 @@ See [documentation/project-specification.md](documentation/project-specification
 
 ## Phase 0 status
 
-Foundations: monorepo layout, five Quarkus services, Flyway baselines, Keycloak + Postgres via Podman Compose, shared `AuthVerifier` / `Clock` / `PushSender` seams.
+**Done.** Monorepo layout, five Quarkus services, Flyway baselines, Keycloak + Postgres via Podman Compose, shared `AuthVerifier` / `Clock` / `PushSender` seams. See `documentation/tasks.md` (T-0001).
 
 ## Prerequisites
 
