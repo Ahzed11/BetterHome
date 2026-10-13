@@ -74,7 +74,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * **M5 · Lists (spec Phase 5)** — T-0023, T-0024. Exit: The Groceries tab journey passes end to end.
 * **M6 · Notifications** — T-0025, T-0026, T-0027, T-0028, T-0012. Exit: Every notification type in spec §5 reaches a fake push gateway in the user's language, honoring preferences.
 * **M7 · Spec completeness and polish (spec Phase 6)** — T-0029, T-0030, T-0031, T-0032, T-0033. Exit: Every rule in spec §2–§9 is implemented and covered by an end-to-end journey.
-* **M8 · Deploy and launch** — T-0004, T-0034, T-0035. Exit: The stack runs on OpenShift with migrations as Jobs, and signed store builds are produced.
+* **M8 · Deploy and launch** — T-0004, T-0034, T-0035. Exit: The stack runs on OpenShift with migrations as Jobs, and signed store builds are produced. Blocked until an OpenShift cluster is available; until then Podman Compose is the target platform.
 
 ## Todo
 
@@ -84,7 +84,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #8
 * Depends on: —
 * Spec: AGENTS §5.3, §6
-* Acceptance criteria: Install and pin the Flutter SDK, Android SDK with a headless emulator image, and CRC/`oc` on the development machine. Document versions and setup in README. Add `make doctor` that fails when a required tool or version is missing (JDK 21 via jbang, Podman socket, Flutter, emulator, `oc`).
+* Acceptance criteria: Install and pin the Flutter SDK and the Android SDK with a headless emulator image on the development machine. OpenShift Local and `oc` are not needed: there is no cluster for now and Podman Compose is the target platform (see T-0004). Document versions and setup in README. Add `make doctor` that fails when a required tool or version is missing (JDK 21 via jbang, Podman and its socket, `podman compose` provider, Flutter, emulator).
 
 ### T-0016 · `make up` and `make seed` run the full local stack
 
@@ -266,7 +266,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0004 · OpenShift / CRC deploy manifests for microservices
 
-* Status: todo
+* Status: blocked (no OpenShift cluster available; blocker is environmental, decided by the product owner on 2026-10-13. Local runs use Podman Compose: ADR 0003, AGENTS §6.1)
 * Issue / PR: #1
 * Depends on: T-0001
 * Spec: §7, ADR 0003
