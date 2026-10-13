@@ -26,6 +26,7 @@ public final class ScoringDtos {
     public record ReverseRequest(
             @NotNull UUID taskId,
             @NotNull UUID assigneeUserId,
+            @NotNull UUID adminUserId,
             @Positive int points,
             @NotBlank String reason,
             @NotNull ReversionResultingStatus resultingStatus) {}

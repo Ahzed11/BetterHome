@@ -70,12 +70,15 @@ components:
       required:
       - taskId
       - assigneeUserId
+      - adminUserId
       - reason
       - resultingStatus
       properties:
         taskId:
           $ref: "#/components/schemas/UUID"
         assigneeUserId:
+          $ref: "#/components/schemas/UUID"
+        adminUserId:
           $ref: "#/components/schemas/UUID"
         points:
           type: integer
@@ -235,6 +238,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Not found
           content:
@@ -263,7 +272,7 @@ paths:
       - bearerAuth: []
   /v1/households/{householdId}/points/award:
     post:
-      summary: Append an award to the ledger (service call)
+      summary: Append an award to the ledger (service role)
       operationId: awardPoints
       tags:
       - points
@@ -288,6 +297,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Not found
           content:
@@ -307,10 +322,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
       security:
-      - bearerAuth: []
+      - bearerAuth:
+        - service
   /v1/households/{householdId}/points/reverse:
     post:
-      summary: Append a reversal linked to its reversion record (service call)
+      summary: Append a reversal linked to its reversion record (service role)
       operationId: reversePoints
       tags:
       - points
@@ -331,6 +347,12 @@ paths:
           description: Not authenticated
         "403":
           description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
           content:
             application/json:
               schema:
@@ -360,7 +382,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
       security:
-      - bearerAuth: []
+      - bearerAuth:
+        - service
   /v1/households/{householdId}/scoreboard:
     get:
       summary: Scoreboard for a period with podium and effort shares
@@ -388,6 +411,12 @@ paths:
           description: Not authenticated
         "403":
           description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
           content:
             application/json:
               schema:
@@ -439,6 +468,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Not found
           content:
@@ -485,6 +520,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Not found
           content:
@@ -522,6 +563,12 @@ paths:
           description: Not authenticated
         "403":
           description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
           content:
             application/json:
               schema:

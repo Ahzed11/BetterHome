@@ -6,7 +6,7 @@ import com.betterhome.scoring.domain.PointTransaction;
 import com.betterhome.scoring.domain.ReversionResultingStatus;
 import com.betterhome.scoring.domain.ScoringException;
 import com.betterhome.scoring.domain.TaskReversion;
-import com.betterhome.scoring.membership.MembershipGateway.MemberView;
+import com.betterhome.scoring.membership.MembershipGateway;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -17,22 +17,24 @@ import java.util.UUID;
 public class LedgerService {
 
     private final CallerService callerService;
+    private final MembershipGateway membershipGateway;
     private final Clock clock;
 
     @Inject
-    public LedgerService(CallerService callerService, Clock clock) {
+    public LedgerService(
+            CallerService callerService, MembershipGateway membershipGateway, Clock clock) {
         this.callerService = callerService;
+        this.membershipGateway = membershipGateway;
         this.clock = clock;
     }
 
     /**
-     * Append a positive award for a completed task. Callable by any active member (tasks-service
-     * invokes this after complete / quick-log under the acting user's token).
+     * Append a positive award for a completed task. Only tasks-service calls this, with its service
+     * token (checked at the REST boundary); it has already authorized the acting user.
      */
     @Transactional
     public PointTransaction award(
             UUID householdId, UUID userId, UUID taskId, int points, PointReason reason) {
-        callerService.requireMember(householdId);
         if (points <= 0) {
             throw new ScoringException.BadRequest("Awarded points must be positive");
         }
@@ -57,17 +59,19 @@ public class LedgerService {
 
     /**
      * Reverse points for a done task: creates {@link TaskReversion} and a negative ledger row in
-     * one transaction. Admin only.
+     * one transaction. Called by tasks-service with its service token, which names the admin who
+     * ordered the reversion; that user must be an active admin of the household.
      */
     @Transactional
     public TaskReversion reverse(
             UUID householdId,
             UUID taskId,
             UUID assigneeUserId,
+            UUID adminUserId,
             int pointsToReverse,
             String reason,
             ReversionResultingStatus resultingStatus) {
-        MemberView admin = callerService.requireAdmin(householdId);
+        requireActiveAdmin(householdId, adminUserId);
         if (reason == null || reason.isBlank()) {
             throw new ScoringException.BadRequest("Reversion reason is required");
         }
@@ -88,7 +92,7 @@ public class LedgerService {
         reversion.id = UUID.randomUUID();
         reversion.householdId = householdId;
         reversion.taskId = taskId;
-        reversion.adminUserId = admin.userId();
+        reversion.adminUserId = adminUserId;
         reversion.reason = reason.trim();
         reversion.pointsReversed = pointsToReverse;
         reversion.resultingStatus = resultingStatus;
@@ -106,6 +110,15 @@ public class LedgerService {
         row.createdAt = now;
         row.persist();
         return reversion;
+    }
+
+    private void requireActiveAdmin(UUID householdId, UUID adminUserId) {
+        boolean isAdmin =
+                membershipGateway.listActiveMembers(householdId).stream()
+                        .anyMatch(member -> member.admin() && member.userId().equals(adminUserId));
+        if (!isAdmin) {
+            throw new ScoringException.Forbidden("Reversions must be ordered by an active admin");
+        }
     }
 
     /** Admin manual adjustment. Guarded so the member's all-time score never goes negative. */

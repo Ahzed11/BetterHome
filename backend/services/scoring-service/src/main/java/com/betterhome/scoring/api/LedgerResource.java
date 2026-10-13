@@ -7,6 +7,7 @@ import com.betterhome.scoring.api.ScoringDtos.ReversionResponse;
 import com.betterhome.scoring.api.ScoringDtos.TransactionResponse;
 import com.betterhome.scoring.service.LedgerService;
 import io.quarkus.security.Authenticated;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -34,6 +35,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
         description = "Not allowed to do this",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
 @APIResponse(
+        responseCode = "503",
+        description = "A service this one depends on is unavailable",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+@APIResponse(
         responseCode = "404",
         description = "Not found",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -48,7 +53,8 @@ public class LedgerResource {
 
     @Operation(
             operationId = "awardPoints",
-            summary = "Append an award to the ledger (service call)")
+            summary = "Append an award to the ledger (service role)")
+    @RolesAllowed("service")
     @APIResponse(
             responseCode = "201",
             description = "Created",
@@ -73,7 +79,8 @@ public class LedgerResource {
 
     @Operation(
             operationId = "reversePoints",
-            summary = "Append a reversal linked to its reversion record (service call)")
+            summary = "Append a reversal linked to its reversion record (service role)")
+    @RolesAllowed("service")
     @APIResponse(
             responseCode = "201",
             description = "Created",
@@ -96,6 +103,7 @@ public class LedgerResource {
                                 householdId,
                                 request.taskId(),
                                 request.assigneeUserId(),
+                                request.adminUserId(),
                                 request.points(),
                                 request.reason(),
                                 request.resultingStatus()));

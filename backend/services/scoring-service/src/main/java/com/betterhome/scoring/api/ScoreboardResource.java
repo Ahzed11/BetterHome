@@ -39,6 +39,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
         description = "Not allowed to do this",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
 @APIResponse(
+        responseCode = "503",
+        description = "A service this one depends on is unavailable",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+@APIResponse(
         responseCode = "404",
         description = "Not found",
         content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
