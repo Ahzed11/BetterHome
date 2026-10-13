@@ -15,18 +15,16 @@ Shared memory for agents and humans. Read before starting; update before finishi
 * Verification: `make test-docs`; `make test-backend`; `make up` (Postgres healthy, Keycloak realm `betterhome`); `make migrate` (all five DBs). `make check` runs docs + backend (+ Flutter when present). Full e2e not required for Phase 0.
 * Follow-ups: T-0004 (OpenShift manifests), T-0005 (OWASP + OpenAPI client guard), e2e when journeys exist.
 
-## In review
-
 ### T-0002 · Phase 1 households domain (users, memberships, invitations, away)
 
-* Status: in-review
-* Issue / PR: —
+* Status: done
+* Issue / PR: — / on `master`
 * Depends on: T-0001
 * Spec: §2, §10 Phase 1
-* Summary: households-service now syncs users from the auth subject (`PUT /v1/me`), creates/lists/updates/soft-deletes households, manages memberships (roles, leave with last-admin guard), invitations (create/list/accept with email match), and away status. Authorization is membership-based, not Keycloak realm roles.
-* Decisions and deviations: Local user rows are upserted via `PUT /v1/me` (email/names from the client after Keycloak login) rather than reading JWT claims in the verifier. Invitation TTL defaults to 7 days (not specified). Away does not trigger task reassignment here (tasks-service owns that).
-* Verification: `make test-docs`; `make test-backend` (households Phase 1 tests + other services). e2e / app launch not run.
-* Follow-ups: T-0003 (away → open-task reassignment in tasks-service).
+* Summary: Backend households-service covers user sync, household CRUD, memberships/roles/leave, invitations, and away. Flutter app adds FR/EN profile sync, household list/create/detail, invite, accept-token, and away toggles via `HouseholdsRepository` (HTTP + in-memory demo).
+* Decisions and deviations: `PUT /v1/me` upserts the local user from client-supplied claims. Invitation TTL defaults to 7 days. App defaults to `FakeHouseholdsRepository`; real API via `--dart-define=API_BASE_URL` + `ACCESS_TOKEN`. Keycloak AppAuth and full emulator e2e deferred (T-0006). Away → task reassignment remains T-0003.
+* Verification: `make test-docs`; `make test-backend`; `make test-app` (widget tests EN/FR + repository unit tests). Demo-mode app launched on Chrome (`flutter run -d chrome`). Emulator e2e against Keycloak not run.
+* Follow-ups: T-0003, T-0006.
 
 ## In progress
 
@@ -61,3 +59,11 @@ _(none)_
 * Depends on: T-0001
 * Spec: AGENTS §5.3, ADR 0006 / 0007
 * Acceptance criteria: `make test-policy` and `make test-guard` fail closed when advisories or OpenAPI/client drift cannot be verified.
+
+### T-0006 · Keycloak AppAuth in Flutter and e2e household journeys
+
+* Status: todo
+* Issue / PR: —
+* Depends on: T-0002
+* Spec: §2, §9, AGENTS §6.2
+* Acceptance criteria: App authenticates via Keycloak (PKCE); e2e covers sign-up/create household/invite/join against the real stack.
