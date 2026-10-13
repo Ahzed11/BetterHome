@@ -16,7 +16,7 @@
 
     <properties>
         <jacoco.exec>${project.build.directory}/jacoco.exec</jacoco.exec>
-        <jacoco.line.minimum>0.09</jacoco.line.minimum>
+        <jacoco.line.minimum>0.99</jacoco.line.minimum>
     </properties>
 
     <dependencies>

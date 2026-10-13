@@ -20,4 +20,13 @@ class SystemClockTest {
         assertFalse(actual.isBefore(before));
         assertTrue(!actual.isAfter(after));
     }
+
+    @Test
+    void successiveReadingsNeverGoBackwards() {
+        SystemClock clock = new SystemClock();
+        Instant first = clock.now();
+        Instant second = clock.now();
+
+        assertFalse(second.isBefore(first));
+    }
 }

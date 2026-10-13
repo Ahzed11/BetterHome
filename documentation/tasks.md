@@ -369,11 +369,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0037 · Unit tests for common-domain seams
 
-* Status: todo
-* Issue / PR: #30
+* Status: in-review
+* Issue / PR: #30 / PR_NUM
 * Depends on: T-0017
 * Spec: AGENTS §5.1, §5.3
 * Acceptance criteria: common-domain line coverage is 9% (only `SystemClock`); `OidcAuthVerifier`, `NoOpPushSender` and the other seams are exercised only through the services' tests. Add direct unit tests for them and raise the `jacoco.line.minimum` floor in `common-domain/pom.xml`.
+* Summary: Plain JUnit 5 tests now cover every class in common-domain main: `OidcAuthVerifier` (real `QuarkusSecurityIdentity`: valid UUID, anonymous, null identity, null/blank principal name, non-UUID name), `NoOpPushSender` (logs only type and user at FINE, never body or payload; silent at INFO), the `PushMessage` record, and `SystemClock` monotonicity. Line coverage 2/21 (9%) -> 21/21 (100%), all 8 branches; `jacoco.line.minimum` 0.09 -> 0.99.
+* Decisions and deviations: No production change and no Quarkus test infrastructure or mocks. The floor is 0.99, just below the measured 1.00, as the task asked.
+* Verification: `make test-backend` on JDK 21 with Podman passes (common-domain 11 tests, all services green, floors met). Flutter, e2e and CI were not run.
+* Follow-ups: none.
 
 ### T-0038 · OWASP Dependency-Check and `make test-policy`
 
