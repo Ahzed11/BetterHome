@@ -119,6 +119,10 @@ services:
     environment:
       <<: *service-env
       DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_notifications
+      HOUSEHOLDS_SERVICE_URL: http://households-service:8081
+      OIDC_SERVICE_CLIENT_ID: betterhome-notifications-service
+      # Local-dev placeholder, same value as the secret in realm-betterhome.json
+      OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
       - "8085:8085"
 
