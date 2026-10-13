@@ -81,7 +81,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0015 · Developer toolchain: Flutter and the Android emulator
 
 * Status: in-review
-* Issue / PR: #8 / PR to be linked
+* Issue / PR: #8 / #36
 * Depends on: —
 * Spec: AGENTS §5.3, §6
 * Acceptance criteria: Install and pin the Flutter SDK and the Android SDK with a headless emulator image on the development machine. OpenShift Local and `oc` are not needed: there is no cluster for now and Podman Compose is the target platform (see T-0004). Document versions and setup in README. Add `make doctor` that fails when a required tool or version is missing (JDK 21 via jbang, Podman and its socket, `podman compose` provider, Flutter, emulator).
