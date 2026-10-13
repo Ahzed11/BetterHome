@@ -42,4 +42,10 @@ public abstract class TaskException extends RuntimeException {
             super("unauthorized", message);
         }
     }
+
+    public static final class ServiceUnavailable extends TaskException {
+        public ServiceUnavailable(String message) {
+            super("service_unavailable", message);
+        }
+    }
 }

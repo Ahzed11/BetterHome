@@ -1,6 +1,8 @@
 package com.betterhome.tasks.membership;
 
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -11,9 +13,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * In-process membership directory for local/dev tests. An HTTP client against households-service
- * replaces this in T-0008.
+ * In-process membership directory that stands in for {@link HttpMembershipGateway} in Quarkus tests.
  */
+@Alternative
+@Priority(1)
 @ApplicationScoped
 public class InMemoryMembershipGateway implements MembershipGateway {
 

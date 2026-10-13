@@ -1,0 +1,101 @@
+openapi: 3.0.3
+info:
+  title: BetterHome Households internal API
+  version: 0.1.0
+  description: >
+    Service-to-service endpoints of households-service (port 8081). Only callers whose token
+    carries the `service` realm role are allowed; household members and admins get 403.
+    Not part of the app contract, so it is kept out of openapi.yaml and the generated Dart client.
+servers:
+  - url: http://localhost:8081
+paths:
+  /v1/internal/households/{householdId}/members:
+    parameters:
+      - $ref: "#/components/parameters/householdId"
+    get:
+      operationId: listHouseholdMembersInternal
+      summary: Active members in joining order, with away resolved at the current instant
+      tags: [internal]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InternalMember"
+        "401":
+          description: Not authenticated
+        "403":
+          description: Caller does not hold the service role
+        "404":
+          description: Household not found
+  /v1/internal/households/{householdId}/settings:
+    parameters:
+      - $ref: "#/components/parameters/householdId"
+    get:
+      operationId: getHouseholdSettingsInternal
+      summary: Timezone and reminder settings
+      tags: [internal]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalSettings"
+        "401":
+          description: Not authenticated
+        "403":
+          description: Caller does not hold the service role
+        "404":
+          description: Household not found
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    householdId:
+      name: householdId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    InternalMember:
+      type: object
+      required: [userId, authSubject, role, away, joinedAt]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        authSubject:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [admin, member]
+        away:
+          type: boolean
+        joinedAt:
+          type: string
+          format: date-time
+    InternalSettings:
+      type: object
+      required: [timezone, reminderDaysBefore, reminderTime]
+      properties:
+        timezone:
+          type: string
+        reminderDaysBefore:
+          type: integer
+        reminderTime:
+          type: string
+          example: "08:00:00"

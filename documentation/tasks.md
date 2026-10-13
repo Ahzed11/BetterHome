@@ -107,11 +107,15 @@ _(none)_
 
 ### T-0008 · HTTP MembershipGateway from tasks-service to households-service
 
-* Status: todo
+* Status: in-review
 * Issue / PR: —
 * Depends on: T-0007
 * Spec: §7 service boundaries
 * Acceptance criteria: Replace in-memory membership directory with token-propagating REST client; keep test double for Quarkus tests.
+* Summary: households-service exposes read-only `GET /v1/internal/households/{id}/members` and `/settings` for the `service` realm role. tasks-service's `HttpMembershipGateway` calls them through `HouseholdsClient` with its own client-credentials token (`quarkus-oidc-client`), for request handlers and background jobs alike. `InMemoryMembershipGateway` moved to `src/test` as a CDI alternative. Households unreachable maps to 503 (`TaskException.ServiceUnavailable`). New Keycloak client `betterhome-tasks-service` and realm role `service`; ADR 0014; `documentation/api/households-internal-openapi.yaml`.
+* Decisions and deviations: Deviates from "token-propagating": forwarding the user's token cannot serve scheduler jobs, so one service-account token is used everywhere (ADR 0014); no `/members/me` endpoint was added. Tasks verifies the user's token, then asks households whether that subject is a member. The service role can read any household, so only trusted services may hold it. Realm secret is the same local-dev placeholder as `betterhome-api`; real secrets come from `OIDC_SERVICE_CLIENT_SECRET`. The fake households server in tests returns hand-written JSON; the contract is checked against the real service only by the live run below until T-0005 adds drift checks.
+* Verification: `./mvnw -B verify` in `backend/` on JDK 21 (households 20 tests incl. `InternalHouseholdResourceTest` role matrix; tasks 28 tests incl. `HttpMembershipGatewayTest`). Live: real Keycloak 26 realm import yields a service token with `realm_access.roles=[service]`; households-service in dev mode answers internal endpoints 401 (no token) / 403 (user token) / 200 / 404; tasks-service in dev mode created and listed a template for the real admin and returned 403 for a service account and an unknown household. The live run needed `-Dquarkus.oidc.token.principal-claim=sub` (see T-0013). `make` is not installed, so `make check`, Flutter checks and e2e were not run.
+* Follow-ups: T-0013, T-0010 (scoring reuses the pattern), compose does not start the services yet (T-0004).
 
 ### T-0010 · HTTP PointsLedgerClient and scoring MembershipGateway
 
@@ -128,3 +132,11 @@ _(none)_
 * Depends on: T-0003, T-0008
 * Spec: §2 Away, §3.3 Reassignment
 * Acceptance criteria: Decide and implement (1) reassignment when a future `away_from` arrives, (2) reliable delivery of the households → tasks call (outbox or retry) instead of a logged best-effort call, (3) what happens to open tasks when no other member is eligible; the spec must define (3) first.
+
+### T-0013 · Services reject every real Keycloak user: principal is not the `sub` UUID
+
+* Status: todo
+* Issue / PR: —
+* Depends on: T-0001
+* Spec: §2, §9 (auth), AGENTS §3 (Auth)
+* Acceptance criteria: `OidcAuthVerifier` expects the principal name to be the Keycloak `sub` UUID, but quarkus-oidc defaults to `preferred_username`, so with a real token every service answers 401 "Authentication required". Set `quarkus.oidc.token.principal-claim=sub` in each service (found during T-0008; reproduced with the demo user from `deploy/keycloak/README.md` and fixed at runtime only), and add a test that fails without it.

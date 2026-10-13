@@ -10,7 +10,8 @@
   "roles": {
     "realm": [
       { "name": "admin", "description": "Household administrator" },
-      { "name": "member", "description": "Household member" }
+      { "name": "member", "description": "Household member" },
+      { "name": "service", "description": "Backend service account for internal endpoints" }
     ]
   },
   "clients": [
@@ -43,6 +44,26 @@
       "attributes": {
         "pkce.code.challenge.method": "S256"
       }
+    },
+    {
+      "clientId": "betterhome-tasks-service",
+      "name": "BetterHome tasks service",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "secret": "local-dev-only-change-me"
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-betterhome-tasks-service",
+      "enabled": true,
+      "serviceAccountClientId": "betterhome-tasks-service",
+      "realmRoles": ["service"]
     }
   ]
 }

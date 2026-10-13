@@ -17,6 +17,7 @@ public class TaskExceptionMapper implements ExceptionMapper<TaskException> {
                     case TaskException.NotFound ignored -> 404;
                     case TaskException.Conflict ignored -> 409;
                     case TaskException.BadRequest ignored -> 400;
+                    case TaskException.ServiceUnavailable ignored -> 503;
                     default -> 500;
                 };
         return Response.status(status)
