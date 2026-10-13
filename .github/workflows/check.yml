@@ -47,5 +47,10 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
+      # The Makefile assumes a prepared checkout; a fresh runner has no .dart_tool package config yet.
+      - name: Resolve app dependencies from the lockfile
+        working-directory: app
+        run: flutter pub get --enforce-lockfile
+
       - name: make check
         run: make check
