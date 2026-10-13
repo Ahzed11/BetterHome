@@ -86,6 +86,11 @@
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.atlassian.oai</groupId>
+            <artifactId>openapi-request-validator-restassured</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
