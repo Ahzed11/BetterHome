@@ -326,11 +326,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0014 · Invitation endpoints return 404 on a running server
 
-* Status: todo
+* Status: in-review
 * Issue / PR: #7
 * Depends on: T-0002
 * Spec: §2 (invitations)
 * Acceptance criteria: `POST/GET /v1/households/{id}/invitations` answer 404 "Resource Not Found" when the service runs, although they are listed in the route table and the service-level tests pass. `InvitationResource` is rooted at `@Path("/v1")` and appears to lose to `HouseholdResource` at `/v1/households`. Add an HTTP-level test that fails today (create then accept an invitation through REST) and fix the routing.
+* Summary: `InvitationResource` is now rooted at `/v1/households/{householdId}/invitations` (create, list); accept moved to the new `InvitationAcceptResource` at `/v1/invitations/{token}/accept`. URLs and OpenAPI are unchanged. `InvitationHttpTest` drives the flow over HTTP with real signed tokens (T-0013 fixture): invite, list, accept, members, plus 403 for an outsider and 401 without a token.
+* Decisions and deviations: Confirmed cause: a class path of `/v1` is out-ranked by the longer `/v1/households` class, so its methods were never reached. No other resource in the service is rooted at a bare `/v1`.
+* Verification: `./mvnw -B verify` in `backend/` on JDK 21 (both new tests failed with 404 before the change). Live on real Keycloak 26 + Postgres 16 with households in dev mode: admin created an invitation (201) and listed it, a member's invite attempt got 403, the invitee accepted (200), members were admin + member. `make` checks beyond `verify`, Flutter and e2e were not run.
+* Follow-ups: none.
 
 ### T-0036 · Real Keycloak roles are not mapped in tasks, scoring, lists and notifications
 

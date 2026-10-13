@@ -1,6 +1,5 @@
 package com.betterhome.households.api;
 
-import com.betterhome.households.api.HouseholdDtos.MembershipResponse;
 import com.betterhome.households.api.InvitationDtos.CreateInvitationRequest;
 import com.betterhome.households.api.InvitationDtos.InvitationResponse;
 import com.betterhome.households.service.InvitationService;
@@ -18,7 +17,7 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.UUID;
 
-@Path("/v1")
+@Path("/v1/households/{householdId}/invitations")
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -32,7 +31,6 @@ public class InvitationResource {
     }
 
     @POST
-    @Path("/households/{householdId}/invitations")
     public Response create(
             @PathParam("householdId") UUID householdId, @Valid CreateInvitationRequest request) {
         InvitationResponse body =
@@ -42,16 +40,9 @@ public class InvitationResource {
     }
 
     @GET
-    @Path("/households/{householdId}/invitations")
     public List<InvitationResponse> listPending(@PathParam("householdId") UUID householdId) {
         return invitationService.listPending(householdId).stream()
                 .map(InvitationResponse::from)
                 .toList();
-    }
-
-    @POST
-    @Path("/invitations/{token}/accept")
-    public MembershipResponse accept(@PathParam("token") String token) {
-        return MembershipResponse.from(invitationService.accept(token));
     }
 }
