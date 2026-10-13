@@ -98,4 +98,46 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Chore'), findsWidgets);
   });
+
+  testWidgets('leaderboard shows podium and effort bar', (tester) async {
+    final session = AppSession(repository: FakeHouseholdsRepository());
+    await tester.pumpWidget(
+      BetterHomeApp(session: session, initialLocale: const Locale('en')),
+    );
+    await tester.tap(find.text('Continue with demo data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create household'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Flat');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flat'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Leaderboard'));
+    await tester.pumpAndSettle();
+    expect(find.text('Podium'), findsOneWidget);
+    expect(find.text('Shared effort'), findsOneWidget);
+    expect(find.text('Hall of winners'), findsOneWidget);
+  });
+
+  testWidgets('French leaderboard labels', (tester) async {
+    final session = AppSession(repository: FakeHouseholdsRepository());
+    await tester.pumpWidget(
+      BetterHomeApp(session: session, initialLocale: const Locale('fr')),
+    );
+    await tester.tap(find.text('Continuer avec des données de démo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Créer un foyer'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Coloc');
+    await tester.tap(find.text('Enregistrer'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Coloc'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Classement'));
+    await tester.pumpAndSettle();
+    expect(find.text('Podium'), findsOneWidget);
+    expect(find.text('Effort partagé'), findsOneWidget);
+    expect(find.text('Palmarès'), findsOneWidget);
+  });
 }

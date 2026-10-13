@@ -367,6 +367,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open chores'**
   String get openChores;
+
+  /// No description provided for @leaderboardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard'**
+  String get leaderboardTitle;
+
+  /// No description provided for @openLeaderboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaderboard'**
+  String get openLeaderboard;
+
+  /// No description provided for @periodWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get periodWeek;
+
+  /// No description provided for @periodMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get periodMonth;
+
+  /// No description provided for @periodYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get periodYear;
+
+  /// No description provided for @periodAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All time'**
+  String get periodAll;
+
+  /// No description provided for @podiumTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Podium'**
+  String get podiumTitle;
+
+  /// No description provided for @effortBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared effort'**
+  String get effortBarTitle;
+
+  /// No description provided for @hallOfWinners.
+  ///
+  /// In en, this message translates to:
+  /// **'Hall of winners'**
+  String get hallOfWinners;
+
+  /// No description provided for @leaderboardEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No points yet this period.'**
+  String get leaderboardEmpty;
+
+  /// No description provided for @noWinnersYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No past winners yet.'**
+  String get noWinnersYet;
+
+  /// No description provided for @pointsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} pts'**
+  String pointsLabel(int points);
+
+  /// No description provided for @you.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get you;
+
+  /// No description provided for @revertTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Revert'**
+  String get revertTask;
+
+  /// No description provided for @revertConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revert this completion?'**
+  String get revertConfirmTitle;
+
+  /// No description provided for @revertConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Points will be reversed. Please give a reason.'**
+  String get revertConfirmBody;
+
+  /// No description provided for @revertReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get revertReason;
 }
 
 class _AppLocalizationsDelegate

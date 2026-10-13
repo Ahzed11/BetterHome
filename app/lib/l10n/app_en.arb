@@ -49,5 +49,27 @@
   "dismissConfirmBody": "Dismissal is permanent and awards no points.",
   "createTemplate": "New chore template",
   "templateTitle": "Title",
-  "openChores": "Open chores"
+  "openChores": "Open chores",
+  "leaderboardTitle": "Leaderboard",
+  "openLeaderboard": "Leaderboard",
+  "periodWeek": "Week",
+  "periodMonth": "Month",
+  "periodYear": "Year",
+  "periodAll": "All time",
+  "podiumTitle": "Podium",
+  "effortBarTitle": "Shared effort",
+  "hallOfWinners": "Hall of winners",
+  "leaderboardEmpty": "No points yet this period.",
+  "noWinnersYet": "No past winners yet.",
+  "pointsLabel": "{points} pts",
+  "@pointsLabel": {
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+  "you": "You",
+  "revertTask": "Revert",
+  "revertConfirmTitle": "Revert this completion?",
+  "revertConfirmBody": "Points will be reversed. Please give a reason.",
+  "revertReason": "Reason"
 }

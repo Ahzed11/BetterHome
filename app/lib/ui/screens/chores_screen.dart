@@ -1,3 +1,4 @@
+import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
@@ -22,11 +23,13 @@ class _ChoresScreenState extends State<ChoresScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabs;
   late Future<List<ChoreTask>> _future;
+  bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
+    _loadAdmin();
     _reload();
   }
 
@@ -36,11 +39,44 @@ class _ChoresScreenState extends State<ChoresScreen>
     super.dispose();
   }
 
+  Future<void> _loadAdmin() async {
+    final members = await widget.session.repository.listMembers(
+      widget.householdId,
+    );
+    final me = widget.session.profile?.id;
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isAdmin = members.any(
+        (m) => m.userId == me && m.role == MembershipRole.admin,
+      );
+    });
+  }
+
   void _reload() {
     final mine = _tabs.index == 1;
     _future = widget.session.tasksRepository.listTasks(
       widget.householdId,
       mine: mine,
+    );
+  }
+
+  Future<void> _awardFor(ChoreTask task) async {
+    final points = task.pointsAwarded ?? task.points;
+    if (points <= 0) {
+      return;
+    }
+    final late =
+        task.dueAt != null &&
+        task.completedAt != null &&
+        task.completedAt!.isAfter(task.dueAt!);
+    await widget.session.scoringRepository.award(
+      householdId: widget.householdId,
+      userId: task.assigneeId,
+      taskId: task.id,
+      points: points,
+      late: late,
     );
   }
 
@@ -107,9 +143,61 @@ class _ChoresScreenState extends State<ChoresScreen>
     if (templateId == null || !mounted) {
       return;
     }
-    await widget.session.tasksRepository.quickLog(
+    final task = await widget.session.tasksRepository.quickLog(
       householdId: widget.householdId,
       templateId: templateId,
+    );
+    await _awardFor(task);
+    setState(_reload);
+  }
+
+  Future<void> _revert(ChoreTask task) async {
+    final l10n = AppLocalizations.of(context);
+    final reasonController = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.revertConfirmTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l10n.revertConfirmBody),
+            const SizedBox(height: AppTokens.spaceMd),
+            TextField(
+              controller: reasonController,
+              decoration: InputDecoration(labelText: l10n.revertReason),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(context, reasonController.text.trim()),
+            child: Text(l10n.revertTask),
+          ),
+        ],
+      ),
+    );
+    if (reason == null || reason.isEmpty || !mounted) {
+      return;
+    }
+    final points = task.pointsAwarded ?? task.points;
+    final updated = await widget.session.tasksRepository.revert(
+      widget.householdId,
+      task.id,
+      reason: reason,
+    );
+    await widget.session.scoringRepository.reverse(
+      householdId: widget.householdId,
+      taskId: task.id,
+      assigneeUserId: task.assigneeId,
+      points: points,
+      reason: reason,
+      resultingStatus: updated.status.name,
     );
     setState(_reload);
   }
@@ -170,10 +258,9 @@ class _ChoresScreenState extends State<ChoresScreen>
                           IconButton(
                             tooltip: l10n.completeTask,
                             onPressed: () async {
-                              await widget.session.tasksRepository.complete(
-                                widget.householdId,
-                                task.id,
-                              );
+                              final done = await widget.session.tasksRepository
+                                  .complete(widget.householdId, task.id);
+                              await _awardFor(done);
                               setState(_reload);
                             },
                             icon: const Icon(Icons.check_circle_outline),
@@ -211,6 +298,12 @@ class _ChoresScreenState extends State<ChoresScreen>
                             icon: const Icon(Icons.cancel_outlined),
                           ),
                         ],
+                      )
+                    : task.status == TaskStatus.done && _isAdmin
+                    ? IconButton(
+                        tooltip: l10n.revertTask,
+                        onPressed: () => _revert(task),
+                        icon: const Icon(Icons.undo),
                       )
                     : null,
               );

@@ -142,6 +142,12 @@ abstract class TasksRepository {
   Future<ChoreTask> dismiss(String householdId, String taskId);
 
   Future<ChoreTask> reassign(String householdId, String taskId);
+
+  Future<ChoreTask> revert(
+    String householdId,
+    String taskId, {
+    required String reason,
+  });
 }
 
 class HttpTasksRepository implements TasksRepository {
@@ -279,6 +285,20 @@ class HttpTasksRepository implements TasksRepository {
     final response = await _client.post(
       _uri('/v1/households/$householdId/tasks/$taskId/reassign'),
       headers: _headers,
+    );
+    return ChoreTask.fromJson(await _json(response));
+  }
+
+  @override
+  Future<ChoreTask> revert(
+    String householdId,
+    String taskId, {
+    required String reason,
+  }) async {
+    final response = await _client.post(
+      _uri('/v1/households/$householdId/tasks/$taskId/revert'),
+      headers: _headers,
+      body: jsonEncode({'reason': reason}),
     );
     return ChoreTask.fromJson(await _json(response));
   }
@@ -450,6 +470,40 @@ class FakeTasksRepository implements TasksRepository {
         pointsAwarded: t.pointsAwarded,
       ),
     );
+  }
+
+  @override
+  Future<ChoreTask> revert(
+    String householdId,
+    String taskId, {
+    required String reason,
+  }) async {
+    if (reason.trim().isEmpty) {
+      throw ApiException('reason required', statusCode: 400);
+    }
+    return _replace(householdId, taskId, (t) {
+      if (t.status != TaskStatus.done) {
+        throw ApiException('only done', statusCode: 409);
+      }
+      final resulting = t.origin == TaskOrigin.manual
+          ? TaskStatus.reverted
+          : (t.dueAt != null && t.dueAt!.isAfter(DateTime.now().toUtc())
+                ? TaskStatus.open
+                : TaskStatus.dismissed);
+      return ChoreTask(
+        id: t.id,
+        householdId: t.householdId,
+        templateId: t.templateId,
+        origin: t.origin,
+        title: t.title,
+        emoji: t.emoji,
+        points: t.points,
+        latePoints: t.latePoints,
+        status: resulting,
+        assigneeId: t.assigneeId,
+        dueAt: t.dueAt,
+      );
+    });
   }
 
   ChoreTask _replace(

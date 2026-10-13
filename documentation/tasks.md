@@ -37,15 +37,20 @@ Shared memory for agents and humans. Read before starting; update before finishi
 * Verification: `make test-docs`; `make test-backend` (incl. TaskPhase2Test + RoundRobinTest); `make test-app` (chores widget + tasks repository tests).
 * Follow-ups: T-0003 (wire households away → reassign-away), T-0008 (HTTP MembershipGateway).
 
-## In progress
-
 ### T-0009 · Phase 3 scoring (ledger, reversions, scoreboard)
 
-* Status: in-progress
-* Issue / PR: —
+* Status: done
+* Issue / PR: — / on `master`
 * Depends on: T-0007
 * Spec: §3.3 Reversion, §3.4, §10 Phase 3
-* Acceptance criteria: Append-only point ledger; award on task completion; admin revert with reason (task status + negative ledger); scoreboard week/month/year/all-time with podium and effort bar; hall of past winners; Flutter FR/EN leaderboard; tests.
+* Summary: scoring-service Flyway V2 (point_transaction, task_reversion, monthly_recap); award/reverse/adjust ledger; scoreboard week/month/year/all-time with podium and effort shares; close-month winners + celebrate. tasks-service awards via `InMemoryPointsLedgerClient` and admin `POST .../revert`. Flutter leaderboard (FR/EN) with period switcher; chores award/reverse against scoring repository.
+* Decisions and deviations: Period bounds use UTC (household timezone deferred). Tasks↔scoring and scoring membership use in-memory gateways (HTTP clients: T-0008 / T-0010). Month-end scheduler not automated (admin `close-month` endpoint). Demo FakeScoringRepository seeds sample podium data once per household.
+* Verification: `make test-docs`; `make test-backend` (ScoringPhase3Test, TaskPhase3ScoringWireTest); `make test-app` (leaderboard widgets EN/FR, scoring repository tests). Emulator e2e against Keycloak not run.
+* Follow-ups: T-0010 (HTTP PointsLedgerClient + scoring MembershipGateway); month-end Quartz job; household-TZ period windows.
+
+## In progress
+
+_(none)_
 
 ## Todo
 
@@ -92,3 +97,11 @@ _(none)_
 * Depends on: T-0007
 * Spec: §7 service boundaries
 * Acceptance criteria: Replace in-memory membership directory with token-propagating REST client; keep test double for Quarkus tests.
+
+### T-0010 · HTTP PointsLedgerClient and scoring MembershipGateway
+
+* Status: todo
+* Issue / PR: —
+* Depends on: T-0009
+* Spec: §7 service boundaries, §3.4
+* Acceptance criteria: tasks-service calls scoring-service award/reverse over REST with service or user token; scoring-service resolves membership via households-service HTTP client; keep in-memory doubles for Quarkus tests.

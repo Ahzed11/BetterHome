@@ -44,5 +44,27 @@
   "dismissConfirmBody": "L’action est définitive et n’attribue aucun point.",
   "createTemplate": "Nouveau modèle",
   "templateTitle": "Titre",
-  "openChores": "Ouvrir les tâches"
+  "openChores": "Ouvrir les tâches",
+  "leaderboardTitle": "Classement",
+  "openLeaderboard": "Classement",
+  "periodWeek": "Semaine",
+  "periodMonth": "Mois",
+  "periodYear": "Année",
+  "periodAll": "Tout",
+  "podiumTitle": "Podium",
+  "effortBarTitle": "Effort partagé",
+  "hallOfWinners": "Palmarès",
+  "leaderboardEmpty": "Aucun point pour cette période.",
+  "noWinnersYet": "Pas encore de gagnants.",
+  "pointsLabel": "{points} pts",
+  "@pointsLabel": {
+    "placeholders": {
+      "points": {"type": "int"}
+    }
+  },
+  "you": "Vous",
+  "revertTask": "Annuler",
+  "revertConfirmTitle": "Annuler cette validation ?",
+  "revertConfirmBody": "Les points seront retirés. Indiquez une raison.",
+  "revertReason": "Raison"
 }

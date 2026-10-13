@@ -148,4 +148,58 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get openChores => 'Ouvrir les tâches';
+
+  @override
+  String get leaderboardTitle => 'Classement';
+
+  @override
+  String get openLeaderboard => 'Classement';
+
+  @override
+  String get periodWeek => 'Semaine';
+
+  @override
+  String get periodMonth => 'Mois';
+
+  @override
+  String get periodYear => 'Année';
+
+  @override
+  String get periodAll => 'Tout';
+
+  @override
+  String get podiumTitle => 'Podium';
+
+  @override
+  String get effortBarTitle => 'Effort partagé';
+
+  @override
+  String get hallOfWinners => 'Palmarès';
+
+  @override
+  String get leaderboardEmpty => 'Aucun point pour cette période.';
+
+  @override
+  String get noWinnersYet => 'Pas encore de gagnants.';
+
+  @override
+  String pointsLabel(int points) {
+    return '$points pts';
+  }
+
+  @override
+  String get you => 'Vous';
+
+  @override
+  String get revertTask => 'Annuler';
+
+  @override
+  String get revertConfirmTitle => 'Annuler cette validation ?';
+
+  @override
+  String get revertConfirmBody =>
+      'Les points seront retirés. Indiquez une raison.';
+
+  @override
+  String get revertReason => 'Raison';
 }

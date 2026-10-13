@@ -146,4 +146,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get openChores => 'Open chores';
+
+  @override
+  String get leaderboardTitle => 'Leaderboard';
+
+  @override
+  String get openLeaderboard => 'Leaderboard';
+
+  @override
+  String get periodWeek => 'Week';
+
+  @override
+  String get periodMonth => 'Month';
+
+  @override
+  String get periodYear => 'Year';
+
+  @override
+  String get periodAll => 'All time';
+
+  @override
+  String get podiumTitle => 'Podium';
+
+  @override
+  String get effortBarTitle => 'Shared effort';
+
+  @override
+  String get hallOfWinners => 'Hall of winners';
+
+  @override
+  String get leaderboardEmpty => 'No points yet this period.';
+
+  @override
+  String get noWinnersYet => 'No past winners yet.';
+
+  @override
+  String pointsLabel(int points) {
+    return '$points pts';
+  }
+
+  @override
+  String get you => 'You';
+
+  @override
+  String get revertTask => 'Revert';
+
+  @override
+  String get revertConfirmTitle => 'Revert this completion?';
+
+  @override
+  String get revertConfirmBody =>
+      'Points will be reversed. Please give a reason.';
+
+  @override
+  String get revertReason => 'Reason';
 }

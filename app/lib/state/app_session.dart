@@ -1,5 +1,6 @@
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:flutter/foundation.dart';
 
@@ -7,17 +8,21 @@ class AppSession extends ChangeNotifier {
   AppSession({
     required HouseholdsRepository repository,
     TasksRepository? tasksRepository,
+    ScoringRepository? scoringRepository,
   }) : _repository = repository,
-       _tasksRepository = tasksRepository ?? FakeTasksRepository();
+       _tasksRepository = tasksRepository ?? FakeTasksRepository(),
+       _scoringRepository = scoringRepository ?? FakeScoringRepository();
 
   HouseholdsRepository _repository;
   TasksRepository _tasksRepository;
+  ScoringRepository _scoringRepository;
   UserProfile? profile;
   Object? lastError;
   bool busy = false;
 
   HouseholdsRepository get repository => _repository;
   TasksRepository get tasksRepository => _tasksRepository;
+  ScoringRepository get scoringRepository => _scoringRepository;
 
   void useRepository(HouseholdsRepository repository) {
     _repository = repository;
@@ -26,6 +31,11 @@ class AppSession extends ChangeNotifier {
 
   void useTasksRepository(TasksRepository repository) {
     _tasksRepository = repository;
+    notifyListeners();
+  }
+
+  void useScoringRepository(ScoringRepository repository) {
+    _scoringRepository = repository;
     notifyListeners();
   }
 
@@ -48,6 +58,12 @@ class AppSession extends ChangeNotifier {
         useTasksRepository(
           FakeTasksRepository(currentUserId: profile?.id ?? 'user-1'),
         );
+      }
+      if (_scoringRepository is FakeScoringRepository) {
+        final fake = FakeScoringRepository(
+          memberIds: [profile?.id ?? 'user-1', 'user-2'],
+        );
+        useScoringRepository(fake);
       }
     });
   }
