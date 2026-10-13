@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: BetterHome API
-  version: 0.1.0
+  version: 0.2.0
   description: >
     Aggregate OpenAPI surface for BetterHome microservices.
-    Phase 0 exposes per-service meta and health only; domain paths arrive in later phases.
+    Phase 1 adds households-service user, household, membership, invitation, and away APIs.
 servers:
   - url: http://localhost:8081
     description: households-service (local)
@@ -25,6 +25,282 @@ paths:
                 $ref: "#/components/schemas/ServiceMeta"
         "401":
           description: Missing or invalid bearer token
+  /v1/me:
+    get:
+      operationId: getMe
+      summary: Get the synced profile for the current auth subject
+      tags: [users]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Profile not synced yet
+    put:
+      operationId: syncMe
+      summary: Create or update the local user row from Keycloak identity claims
+      tags: [users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncUserRequest"
+      responses:
+        "200":
+          description: Synced user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /v1/households:
+    get:
+      operationId: listMyHouseholds
+      summary: List households where the caller is an active member
+      tags: [households]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Households
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Household"
+    post:
+      operationId: createHousehold
+      summary: Create a household; caller becomes admin
+      tags: [households]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHouseholdRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+  /v1/households/{householdId}:
+    parameters:
+      - $ref: "#/components/parameters/householdId"
+    get:
+      operationId: getHousehold
+      summary: Get a household (active member)
+      tags: [households]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "403":
+          description: Not a member
+        "404":
+          description: Not found
+    patch:
+      operationId: updateHousehold
+      summary: Update household settings (admin)
+      tags: [households]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateHouseholdRequest"
+      responses:
+        "200":
+          description: Updated household
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Household"
+        "403":
+          description: Admin required
+    delete:
+      operationId: deleteHousehold
+      summary: Soft-delete a household (admin)
+      tags: [households]
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Deleted
+        "403":
+          description: Admin required
+  /v1/households/{householdId}/members:
+    parameters:
+      - $ref: "#/components/parameters/householdId"
+    get:
+      operationId: listMembers
+      summary: List active members
+      tags: [memberships]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Membership"
+  /v1/households/{householdId}/members/{userId}/role:
+    parameters:
+      - $ref: "#/components/parameters/householdId"
+      - $ref: "#/components/parameters/userId"
+    patch:
+      operationId: changeMemberRole
+      summary: Change a member role (admin)
+      tags: [memberships]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeRoleRequest"
+      responses:
+        "200":
+          description: Updated membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "409":
+          description: Would remove the last admin
+  /v1/households/{householdId}/members/me/leave:
+    parameters:
+      - $ref: "#/components/parameters/householdId"
+    post:
+      operationId: leaveHousehold
+      summary: Leave a household (sets left_at)
+      tags: [memberships]
+      security:
+        - bearerAuth: []
+      responses:
+        "204":
+          description: Left
+        "409":
+          description: Last admin must hand over or delete first
+  /v1/households/{householdId}/members/{userId}/away:
+    parameters:
+      - $ref: "#/components/parameters/householdId"
+      - $ref: "#/components/parameters/userId"
+    post:
+      operationId: setMemberAway
+      summary: Mark a member away (admin)
+      tags: [memberships]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetAwayRequest"
+      responses:
+        "200":
+          description: Updated membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+    delete:
+      operationId: clearMemberAway
+      summary: Clear away status (admin)
+      tags: [memberships]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Updated membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /v1/households/{householdId}/invitations:
+    parameters:
+      - $ref: "#/components/parameters/householdId"
+    get:
+      operationId: listPendingInvitations
+      summary: List pending invitations (admin)
+      tags: [invitations]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Pending invitations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invitation"
+    post:
+      operationId: createInvitation
+      summary: Invite a member by email (admin)
+      tags: [invitations]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvitationRequest"
+      responses:
+        "201":
+          description: Created invitation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invitation"
+  /v1/invitations/{token}/accept:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: acceptInvitation
+      summary: Accept an invitation (email must match synced user)
+      tags: [invitations]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: New membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "403":
+          description: Email mismatch
+        "409":
+          description: Expired, already accepted, or already a member
   /q/health/live:
     get:
       operationId: liveness
@@ -49,6 +325,21 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  parameters:
+    householdId:
+      name: householdId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     ServiceMeta:
       type: object
@@ -56,12 +347,167 @@ components:
       properties:
         service:
           type: string
-          example: households-service
         now:
           type: string
           format: date-time
         authSubject:
           type: string
-          description: Keycloak subject UUID, or empty when anonymous tooling calls are allowed
+    SyncUserRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+        givenName:
+          type: string
+        familyName:
+          type: string
+        language:
+          type: string
+          enum: [en, fr]
+        timezone:
+          type: string
+    User:
+      type: object
+      required: [id, authSubject, email, givenName, familyName, language, timezone]
+      properties:
+        id:
+          type: string
+          format: uuid
+        authSubject:
+          type: string
+          format: uuid
+        email:
+          type: string
+        givenName:
+          type: string
+        familyName:
+          type: string
+        language:
+          type: string
+        timezone:
+          type: string
+    CreateHouseholdRequest:
+      type: object
+      required: [name, timezone]
+      properties:
+        name:
+          type: string
+        timezone:
+          type: string
+    UpdateHouseholdRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        timezone:
+          type: string
+        reminderDaysBefore:
+          type: integer
+          minimum: 0
+        reminderTime:
+          type: string
+          format: time
+    Household:
+      type: object
+      required: [id, name, timezone, reminderDaysBefore, reminderTime, createdBy]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        timezone:
+          type: string
+        reminderDaysBefore:
+          type: integer
+        reminderTime:
+          type: string
+          format: time
+        createdBy:
+          type: string
+          format: uuid
+    Membership:
+      type: object
+      required: [id, userId, householdId, role, joinedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [admin, member]
+        joinedAt:
+          type: string
+          format: date-time
+        awayFrom:
+          type: string
+          format: date-time
+          nullable: true
+        awayUntil:
+          type: string
+          format: date-time
+          nullable: true
+        awaySetBy:
+          type: string
+          format: uuid
+          nullable: true
+    ChangeRoleRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [admin, member]
+    SetAwayRequest:
+      type: object
+      properties:
+        awayFrom:
+          type: string
+          format: date-time
+        awayUntil:
+          type: string
+          format: date-time
+    CreateInvitationRequest:
+      type: object
+      required: [email, role]
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, member]
+    Invitation:
+      type: object
+      required: [id, householdId, email, role, token, expiresAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        householdId:
+          type: string
+          format: uuid
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, member]
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
 security:
   - bearerAuth: []
