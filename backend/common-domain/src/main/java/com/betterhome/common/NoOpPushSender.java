@@ -8,7 +8,7 @@ import java.util.logging.Logger;
  * wired (Phase 4).
  */
 @ApplicationScoped
-public class NoOpPushSender implements PushSender {
+public    class NoOpPushSender implements PushSender {
 
     private static final Logger LOG = Logger.getLogger(NoOpPushSender.class.getName());
 
