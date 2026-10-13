@@ -4,7 +4,8 @@ import java.util.UUID;
 
 /**
  * Boundary to the scoring service for ledger writes. Tasks never write the scoring database
- * directly. Phase 3 uses an in-process implementation; HTTP client follows in a later task.
+ * directly. Failures surface as {@code TaskException.ServiceUnavailable} so the surrounding task
+ * transaction rolls back and no task is left done without its points.
  */
 public interface PointsLedgerClient {
 

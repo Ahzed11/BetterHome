@@ -21,6 +21,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -128,6 +129,78 @@ class TaskPhase3ScoringWireTest {
                         assertThrows(
                                 TaskException.Forbidden.class,
                                 () -> taskService.revert(HOUSEHOLD, manual.id, "member cannot")));
+    }
+
+    @Test
+    void aLedgerOutageLeavesNoDoneTaskWithoutPoints() {
+        TaskTemplate template =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () -> templateService.create(HOUSEHOLD, "Vacuum", null, "", 3, 1, 60));
+        Task open =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () ->
+                                taskService.createOpen(
+                                        HOUSEHOLD,
+                                        template.id,
+                                        MEMBER_USER,
+                                        Instant.now().plusSeconds(3600)));
+        pointsLedgerClient.setUnavailable(true);
+
+        asUser(
+                MEMBER_SUBJECT,
+                () ->
+                        assertThrows(
+                                TaskException.ServiceUnavailable.class,
+                                () -> taskService.complete(HOUSEHOLD, open.id)));
+        asUser(
+                MEMBER_SUBJECT,
+                () ->
+                        assertThrows(
+                                TaskException.ServiceUnavailable.class,
+                                () -> taskService.quickLog(HOUSEHOLD, template.id)));
+
+        assertEquals(TaskStatus.open, reload(open.id).status);
+        assertEquals(0L, countTasks(template.id, TaskStatus.done));
+        assertEquals(0L, countTasks(template.id, TaskStatus.reverted));
+        assertTrue(pointsLedgerClient.awards().isEmpty());
+
+        pointsLedgerClient.setUnavailable(false);
+        Task done = asUser(MEMBER_SUBJECT, () -> taskService.complete(HOUSEHOLD, open.id));
+        assertEquals(TaskStatus.done, done.status);
+        assertEquals(3, pointsLedgerClient.balance(MEMBER_USER));
+    }
+
+    @Test
+    void aLedgerOutageLeavesTheDoneTaskDoneOnRevert() {
+        TaskTemplate template =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () -> templateService.create(HOUSEHOLD, "Sweep", null, "", 3, 1, 60));
+        Task manual = asUser(MEMBER_SUBJECT, () -> taskService.quickLog(HOUSEHOLD, template.id));
+        pointsLedgerClient.setUnavailable(true);
+
+        asUser(
+                ADMIN_SUBJECT,
+                () ->
+                        assertThrows(
+                                TaskException.ServiceUnavailable.class,
+                                () -> taskService.revert(HOUSEHOLD, manual.id, "Mistake")));
+
+        Task reloaded = reload(manual.id);
+        assertEquals(TaskStatus.done, reloaded.status);
+        assertEquals(3, reloaded.pointsAwarded);
+    }
+
+    @Transactional
+    Task reload(UUID taskId) {
+        return Task.findById(taskId);
+    }
+
+    @Transactional
+    long countTasks(UUID templateId, TaskStatus status) {
+        return Task.count("templateId = ?1 and status = ?2", templateId, status);
     }
 
     private <T> T asUser(UUID authSubject, Supplier<T> action) {
