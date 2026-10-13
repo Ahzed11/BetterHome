@@ -2,8 +2,8 @@ package com.betterhome.tasks.service;
 
 import com.betterhome.common.Clock;
 import com.betterhome.tasks.domain.DismissalReason;
-import com.betterhome.tasks.domain.RoundRobin;
 import com.betterhome.tasks.domain.Rotation;
+import com.betterhome.tasks.domain.RoundRobin;
 import com.betterhome.tasks.domain.Task;
 import com.betterhome.tasks.domain.TaskException;
 import com.betterhome.tasks.domain.TaskOrigin;
@@ -77,8 +77,7 @@ public class TaskService {
         task.completedAt = now;
         task.pointsAwarded = template.points;
         task.persist();
-        pointsLedgerClient.award(
-                householdId, caller.userId(), task.id, template.points, false);
+        pointsLedgerClient.award(householdId, caller.userId(), task.id, template.points, false);
         return task;
     }
 
@@ -99,8 +98,7 @@ public class TaskService {
         task.completedAt = now;
         task.pointsAwarded = late ? task.latePoints : task.points;
         task.updatedAt = now;
-        pointsLedgerClient.award(
-                householdId, task.assigneeId, task.id, task.pointsAwarded, late);
+        pointsLedgerClient.award(householdId, task.assigneeId, task.id, task.pointsAwarded, late);
         return task;
     }
 
@@ -152,7 +150,6 @@ public class TaskService {
         advanceRotation(template.rotationId, next);
         return task;
     }
-
 
     @Transactional
     public Task revert(UUID householdId, UUID taskId, String reason) {
@@ -259,8 +256,7 @@ public class TaskService {
                 Rotation.findOptionalById(template.rotationId)
                         .orElseThrow(() -> new TaskException.NotFound("Rotation not found"));
         return RoundRobin.next(eligible, rotation.lastAssignedUserId)
-                .orElseThrow(
-                        () -> new TaskException.Conflict("No eligible members to assign"));
+                .orElseThrow(() -> new TaskException.Conflict("No eligible members to assign"));
     }
 
     private TaskTemplate requireActiveTemplate(UUID householdId, UUID templateId) {

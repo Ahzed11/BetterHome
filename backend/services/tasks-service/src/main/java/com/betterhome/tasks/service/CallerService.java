@@ -30,8 +30,7 @@ public class CallerService {
         UUID subject = requireAuthSubject();
         return membershipGateway
                 .findByAuthSubject(householdId, subject)
-                .orElseThrow(
-                        () -> new TaskException.Forbidden("Not an active household member"));
+                .orElseThrow(() -> new TaskException.Forbidden("Not an active household member"));
     }
 
     public MemberView requireAdmin(UUID householdId) {

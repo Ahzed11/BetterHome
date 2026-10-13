@@ -16,8 +16,7 @@ import java.util.UUID;
 @Table(name = "membership")
 public class Membership extends PanacheEntityBase {
 
-    @Id
-    public UUID id;
+    @Id public UUID id;
 
     @Column(name = "user_id", nullable = false)
     public UUID userId;
@@ -59,10 +58,7 @@ public class Membership extends PanacheEntityBase {
     }
 
     public static Optional<Membership> findActive(UUID householdId, UUID userId) {
-        return find(
-                        "householdId = ?1 and userId = ?2 and leftAt is null",
-                        householdId,
-                        userId)
+        return find("householdId = ?1 and userId = ?2 and leftAt is null", householdId, userId)
                 .firstResultOptional();
     }
 

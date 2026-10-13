@@ -4,8 +4,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.logging.Logger;
 
 /**
- * Default push sender that logs and drops messages. Replaced when the notifications gateway
- * is wired (Phase 4).
+ * Default push sender that logs and drops messages. Replaced when the notifications gateway is
+ * wired (Phase 4).
  */
 @ApplicationScoped
 public class NoOpPushSender implements PushSender {
@@ -14,6 +14,11 @@ public class NoOpPushSender implements PushSender {
 
     @Override
     public void send(PushMessage message) {
-        LOG.fine(() -> "Push suppressed (no-op): type=" + message.type() + " user=" + message.userId());
+        LOG.fine(
+                () ->
+                        "Push suppressed (no-op): type="
+                                + message.type()
+                                + " user="
+                                + message.userId());
     }
 }

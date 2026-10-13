@@ -39,20 +39,15 @@ class TaskPhase3ScoringWireTest {
     private static final UUID ADMIN_USER = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final UUID MEMBER_USER = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
-    @Inject
-    TemplateService templateService;
+    @Inject TemplateService templateService;
 
-    @Inject
-    TaskService taskService;
+    @Inject TaskService taskService;
 
-    @Inject
-    InMemoryMembershipGateway membershipGateway;
+    @Inject InMemoryMembershipGateway membershipGateway;
 
-    @Inject
-    InMemoryPointsLedgerClient pointsLedgerClient;
+    @Inject InMemoryPointsLedgerClient pointsLedgerClient;
 
-    @Inject
-    CurrentIdentityAssociation identityAssociation;
+    @Inject CurrentIdentityAssociation identityAssociation;
 
     @BeforeEach
     void seed() {
@@ -69,9 +64,7 @@ class TaskPhase3ScoringWireTest {
         TaskTemplate template =
                 asUser(
                         ADMIN_SUBJECT,
-                        () ->
-                                templateService.create(
-                                        HOUSEHOLD, "Dust", null, "", 4, 1, 60));
+                        () -> templateService.create(HOUSEHOLD, "Dust", null, "", 4, 1, 60));
 
         Task manual = asUser(MEMBER_SUBJECT, () -> taskService.quickLog(HOUSEHOLD, template.id));
         assertEquals(1, pointsLedgerClient.awards().size());
@@ -99,9 +92,7 @@ class TaskPhase3ScoringWireTest {
         TaskTemplate template =
                 asUser(
                         ADMIN_SUBJECT,
-                        () ->
-                                templateService.create(
-                                        HOUSEHOLD, "Mop", null, "", 5, 2, 30));
+                        () -> templateService.create(HOUSEHOLD, "Mop", null, "", 5, 2, 30));
 
         Task manual = asUser(MEMBER_SUBJECT, () -> taskService.quickLog(HOUSEHOLD, template.id));
         Task reverted =
@@ -136,9 +127,7 @@ class TaskPhase3ScoringWireTest {
                 () ->
                         assertThrows(
                                 TaskException.Forbidden.class,
-                                () ->
-                                        taskService.revert(
-                                                HOUSEHOLD, manual.id, "member cannot")));
+                                () -> taskService.revert(HOUSEHOLD, manual.id, "member cannot")));
     }
 
     private <T> T asUser(UUID authSubject, Supplier<T> action) {

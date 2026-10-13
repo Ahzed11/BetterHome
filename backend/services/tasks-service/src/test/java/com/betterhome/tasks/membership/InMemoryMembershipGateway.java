@@ -13,7 +13,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * In-process membership directory that stands in for {@link HttpMembershipGateway} in Quarkus tests.
+ * In-process membership directory that stands in for {@link HttpMembershipGateway} in Quarkus
+ * tests.
  */
 @Alternative
 @Priority(1)

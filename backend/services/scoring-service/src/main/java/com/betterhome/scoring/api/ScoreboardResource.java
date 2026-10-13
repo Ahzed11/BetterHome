@@ -40,15 +40,14 @@ public class ScoreboardResource {
             @PathParam("householdId") UUID householdId,
             @QueryParam("period") @DefaultValue("month") ScorePeriod period,
             @QueryParam("yearMonth") String yearMonth) {
-        return ScoreboardResponse.from(scoreboardService.scoreboard(householdId, period, yearMonth));
+        return ScoreboardResponse.from(
+                scoreboardService.scoreboard(householdId, period, yearMonth));
     }
 
     @GET
     @Path("/winners")
     public List<WinnerResponse> winners(@PathParam("householdId") UUID householdId) {
-        return scoreboardService.winners(householdId).stream()
-                .map(WinnerResponse::from)
-                .toList();
+        return scoreboardService.winners(householdId).stream().map(WinnerResponse::from).toList();
     }
 
     @POST
@@ -68,8 +67,7 @@ public class ScoreboardResource {
     @POST
     @Path("/recaps/{yearMonth}/celebrate")
     public Map<String, Boolean> celebrate(
-            @PathParam("householdId") UUID householdId,
-            @PathParam("yearMonth") String yearMonth) {
+            @PathParam("householdId") UUID householdId, @PathParam("yearMonth") String yearMonth) {
         scoreboardService.markCelebrated(householdId, yearMonth);
         return Map.of("seen", true);
     }

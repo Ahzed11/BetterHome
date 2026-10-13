@@ -2,7 +2,6 @@ package com.betterhome.tasks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -49,26 +48,19 @@ class TaskPhase4AutomationTest {
     private static final UUID ADMIN_USER = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final UUID MEMBER_USER = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
-    @Inject
-    TemplateService templateService;
+    @Inject TemplateService templateService;
 
-    @Inject
-    RecurrenceService recurrenceService;
+    @Inject RecurrenceService recurrenceService;
 
-    @Inject
-    RecurrenceSpawnService spawnService;
+    @Inject RecurrenceSpawnService spawnService;
 
-    @Inject
-    ReminderService reminderService;
+    @Inject ReminderService reminderService;
 
-    @Inject
-    OutboxService outboxService;
+    @Inject OutboxService outboxService;
 
-    @Inject
-    InMemoryMembershipGateway membershipGateway;
+    @Inject InMemoryMembershipGateway membershipGateway;
 
-    @Inject
-    CurrentIdentityAssociation identityAssociation;
+    @Inject CurrentIdentityAssociation identityAssociation;
 
     @BeforeEach
     @Transactional
@@ -92,9 +84,7 @@ class TaskPhase4AutomationTest {
         TaskTemplate template =
                 asUser(
                         ADMIN_SUBJECT,
-                        () ->
-                                templateService.create(
-                                        HOUSEHOLD, "Bins", "🗑️", "", 5, 2, 60));
+                        () -> templateService.create(HOUSEHOLD, "Bins", "🗑️", "", 5, 2, 60));
 
         Instant start = Instant.now().minusSeconds(3600);
         asUser(
@@ -178,7 +168,8 @@ class TaskPhase4AutomationTest {
                                 Instant.now().minusSeconds(120),
                                 null));
         assertEquals(1, spawnService.claimAndSpawnDue(1));
-        List<Task> tasks = Task.list("householdId = ?1 and templateId = ?2", HOUSEHOLD, template.id);
+        List<Task> tasks =
+                Task.list("householdId = ?1 and templateId = ?2", HOUSEHOLD, template.id);
         assertEquals(1, tasks.size());
         assertEquals(TaskStatus.dismissed, tasks.getFirst().status);
         assertEquals(DismissalReason.nobody_available, tasks.getFirst().dismissalReason);
@@ -239,9 +230,7 @@ class TaskPhase4AutomationTest {
         int sent = reminderService.sendDueReminders();
         assertEquals(1, sent);
         assertEquals(1, NotificationOutbox.count("type = ?1", "due_reminder"));
-        assertEquals(
-                1,
-                Task.count("id = ?1 and dueReminderSentAt is not null", open.id));
+        assertEquals(1, Task.count("id = ?1 and dueReminderSentAt is not null", open.id));
     }
 
     private <T> T asUser(UUID authSubject, Supplier<T> action) {

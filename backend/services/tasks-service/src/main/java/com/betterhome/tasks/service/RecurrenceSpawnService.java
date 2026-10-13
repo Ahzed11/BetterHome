@@ -45,8 +45,8 @@ public class RecurrenceSpawnService {
     }
 
     /**
-     * Claim due recurrences with SKIP LOCKED and spawn. For each claimed row, catch up until
-     * {@code next_run_at} is in the future or null (bounded by {@code limit} occurrences total).
+     * Claim due recurrences with SKIP LOCKED and spawn. For each claimed row, catch up until {@code
+     * next_run_at} is in the future or null (bounded by {@code limit} occurrences total).
      */
     @Transactional
     public int claimAndSpawnDue(int limit) {
@@ -95,16 +95,14 @@ public class RecurrenceSpawnService {
         Instant occurrenceAt = recurrence.nextRunAt;
         supersedeOpen(recurrence.householdId, recurrence.templateId, now);
 
-        List<UUID> eligible =
-                membershipGateway.listEligibleAssigneeIds(recurrence.householdId);
+        List<UUID> eligible = membershipGateway.listEligibleAssigneeIds(recurrence.householdId);
         UUID assignee;
         boolean nobodyAvailable = false;
         if (recurrence.assignmentMode == AssignmentMode.fixed) {
             if (eligible.contains(recurrence.fixedAssigneeId)) {
                 assignee = recurrence.fixedAssigneeId;
             } else if (!eligible.isEmpty()) {
-                Rotation rotation =
-                        Rotation.findOptionalById(recurrence.rotationId).orElse(null);
+                Rotation rotation = Rotation.findOptionalById(recurrence.rotationId).orElse(null);
                 assignee =
                         RoundRobin.next(
                                         eligible,
@@ -115,12 +113,9 @@ public class RecurrenceSpawnService {
                 assignee = fallbackAssignee(recurrence);
             }
         } else {
-            Rotation rotation =
-                    Rotation.findOptionalById(recurrence.rotationId).orElse(null);
+            Rotation rotation = Rotation.findOptionalById(recurrence.rotationId).orElse(null);
             assignee =
-                    RoundRobin.next(
-                                    eligible,
-                                    rotation == null ? null : rotation.lastAssignedUserId)
+                    RoundRobin.next(eligible, rotation == null ? null : rotation.lastAssignedUserId)
                             .orElse(null);
             if (assignee == null) {
                 nobodyAvailable = true;
@@ -128,8 +123,7 @@ public class RecurrenceSpawnService {
             }
         }
 
-        Instant dueAt =
-                occurrenceAt.plus(template.defaultDueOffsetMinutes, ChronoUnit.MINUTES);
+        Instant dueAt = occurrenceAt.plus(template.defaultDueOffsetMinutes, ChronoUnit.MINUTES);
         Task task = new Task();
         task.id = UUID.randomUUID();
         task.householdId = recurrence.householdId;

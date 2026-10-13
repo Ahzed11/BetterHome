@@ -59,13 +59,16 @@ class HttpMembershipGatewayTest {
     @Test
     void strangersAndUnknownHouseholdsAreNotMembers() {
         assertTrue(gateway.findByAuthSubject(HOUSEHOLD_ID, UUID.randomUUID()).isEmpty());
-        assertTrue(gateway.findByAuthSubject(UUID.randomUUID(), UUID.fromString(ADMIN_SUBJECT))
-                .isEmpty());
+        assertTrue(
+                gateway.findByAuthSubject(UUID.randomUUID(), UUID.fromString(ADMIN_SUBJECT))
+                        .isEmpty());
     }
 
     @Test
     void eligibleMembersSkipAwayWhileActiveMembersKeepEveryone() {
-        assertEquals(List.of(UUID.fromString(ADMIN_USER)), gateway.listEligibleAssigneeIds(HOUSEHOLD_ID));
+        assertEquals(
+                List.of(UUID.fromString(ADMIN_USER)),
+                gateway.listEligibleAssigneeIds(HOUSEHOLD_ID));
         assertEquals(
                 List.of(UUID.fromString(ADMIN_USER), UUID.fromString(MEMBER_USER)),
                 gateway.listActiveMemberIds(HOUSEHOLD_ID));
@@ -86,7 +89,8 @@ class HttpMembershipGatewayTest {
         gateway.listActiveMemberIds(HOUSEHOLD_ID);
         gateway.householdSettings(HOUSEHOLD_ID);
 
-        assertEquals(List.of("Bearer " + TOKEN, "Bearer " + TOKEN), FakeHouseholdsServer.AUTHORIZATIONS);
+        assertEquals(
+                List.of("Bearer " + TOKEN, "Bearer " + TOKEN), FakeHouseholdsServer.AUTHORIZATIONS);
     }
 
     @Test

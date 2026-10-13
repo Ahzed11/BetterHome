@@ -37,17 +37,13 @@ class ScoringPhase3Test {
     private static final UUID ADMIN_USER = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final UUID MEMBER_USER = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
-    @Inject
-    LedgerService ledgerService;
+    @Inject LedgerService ledgerService;
 
-    @Inject
-    ScoreboardService scoreboardService;
+    @Inject ScoreboardService scoreboardService;
 
-    @Inject
-    InMemoryMembershipGateway membershipGateway;
+    @Inject InMemoryMembershipGateway membershipGateway;
 
-    @Inject
-    CurrentIdentityAssociation identityAssociation;
+    @Inject CurrentIdentityAssociation identityAssociation;
 
     @BeforeEach
     @Transactional
@@ -74,16 +70,16 @@ class ScoringPhase3Test {
                 MEMBER_SUBJECT,
                 () ->
                         ledgerService.award(
-                                HOUSEHOLD,
-                                MEMBER_USER,
-                                task2,
-                                2,
-                                PointReason.task_completed_late));
+                                HOUSEHOLD, MEMBER_USER, task2, 2, PointReason.task_completed_late));
         asUser(
                 ADMIN_SUBJECT,
                 () ->
                         ledgerService.award(
-                                HOUSEHOLD, ADMIN_USER, UUID.randomUUID(), 3, PointReason.task_completed));
+                                HOUSEHOLD,
+                                ADMIN_USER,
+                                UUID.randomUUID(),
+                                3,
+                                PointReason.task_completed));
 
         Scoreboard board =
                 asUser(
@@ -149,7 +145,8 @@ class ScoringPhase3Test {
                 ADMIN_SUBJECT,
                 () ->
                         scoreboardService.closeMonth(
-                                HOUSEHOLD, java.time.YearMonth.now(java.time.ZoneOffset.UTC).toString()));
+                                HOUSEHOLD,
+                                java.time.YearMonth.now(java.time.ZoneOffset.UTC).toString()));
 
         var winners = asUser(MEMBER_SUBJECT, () -> scoreboardService.winners(HOUSEHOLD));
         assertEquals(1, winners.size());

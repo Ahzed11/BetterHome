@@ -14,8 +14,7 @@ import java.util.UUID;
 @Table(name = "task_reversion")
 public class TaskReversion extends PanacheEntityBase {
 
-    @Id
-    public UUID id;
+    @Id public UUID id;
 
     @Column(name = "household_id", nullable = false)
     public UUID householdId;

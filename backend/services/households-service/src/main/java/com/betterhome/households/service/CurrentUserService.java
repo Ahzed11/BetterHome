@@ -40,11 +40,7 @@ public class CurrentUserService {
 
     @Transactional
     public AppUser sync(
-            String email,
-            String givenName,
-            String familyName,
-            String language,
-            String timezone) {
+            String email, String givenName, String familyName, String language, String timezone) {
         UUID subject = requireAuthSubject();
         Instant now = clock.now();
         String normalizedEmail = normalizeEmail(email);

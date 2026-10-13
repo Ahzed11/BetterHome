@@ -13,8 +13,7 @@ import java.util.UUID;
 @Table(name = "notification_outbox")
 public class NotificationOutbox extends PanacheEntityBase {
 
-    @Id
-    public UUID id;
+    @Id public UUID id;
 
     @Column(name = "household_id", nullable = false)
     public UUID householdId;

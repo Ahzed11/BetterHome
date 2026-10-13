@@ -14,8 +14,7 @@ import java.util.UUID;
 @Table(name = "task_template")
 public class TaskTemplate extends PanacheEntityBase {
 
-    @Id
-    public UUID id;
+    @Id public UUID id;
 
     @Column(name = "household_id", nullable = false)
     public UUID householdId;
@@ -57,10 +56,7 @@ public class TaskTemplate extends PanacheEntityBase {
     }
 
     public static Optional<TaskTemplate> findActive(UUID householdId, UUID templateId) {
-        return find(
-                        "id = ?1 and householdId = ?2 and archivedAt is null",
-                        templateId,
-                        householdId)
+        return find("id = ?1 and householdId = ?2 and archivedAt is null", templateId, householdId)
                 .firstResultOptional();
     }
 
@@ -69,7 +65,6 @@ public class TaskTemplate extends PanacheEntityBase {
     }
 
     public static List<TaskTemplate> listActive(UUID householdId) {
-        return list(
-                "householdId = ?1 and archivedAt is null order by createdAt", householdId);
+        return list("householdId = ?1 and archivedAt is null order by createdAt", householdId);
     }
 }

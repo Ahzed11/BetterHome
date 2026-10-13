@@ -13,8 +13,8 @@ import java.util.UUID;
 
 /**
  * Switches token validation on for a test class and signs tokens shaped like Keycloak's (the
- * subject is a UUID, the username is something else), so tests exercise the real principal
- * mapping instead of {@code @TestSecurity}.
+ * subject is a UUID, the username is something else), so tests exercise the real principal mapping
+ * instead of {@code @TestSecurity}.
  */
 public class RealOidcTestResource implements QuarkusTestResourceLifecycleManager {
 
@@ -33,11 +33,14 @@ public class RealOidcTestResource implements QuarkusTestResourceLifecycleManager
             throw new IllegalStateException("Cannot generate a test signing key", e);
         }
         return Map.of(
-                "quarkus.oidc.tenant-enabled", "true",
-                "quarkus.oidc.discovery-enabled", "false",
+                "quarkus.oidc.tenant-enabled",
+                "true",
+                "quarkus.oidc.discovery-enabled",
+                "false",
                 "quarkus.oidc.public-key",
-                        Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()),
-                "quarkus.oidc.token.issuer", ISSUER);
+                Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()),
+                "quarkus.oidc.token.issuer",
+                ISSUER);
     }
 
     @Override
@@ -45,17 +48,29 @@ public class RealOidcTestResource implements QuarkusTestResourceLifecycleManager
         keyPair = null;
     }
 
-    /** A signed access token for a member, shaped like Keycloak's: the subject differs from the
-     * username and roles sit only under {@code realm_access.roles}. */
+    /**
+     * A signed access token for a member, shaped like Keycloak's: the subject differs from the
+     * username and roles sit only under {@code realm_access.roles}.
+     */
     public static String token(UUID subject, String preferredUsername) {
         Instant now = Instant.now();
         String header = "{\"alg\":\"RS256\",\"typ\":\"JWT\"}";
         String claims =
-                "{\"iss\":\"" + ISSUER + "\","
-                        + "\"sub\":\"" + subject + "\","
-                        + "\"preferred_username\":\"" + preferredUsername + "\","
-                        + "\"iat\":" + now.getEpochSecond() + ","
-                        + "\"exp\":" + now.plusSeconds(300).getEpochSecond() + ","
+                "{\"iss\":\""
+                        + ISSUER
+                        + "\","
+                        + "\"sub\":\""
+                        + subject
+                        + "\","
+                        + "\"preferred_username\":\""
+                        + preferredUsername
+                        + "\","
+                        + "\"iat\":"
+                        + now.getEpochSecond()
+                        + ","
+                        + "\"exp\":"
+                        + now.plusSeconds(300).getEpochSecond()
+                        + ","
                         + "\"realm_access\":{\"roles\":[\"member\"]}}";
         String signingInput = encode(header) + "." + encode(claims);
         return signingInput + "." + URL.encodeToString(sign(signingInput));

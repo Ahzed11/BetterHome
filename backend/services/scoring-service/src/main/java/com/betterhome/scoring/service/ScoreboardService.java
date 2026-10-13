@@ -68,10 +68,7 @@ public class ScoreboardService {
             raw.add(new Entry(member.userId(), score, 0, 0));
             totalPositive += score;
         }
-        raw.sort(
-                Comparator.comparingInt(Entry::points)
-                        .reversed()
-                        .thenComparing(Entry::userId));
+        raw.sort(Comparator.comparingInt(Entry::points).reversed().thenComparing(Entry::userId));
 
         List<Entry> ranked = new ArrayList<>();
         int rank = 0;
@@ -99,13 +96,7 @@ public class ScoreboardService {
     public List<Winner> winners(UUID householdId) {
         callerService.requireMember(householdId);
         return MonthlyRecap.listForHousehold(householdId).stream()
-                .map(
-                        r ->
-                                new Winner(
-                                        r.yearMonth,
-                                        r.winnerUserId,
-                                        r.winnerPoints,
-                                        r.totalPoints))
+                .map(r -> new Winner(r.yearMonth, r.winnerUserId, r.winnerPoints, r.totalPoints))
                 .toList();
     }
 

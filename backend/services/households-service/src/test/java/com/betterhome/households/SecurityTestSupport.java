@@ -12,8 +12,7 @@ import java.util.function.Supplier;
 @ApplicationScoped
 public class SecurityTestSupport {
 
-    @Inject
-    CurrentIdentityAssociation identityAssociation;
+    @Inject CurrentIdentityAssociation identityAssociation;
 
     public <T> T asUser(UUID authSubject, Supplier<T> action) {
         SecurityIdentity previous = identityAssociation.getIdentity();

@@ -20,8 +20,7 @@ class RruleEngineTest {
         Instant next =
                 RruleEngine.nextOccurrence("FREQ=DAILY;INTERVAL=2", zone, start, null, start)
                         .orElseThrow();
-        assertEquals(
-                ZonedDateTime.of(2026, 3, 3, 9, 0, 0, 0, zone).toInstant(), next);
+        assertEquals(ZonedDateTime.of(2026, 3, 3, 9, 0, 0, 0, zone).toInstant(), next);
     }
 
     @Test
@@ -32,8 +31,7 @@ class RruleEngineTest {
                 RruleEngine.nextOccurrence(
                                 "FREQ=WEEKLY;BYDAY=WE", zone, start, null, start.minusSeconds(1))
                         .orElseThrow();
-        assertEquals(
-                LocalDate.of(2026, 3, 4), next.atZone(zone).toLocalDate()); // Wednesday
+        assertEquals(LocalDate.of(2026, 3, 4), next.atZone(zone).toLocalDate()); // Wednesday
     }
 
     @Test

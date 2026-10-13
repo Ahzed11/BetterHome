@@ -65,8 +65,7 @@ class TaskAwayDismissalTest {
         Task awayDone = openTask(household, template, MEMBER_USER);
         asUser(ADMIN_SUBJECT, () -> taskService.complete(household, awayDone.id));
         Task adminOpen = openTask(household, template, ADMIN_USER);
-        Task otherHouseholdOpen =
-                openTask(otherHousehold, template(otherHousehold), MEMBER_USER);
+        Task otherHouseholdOpen = openTask(otherHousehold, template(otherHousehold), MEMBER_USER);
         setMemberAway(true);
 
         int count =
@@ -130,7 +129,8 @@ class TaskAwayDismissalTest {
 
     private Task openTask(UUID householdId, TaskTemplate template, UUID assignee) {
         return asUser(
-                ADMIN_SUBJECT, () -> taskService.createOpen(householdId, template.id, assignee, null));
+                ADMIN_SUBJECT,
+                () -> taskService.createOpen(householdId, template.id, assignee, null));
     }
 
     private static Task reload(UUID householdId, Task task) {

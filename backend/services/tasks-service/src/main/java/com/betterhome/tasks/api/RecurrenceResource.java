@@ -32,8 +32,7 @@ public class RecurrenceResource {
 
     @GET
     public RecurrenceResponse get(
-            @PathParam("householdId") UUID householdId,
-            @PathParam("templateId") UUID templateId) {
+            @PathParam("householdId") UUID householdId, @PathParam("templateId") UUID templateId) {
         return RecurrenceResponse.from(
                 recurrenceService
                         .find(householdId, templateId)

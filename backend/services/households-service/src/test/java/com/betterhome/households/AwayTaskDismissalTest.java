@@ -31,7 +31,8 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class AwayTaskDismissalTest {
 
-    private static final UUID ADMIN_SUBJECT = UUID.fromString("44444444-4444-4444-4444-444444444444");
+    private static final UUID ADMIN_SUBJECT =
+            UUID.fromString("44444444-4444-4444-4444-444444444444");
     private static final UUID MEMBER_SUBJECT =
             UUID.fromString("55555555-5555-5555-5555-555555555555");
     private static final String ADMIN_TOKEN = "admin-access-token";
@@ -86,10 +87,7 @@ class AwayTaskDismissalTest {
                 ADMIN_SUBJECT,
                 () ->
                         membershipService.setAway(
-                                householdId,
-                                memberId,
-                                clock.now().plus(Duration.ofDays(2)),
-                                null));
+                                householdId, memberId, clock.now().plus(Duration.ofDays(2)), null));
 
         assertEquals(0, tasksClient.calls().size());
     }

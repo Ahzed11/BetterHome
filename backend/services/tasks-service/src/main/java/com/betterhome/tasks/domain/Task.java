@@ -16,8 +16,7 @@ import java.util.UUID;
 @Table(name = "task")
 public class Task extends PanacheEntityBase {
 
-    @Id
-    public UUID id;
+    @Id public UUID id;
 
     @Column(name = "household_id", nullable = false)
     public UUID householdId;

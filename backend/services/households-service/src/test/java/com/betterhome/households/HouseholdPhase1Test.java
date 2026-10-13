@@ -28,26 +28,22 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class HouseholdPhase1Test {
 
-    private static final UUID ADMIN_SUBJECT = UUID.fromString("11111111-1111-1111-1111-111111111111");
+    private static final UUID ADMIN_SUBJECT =
+            UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID MEMBER_SUBJECT =
             UUID.fromString("22222222-2222-2222-2222-222222222222");
     private static final UUID OUTSIDER_SUBJECT =
             UUID.fromString("33333333-3333-3333-3333-333333333333");
 
-    @Inject
-    SecurityTestSupport security;
+    @Inject SecurityTestSupport security;
 
-    @Inject
-    CurrentUserService currentUserService;
+    @Inject CurrentUserService currentUserService;
 
-    @Inject
-    HouseholdService householdService;
+    @Inject HouseholdService householdService;
 
-    @Inject
-    MembershipService membershipService;
+    @Inject MembershipService membershipService;
 
-    @Inject
-    InvitationService invitationService;
+    @Inject InvitationService invitationService;
 
     @Test
     @TestSecurity(user = "11111111-1111-1111-1111-111111111111", roles = "member")
@@ -160,7 +156,9 @@ class HouseholdPhase1Test {
                 () -> {
                     Membership away =
                             membershipService.setAway(
-                                    household.id, member.id, Instant.parse("2026-01-01T00:00:00Z"),
+                                    household.id,
+                                    member.id,
+                                    Instant.parse("2026-01-01T00:00:00Z"),
                                     Instant.parse("2026-01-10T00:00:00Z"));
                     assertTrue(away.isAway(Instant.parse("2026-01-05T00:00:00Z")));
                     Membership cleared = membershipService.clearAway(household.id, member.id);
@@ -178,9 +176,7 @@ class HouseholdPhase1Test {
 
         security.asUser(
                 ADMIN_SUBJECT,
-                () ->
-                        membershipService.changeRole(
-                                household.id, member.id, MembershipRole.admin));
+                () -> membershipService.changeRole(household.id, member.id, MembershipRole.admin));
 
         security.asUser(ADMIN_SUBJECT, () -> membershipService.leave(household.id));
 
@@ -198,8 +194,7 @@ class HouseholdPhase1Test {
                 ADMIN_SUBJECT,
                 () -> currentUserService.sync("solo@example.com", "Solo", "Admin", "en", "UTC"));
         var household =
-                security.asUser(
-                        ADMIN_SUBJECT, () -> householdService.create("Solo House", "UTC"));
+                security.asUser(ADMIN_SUBJECT, () -> householdService.create("Solo House", "UTC"));
         security.asUser(
                 ADMIN_SUBJECT,
                 () ->

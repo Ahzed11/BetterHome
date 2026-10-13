@@ -33,8 +33,7 @@ public class LedgerResource {
 
     @POST
     @Path("/award")
-    public Response award(
-            @PathParam("householdId") UUID householdId, @Valid AwardRequest request) {
+    public Response award(@PathParam("householdId") UUID householdId, @Valid AwardRequest request) {
         TransactionResponse body =
                 TransactionResponse.from(
                         ledgerService.award(

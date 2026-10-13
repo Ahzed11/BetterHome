@@ -37,17 +37,13 @@ class TaskPhase2Test {
     private static final UUID ADMIN_USER = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
     private static final UUID MEMBER_USER = UUID.fromString("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb");
 
-    @Inject
-    TemplateService templateService;
+    @Inject TemplateService templateService;
 
-    @Inject
-    TaskService taskService;
+    @Inject TaskService taskService;
 
-    @Inject
-    InMemoryMembershipGateway membershipGateway;
+    @Inject InMemoryMembershipGateway membershipGateway;
 
-    @Inject
-    CurrentIdentityAssociation identityAssociation;
+    @Inject CurrentIdentityAssociation identityAssociation;
 
     @BeforeEach
     void seedMembers() {
@@ -67,8 +63,7 @@ class TaskPhase2Test {
                                 templateService.create(
                                         HOUSEHOLD, "Bins", "🗑️", "Take out bins", 5, 2, 60));
 
-        Task manual =
-                asUser(MEMBER_SUBJECT, () -> taskService.quickLog(HOUSEHOLD, template.id));
+        Task manual = asUser(MEMBER_SUBJECT, () -> taskService.quickLog(HOUSEHOLD, template.id));
         assertEquals(TaskStatus.done, manual.status);
         assertEquals(TaskOrigin.manual, manual.origin);
         assertEquals(5, manual.pointsAwarded);
@@ -86,10 +81,7 @@ class TaskPhase2Test {
                                         Instant.parse("2026-01-01T12:00:00Z")));
         assertEquals(TaskStatus.open, open.status);
 
-        Task late =
-                asUser(
-                        MEMBER_SUBJECT,
-                        () -> taskService.complete(HOUSEHOLD, open.id));
+        Task late = asUser(MEMBER_SUBJECT, () -> taskService.complete(HOUSEHOLD, open.id));
         // system clock is "now" which is after 2026-01-01 in real time → late
         assertEquals(TaskStatus.done, late.status);
         assertEquals(2, late.pointsAwarded);
@@ -124,9 +116,7 @@ class TaskPhase2Test {
         TaskTemplate template =
                 asUser(
                         ADMIN_SUBJECT,
-                        () ->
-                                templateService.create(
-                                        HOUSEHOLD, "Kitchen", null, "", 3, 1, 30));
+                        () -> templateService.create(HOUSEHOLD, "Kitchen", null, "", 3, 1, 30));
         Task open =
                 asUser(
                         ADMIN_SUBJECT,

@@ -48,8 +48,7 @@ public class ReminderService {
             }
             LocalDate dueDate = task.dueAt.atZone(zone).toLocalDate();
             ZonedDateTime reminderAt =
-                    dueDate
-                            .minusDays(settings.reminderDaysBefore())
+                    dueDate.minusDays(settings.reminderDaysBefore())
                             .atTime(settings.reminderTime())
                             .atZone(zone);
             if (!now.isBefore(reminderAt.toInstant())) {

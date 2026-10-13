@@ -44,8 +44,10 @@ public class FakeHouseholdsServer implements QuarkusTestResourceLifecycleManager
         server.start();
         String base = "http://127.0.0.1:" + server.getAddress().getPort();
         return Map.of(
-                "quarkus.oidc-client.auth-server-url", base + "/realms/test",
-                "quarkus.rest-client.households.url", base);
+                "quarkus.oidc-client.auth-server-url",
+                base + "/realms/test",
+                "quarkus.rest-client.households.url",
+                base);
     }
 
     @Override
@@ -76,11 +78,17 @@ public class FakeHouseholdsServer implements QuarkusTestResourceLifecycleManager
             respond(
                     exchange,
                     200,
-                    "[{\"userId\":\"" + ADMIN_USER + "\",\"authSubject\":\"" + ADMIN_SUBJECT
+                    "[{\"userId\":\""
+                            + ADMIN_USER
+                            + "\",\"authSubject\":\""
+                            + ADMIN_SUBJECT
                             + "\",\"role\":\"admin\",\"away\":false,"
                             + "\"joinedAt\":\"2026-01-01T10:00:00Z\"},"
-                            + "{\"userId\":\"" + MEMBER_USER + "\",\"authSubject\":\""
-                            + MEMBER_SUBJECT + "\",\"role\":\"member\",\"away\":true,"
+                            + "{\"userId\":\""
+                            + MEMBER_USER
+                            + "\",\"authSubject\":\""
+                            + MEMBER_SUBJECT
+                            + "\",\"role\":\"member\",\"away\":true,"
                             + "\"joinedAt\":\"2026-01-02T10:00:00Z\"}]");
         } else {
             respond(
@@ -91,8 +99,7 @@ public class FakeHouseholdsServer implements QuarkusTestResourceLifecycleManager
         }
     }
 
-    private static void respond(HttpExchange exchange, int status, String body)
-            throws IOException {
+    private static void respond(HttpExchange exchange, int status, String body) throws IOException {
         byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().add("Content-Type", "application/json");
         exchange.sendResponseHeaders(status, bytes.length);

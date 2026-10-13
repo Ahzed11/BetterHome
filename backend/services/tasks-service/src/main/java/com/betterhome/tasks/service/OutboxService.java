@@ -23,7 +23,12 @@ public class OutboxService {
 
     @Transactional
     public void enqueue(
-            UUID householdId, UUID userId, String type, String title, String body, String payloadJson) {
+            UUID householdId,
+            UUID userId,
+            String type,
+            String title,
+            String body,
+            String payloadJson) {
         NotificationOutbox row = new NotificationOutbox();
         row.id = UUID.randomUUID();
         row.householdId = householdId;
@@ -43,11 +48,7 @@ public class OutboxService {
         for (NotificationOutbox row : pending) {
             pushSender.send(
                     new PushSender.PushMessage(
-                            row.userId.toString(),
-                            row.type,
-                            row.title,
-                            row.body,
-                            row.payloadJson));
+                            row.userId.toString(), row.type, row.title, row.body, row.payloadJson));
             row.processedAt = clock.now();
             count++;
         }

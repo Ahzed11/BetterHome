@@ -28,11 +28,7 @@ public final class RruleEngine {
      * after {@code endsAt} when set.
      */
     public static Optional<Instant> nextOccurrence(
-            String rrule,
-            ZoneId zone,
-            Instant startsAt,
-            Instant endsAt,
-            Instant afterExclusive) {
+            String rrule, ZoneId zone, Instant startsAt, Instant endsAt, Instant afterExclusive) {
         ParsedRule rule = ParsedRule.parse(rrule);
         LocalTime timeOfDay = startsAt.atZone(zone).toLocalTime();
         LocalDate startDate = startsAt.atZone(zone).toLocalDate();
@@ -64,7 +60,9 @@ public final class RruleEngine {
             }
             day = day.plusDays(1);
             if (endsAt != null
-                    && day.atStartOfDay(zone).toInstant().isAfter(endsAt.plus(40, ChronoUnit.DAYS))) {
+                    && day.atStartOfDay(zone)
+                            .toInstant()
+                            .isAfter(endsAt.plus(40, ChronoUnit.DAYS))) {
                 break;
             }
         }
@@ -86,8 +84,7 @@ public final class RruleEngine {
                 }
                 LocalDate weekStart =
                         startDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-                LocalDate candWeek =
-                        date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                LocalDate candWeek = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
                 long weeks = ChronoUnit.WEEKS.between(weekStart, candWeek);
                 yield weeks >= 0 && weeks % rule.interval == 0;
             }
@@ -140,8 +137,8 @@ public final class RruleEngine {
                         case "DAILY" -> Freq.DAILY;
                         case "WEEKLY" -> Freq.WEEKLY;
                         case "MONTHLY" -> Freq.MONTHLY;
-                        default -> throw new TaskException.BadRequest(
-                                "Unsupported FREQ: " + freqRaw);
+                        default ->
+                                throw new TaskException.BadRequest("Unsupported FREQ: " + freqRaw);
                     };
             int interval = 1;
             if (parts.containsKey("INTERVAL")) {

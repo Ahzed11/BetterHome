@@ -1,8 +1,8 @@
 package com.betterhome.common;
 
 /**
- * Seam for delivering push notifications via the notification gateway (FCM / APNs).
- * Implementations are fed by each service's transactional outbox.
+ * Seam for delivering push notifications via the notification gateway (FCM / APNs). Implementations
+ * are fed by each service's transactional outbox.
  */
 public interface PushSender {
 

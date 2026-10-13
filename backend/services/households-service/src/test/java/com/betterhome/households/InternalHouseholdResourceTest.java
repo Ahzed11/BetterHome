@@ -19,10 +19,12 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class InternalHouseholdResourceTest {
 
-    private static final UUID ADMIN_SUBJECT = UUID.fromString("66666666-6666-6666-6666-666666666666");
+    private static final UUID ADMIN_SUBJECT =
+            UUID.fromString("66666666-6666-6666-6666-666666666666");
     private static final UUID MEMBER_SUBJECT =
             UUID.fromString("77777777-7777-7777-7777-777777777777");
-    private static final UUID OTHER_SUBJECT = UUID.fromString("88888888-8888-8888-8888-888888888888");
+    private static final UUID OTHER_SUBJECT =
+            UUID.fromString("88888888-8888-8888-8888-888888888888");
 
     @Inject SecurityTestSupport security;
     @Inject CurrentUserService currentUserService;
@@ -50,7 +52,8 @@ class InternalHouseholdResourceTest {
                         ADMIN_SUBJECT,
                         () -> householdService.create("Internal", "Europe/Paris").id);
         otherHouseholdId =
-                security.asUser(OTHER_SUBJECT, () -> householdService.create("Elsewhere", "UTC").id);
+                security.asUser(
+                        OTHER_SUBJECT, () -> householdService.create("Elsewhere", "UTC").id);
         var invitation =
                 security.asUser(
                         ADMIN_SUBJECT,
@@ -121,18 +124,32 @@ class InternalHouseholdResourceTest {
     @Test
     @TestSecurity(user = "77777777-7777-7777-7777-777777777777", roles = "member")
     void householdMembersCannotUseInternalEndpoints() {
-        given().when().get("/v1/internal/households/" + householdId + "/members").then().statusCode(403);
-        given().when().get("/v1/internal/households/" + householdId + "/settings").then().statusCode(403);
+        given().when()
+                .get("/v1/internal/households/" + householdId + "/members")
+                .then()
+                .statusCode(403);
+        given().when()
+                .get("/v1/internal/households/" + householdId + "/settings")
+                .then()
+                .statusCode(403);
     }
 
     @Test
-    @TestSecurity(user = "66666666-6666-6666-6666-666666666666", roles = {"member", "admin"})
+    @TestSecurity(
+            user = "66666666-6666-6666-6666-666666666666",
+            roles = {"member", "admin"})
     void householdAdminsCannotUseInternalEndpointsEither() {
-        given().when().get("/v1/internal/households/" + otherHouseholdId + "/members").then().statusCode(403);
+        given().when()
+                .get("/v1/internal/households/" + otherHouseholdId + "/members")
+                .then()
+                .statusCode(403);
     }
 
     @Test
     void anonymousIsRejected() {
-        given().when().get("/v1/internal/households/" + householdId + "/members").then().statusCode(401);
+        given().when()
+                .get("/v1/internal/households/" + householdId + "/members")
+                .then()
+                .statusCode(401);
     }
 }

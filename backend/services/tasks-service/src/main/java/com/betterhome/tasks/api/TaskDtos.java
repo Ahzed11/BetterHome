@@ -60,8 +60,7 @@ public final class TaskDtos {
         }
     }
 
-    public record CreateOpenTaskRequest(
-            @NotNull UUID templateId, UUID assigneeId, Instant dueAt) {}
+    public record CreateOpenTaskRequest(@NotNull UUID templateId, UUID assigneeId, Instant dueAt) {}
 
     public record QuickLogRequest(@NotNull UUID templateId) {}
 

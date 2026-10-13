@@ -13,8 +13,7 @@ import java.util.UUID;
 @Table(name = "app_user")
 public class AppUser extends PanacheEntityBase {
 
-    @Id
-    public UUID id;
+    @Id public UUID id;
 
     @Column(name = "auth_subject", nullable = false, unique = true)
     public UUID authSubject;

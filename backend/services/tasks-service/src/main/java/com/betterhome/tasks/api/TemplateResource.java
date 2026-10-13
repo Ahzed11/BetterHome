@@ -74,8 +74,7 @@ public class TemplateResource {
     @POST
     @Path("/{templateId}/archive")
     public TemplateResponse archive(
-            @PathParam("householdId") UUID householdId,
-            @PathParam("templateId") UUID templateId) {
+            @PathParam("householdId") UUID householdId, @PathParam("templateId") UUID templateId) {
         return TemplateResponse.from(templateService.archive(householdId, templateId));
     }
 }

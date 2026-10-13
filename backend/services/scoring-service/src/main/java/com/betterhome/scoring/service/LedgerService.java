@@ -56,8 +56,8 @@ public class LedgerService {
     }
 
     /**
-     * Reverse points for a done task: creates {@link TaskReversion} and a negative ledger row in one
-     * transaction. Admin only.
+     * Reverse points for a done task: creates {@link TaskReversion} and a negative ledger row in
+     * one transaction. Admin only.
      */
     @Transactional
     public TaskReversion reverse(
