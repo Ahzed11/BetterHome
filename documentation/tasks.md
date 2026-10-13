@@ -67,7 +67,7 @@ _(none)_
 
 Milestones in delivery order (vertical slice first). A milestone is reached when its exit criterion holds and its tasks are `done`. T-0003 and T-0008 are in review and close before M1.
 
-* **M1 · Real sign-in works** — T-0013, T-0014. Exit: A Keycloak user can call every service, and invitations work over HTTP.
+* **M1 · Real sign-in works** — T-0013, T-0014, T-0036. Exit: A Keycloak user can call every service, and invitations work over HTTP.
 * **M2 · Toolchain, local stack, gates, CI** — T-0015, T-0016, T-0017, T-0005, T-0018. Exit: `make up` runs all five services; `make check` enforces AGENTS §5.3 and runs in CI on every pull request.
 * **M3 · Services wired for real** — T-0010, T-0019. Exit: No in-memory gateway or ledger client left in main code; one app contract describes every endpoint.
 * **M4 · App vertical slice on the real stack** — T-0020, T-0006, T-0021, T-0022. Exit: The app signs in through Keycloak and runs households, chores and leaderboard against `make up`; `make e2e` runs in CI.
@@ -314,11 +314,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0013 · Services reject every real Keycloak user: principal is not the `sub` UUID
 
-* Status: todo
+* Status: in-review
 * Issue / PR: #6
 * Depends on: T-0001
 * Spec: §2, §9 (auth), AGENTS §3 (Auth)
 * Acceptance criteria: `OidcAuthVerifier` expects the principal name to be the Keycloak `sub` UUID, but quarkus-oidc defaults to `preferred_username`, so with a real token every service answers 401 "Authentication required". Set `quarkus.oidc.token.principal-claim=sub` in each service (found during T-0008; reproduced with the demo user from `deploy/keycloak/README.md` and fixed at runtime only), and add a test that fails without it.
+* Summary: `common-domain/src/main/resources/META-INF/microprofile-config.properties` sets `quarkus.oidc.token.principal-claim=sub`, so all five services pick it up from the module that owns `OidcAuthVerifier`. New shared test fixture `RealOidcTestResource` (common-domain test-jar) enables token validation with a generated RSA key and signs Keycloak-shaped tokens; each service has `RealTokenAuthTest` calling `/v1/meta` with a token whose `sub` is a UUID and `preferred_username` is `demo`.
+* Decisions and deviations: One property in `common-domain` instead of five copies (deviation from the issue text); service `application.properties` can still override it. Root `pom.xml` manages the `common-domain` test-jar, which each service depends on in test scope. The test failed before the fix in households-service (200 with an empty `authSubject`); the other four share the same code path and were run only with the fix.
+* Verification: `./mvnw -B verify` in `backend/` on JDK 21 (all services pass). Live on real Keycloak 26 + Postgres 16 with households and tasks in dev mode and no runtime override: demo user's `/v1/meta` returned the Keycloak `sub`, profile sync 200, household create, template create 201, no token 401, unknown household 403. `make` checks beyond `verify` (spotless, checkstyle, audit), Flutter and e2e were not run.
+* Follow-ups: T-0036.
 
 ### T-0014 · Invitation endpoints return 404 on a running server
 
@@ -327,3 +331,11 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0002
 * Spec: §2 (invitations)
 * Acceptance criteria: `POST/GET /v1/households/{id}/invitations` answer 404 "Resource Not Found" when the service runs, although they are listed in the route table and the service-level tests pass. `InvitationResource` is rooted at `@Path("/v1")` and appears to lose to `HouseholdResource` at `/v1/households`. Add an HTTP-level test that fails today (create then accept an invitation through REST) and fix the routing.
+
+### T-0036 · Real Keycloak roles are not mapped in tasks, scoring, lists and notifications
+
+* Status: todo
+* Issue / PR: #29
+* Depends on: T-0013
+* Spec: §2, AGENTS §8
+* Acceptance criteria: Only households-service sets `quarkus.oidc.roles.role-claim-path=realm_access/roles`. In the other four services `/v1/meta` is `@RolesAllowed({"member","admin"})`, so a real Keycloak token (roles under `realm_access.roles`) would get 403 there. Set the claim path in one shared place next to the verifier config (T-0013) or drop the role requirement from `/v1/meta`; add a `RealTokenAuthTest` assertion that fails first.

@@ -21,6 +21,12 @@
             <artifactId>common-domain</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.betterhome</groupId>
+            <artifactId>common-domain</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jackson</artifactId>
         </dependency>
