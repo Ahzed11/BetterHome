@@ -71,11 +71,15 @@ _(none)_
 
 ### T-0003 · Reassign open tasks when a member is marked away
 
-* Status: todo
+* Status: in-review
 * Issue / PR: —
 * Depends on: T-0007
 * Spec: §2 Away, §3.3 Reassignment
 * Acceptance criteria: When an admin sets away in households-service, call tasks-service `POST .../tasks/reassign-away/{userId}` (endpoint exists) so open tasks move to eligible members.
+* Summary: `MembershipService.setAway` fires `MemberAway`; `AwayReassignment` observes it after commit and calls tasks-service through the `TasksClient` REST client (`TASKS_SERVICE_URL`), forwarding the admin's bearer token. No call when `away_from` is in the future.
+* Decisions and deviations: Synchronous, no retry; a failed call is logged and does not undo the away change. A future-dated away is not reassigned when it begins (see T-0012). If every other member is away, tasks-service answers 409 and the tasks stay with their assignee; the spec does not define this case, so a spec decision is needed (T-0012). Not functional end to end until T-0008, because tasks-service membership data is still the in-memory directory.
+* Verification: `./mvnw -B verify` in `backend/` on JDK 21 (all services pass; `AwayReassignmentTest` covers token forwarding, future-dated away, tasks-service failure, rejected non-admin). `make` is not installed here, so `make test-backend`, `make check`, the Flutter checks and e2e were not run; the app was not launched against Keycloak.
+* Follow-ups: T-0012.
 
 ### T-0004 · OpenShift / CRC deploy manifests for microservices
 
@@ -116,3 +120,11 @@ _(none)_
 * Depends on: T-0009
 * Spec: §7 service boundaries, §3.4
 * Acceptance criteria: tasks-service calls scoring-service award/reverse over REST with service or user token; scoring-service resolves membership via households-service HTTP client; keep in-memory doubles for Quarkus tests.
+
+### T-0012 · Away reassignment: future start, retries, and nobody left
+
+* Status: todo
+* Issue / PR: —
+* Depends on: T-0003, T-0008
+* Spec: §2 Away, §3.3 Reassignment
+* Acceptance criteria: Decide and implement (1) reassignment when a future `away_from` arrives, (2) reliable delivery of the households → tasks call (outbox or retry) instead of a logged best-effort call, (3) what happens to open tasks when no other member is eligible; the spec must define (3) first.
