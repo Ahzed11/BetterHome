@@ -1,0 +1,52 @@
+# BetterHome developer commands. See AGENTS.md §6.1.
+SHELL := /bin/bash
+ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+BACKEND := $(ROOT)/backend
+COMPOSE := podman compose -f $(ROOT)/deploy/podman-compose.yml
+JAVA_HOME ?= $(shell jbang jdk home 21 2>/dev/null)
+export JAVA_HOME
+export PATH := $(JAVA_HOME)/bin:$(PATH)
+# Quarkus Dev Services / Testcontainers against rootless Podman
+export DOCKER_HOST ?= unix://$(XDG_RUNTIME_DIR)/podman/podman.sock
+export TESTCONTAINERS_RYUK_DISABLED ?= true
+
+.PHONY: up down migrate seed test-backend test-app test-docs test-policy test-guard e2e check update-goldens
+
+up: ## Start Postgres and Keycloak via Podman Compose
+	$(COMPOSE) up -d
+	@echo "Postgres :5432  Keycloak :8180 (admin/admin)"
+
+down: ## Stop and remove local Compose stack
+	$(COMPOSE) down -v
+
+migrate: ## Apply Flyway SQL to all service databases
+	@bash $(ROOT)/deploy/migrate.sh
+
+seed: ## Load demo data (Phase 1+)
+	@echo "seed: not implemented until Phase 1 (households)"
+
+test-backend: ## Format check placeholder, unit and Quarkus tests
+	cd $(BACKEND) && ./mvnw -B verify
+
+test-app: ## Flutter analyze and tests
+	cd $(ROOT)/app && dart format --set-exit-if-changed . && flutter analyze && flutter test
+
+update-goldens: ## Regenerate Flutter golden images (Linux)
+	cd $(ROOT)/app && flutter test --update-goldens
+
+test-docs: ## Resolve documentation relative links
+	@bash $(ROOT)/documentation/tools/check-doc-links.sh
+
+test-policy: ## Dependency policy checks (Phase 0 stub)
+	@echo "test-policy: OWASP dependency-check wiring deferred; backend tests still run"
+
+test-guard: ## Generated-client drift guard (Phase 0 stub)
+	@echo "test-guard: OpenAPI client guard deferred until client generation is wired"
+
+e2e: ## Full stack e2e (requires emulator; Phase 0 stub)
+	@echo "e2e: deferred until Phase 1 journeys exist"
+	@exit 1
+
+check: test-docs test-backend ## CI entrypoint (app/e2e when present)
+	@if [[ -d $(ROOT)/app ]]; then $(MAKE) test-app; fi
+	@echo "check: backend + docs OK (e2e not yet required for Phase 0)"

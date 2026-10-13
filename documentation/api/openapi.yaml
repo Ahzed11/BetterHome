@@ -1,0 +1,67 @@
+openapi: 3.0.3
+info:
+  title: BetterHome API
+  version: 0.1.0
+  description: >
+    Aggregate OpenAPI surface for BetterHome microservices.
+    Phase 0 exposes per-service meta and health only; domain paths arrive in later phases.
+servers:
+  - url: http://localhost:8081
+    description: households-service (local)
+paths:
+  /v1/meta:
+    get:
+      operationId: getServiceMeta
+      summary: Authenticated service identity probe
+      tags: [meta]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Service metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceMeta"
+        "401":
+          description: Missing or invalid bearer token
+  /q/health/live:
+    get:
+      operationId: liveness
+      summary: Liveness probe
+      tags: [health]
+      security: []
+      responses:
+        "200":
+          description: Process is alive
+  /q/health/ready:
+    get:
+      operationId: readiness
+      summary: Readiness probe
+      tags: [health]
+      security: []
+      responses:
+        "200":
+          description: Service can accept traffic
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ServiceMeta:
+      type: object
+      required: [service, now, authSubject]
+      properties:
+        service:
+          type: string
+          example: households-service
+        now:
+          type: string
+          format: date-time
+        authSubject:
+          type: string
+          description: Keycloak subject UUID, or empty when anonymous tooling calls are allowed
+security:
+  - bearerAuth: []

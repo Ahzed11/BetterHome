@@ -1,0 +1,48 @@
+{
+  "realm": "betterhome",
+  "enabled": true,
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "sslRequired": "external",
+  "roles": {
+    "realm": [
+      { "name": "admin", "description": "Household administrator" },
+      { "name": "member", "description": "Household member" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "betterhome-api",
+      "name": "BetterHome API",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "secret": "local-dev-only-change-me"
+    },
+    {
+      "clientId": "betterhome-app",
+      "name": "BetterHome Flutter App",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": [
+        "com.betterhome.app://callback",
+        "http://localhost:*"
+      ],
+      "webOrigins": ["*"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ]
+}
