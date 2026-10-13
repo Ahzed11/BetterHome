@@ -157,6 +157,7 @@ Agents must not claim something works without having run it.
 | `make seed` | Load a demo household with two members and sample data |
 | `make test-backend` | Format, dependency audit, lint, Quarkus unit and integration tests |
 | `make test-app` | Analyze, unit, widget and golden tests |
+| `make openapi` | Regenerate `documentation/api/*-openapi.yaml` from the annotated code; review and commit the diff (`decisions/0015-openapi-generated-from-code.md`) |
 | `make update-goldens` | Regenerate the golden images (Linux only; `decisions/0012-goldens-compared-on-one-platform.md`) |
 | `make test-docs` | Resolve documentation's relative links and its ADR/ledger references |
 | `make test-policy` | Require every dependency unvulnerable and verified against policies |

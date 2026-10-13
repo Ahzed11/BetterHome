@@ -16,11 +16,27 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/v1/households/{householdId}/invitations")
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "invitations")
+@APIResponse(responseCode = "401", description = "Not authenticated")
+@APIResponse(
+        responseCode = "403",
+        description = "Not allowed to do this",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+@APIResponse(
+        responseCode = "404",
+        description = "Not found",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
 public class InvitationResource {
 
     private final InvitationService invitationService;
@@ -30,6 +46,15 @@ public class InvitationResource {
         this.invitationService = invitationService;
     }
 
+    @Operation(operationId = "createInvitation", summary = "Invite someone by email (admin)")
+    @APIResponse(
+            responseCode = "201",
+            description = "Created",
+            content = @Content(schema = @Schema(implementation = InvitationResponse.class)))
+    @APIResponse(
+            responseCode = "400",
+            description = "Invalid input",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
     public Response create(
             @PathParam("householdId") UUID householdId, @Valid CreateInvitationRequest request) {
@@ -39,6 +64,16 @@ public class InvitationResource {
         return Response.status(Response.Status.CREATED).entity(body).build();
     }
 
+    @Operation(operationId = "listPendingInvitations", summary = "List pending invitations (admin)")
+    @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content =
+                    @Content(
+                            schema =
+                                    @Schema(
+                                            type = SchemaType.ARRAY,
+                                            implementation = InvitationResponse.class)))
     @GET
     public List<InvitationResponse> listPending(@PathParam("householdId") UUID householdId) {
         return invitationService.listPending(householdId).stream()

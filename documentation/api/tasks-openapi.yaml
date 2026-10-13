@@ -1,155 +1,972 @@
-openapi: 3.0.3
-info:
-  title: BetterHome Tasks API
-  version: 0.5.0
-  description: >
-    Tasks-service (port 8082): templates, tasks, revert, and Phase 4 recurrence.
-    Aggregate index remains openapi.yaml.
-servers:
-  - url: http://localhost:8082
+---
+openapi: 3.1.0
+tags:
+- name: meta
+- name: recurrence
+- name: tasks
+- name: templates
+components:
+  schemas:
+    AssignmentMode:
+      type: string
+      enum:
+      - fixed
+      - round_robin
+    CreateOpenTaskRequest:
+      type: object
+      required:
+      - templateId
+      properties:
+        templateId:
+          $ref: "#/components/schemas/UUID"
+        assigneeId:
+          $ref: "#/components/schemas/UUID"
+        dueAt:
+          $ref: "#/components/schemas/Instant"
+    CreateTemplateRequest:
+      type: object
+      required:
+      - title
+      properties:
+        title:
+          type: string
+          pattern: \S
+        emoji:
+          type: string
+        description:
+          type: string
+        points:
+          type: integer
+          format: int32
+          minimum: 0
+        latePoints:
+          type: integer
+          format: int32
+          minimum: 0
+        defaultDueOffsetMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+    DismissalReason:
+      type: string
+      enum:
+      - manual
+      - superseded
+      - nobody_available
+      - reverted_overdue
+      - assignee_away
+    DismissedCount:
+      type: object
+      properties:
+        dismissed:
+          type: integer
+          format: int32
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    Instant:
+      type: string
+      format: date-time
+      examples:
+      - 2022-03-10T16:15:50Z
+    QuickLogRequest:
+      type: object
+      required:
+      - templateId
+      properties:
+        templateId:
+          $ref: "#/components/schemas/UUID"
+    ReassignedCount:
+      type: object
+      properties:
+        reassigned:
+          type: integer
+          format: int32
+    RecurrenceResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        templateId:
+          $ref: "#/components/schemas/UUID"
+        rrule:
+          type: string
+        assignmentMode:
+          $ref: "#/components/schemas/AssignmentMode"
+        fixedAssigneeId:
+          $ref: "#/components/schemas/UUID"
+        timezone:
+          type: string
+        startsAt:
+          $ref: "#/components/schemas/Instant"
+        endsAt:
+          $ref: "#/components/schemas/Instant"
+        lastGeneratedAt:
+          $ref: "#/components/schemas/Instant"
+        nextRunAt:
+          $ref: "#/components/schemas/Instant"
+    RevertRequest:
+      type: object
+      required:
+      - reason
+      properties:
+        reason:
+          type: string
+          pattern: \S
+    ServiceInfo:
+      type: object
+      properties:
+        service:
+          type: string
+        now:
+          type: string
+        authSubject:
+          type: string
+    TaskOrigin:
+      type: string
+      enum:
+      - manual
+      - ad_hoc
+      - recurrence
+    TaskResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        templateId:
+          $ref: "#/components/schemas/UUID"
+        origin:
+          $ref: "#/components/schemas/TaskOrigin"
+        title:
+          type: string
+        emoji:
+          type: string
+        description:
+          type: string
+        points:
+          type: integer
+          format: int32
+        latePoints:
+          type: integer
+          format: int32
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        assigneeId:
+          $ref: "#/components/schemas/UUID"
+        completerId:
+          $ref: "#/components/schemas/UUID"
+        dismissedBy:
+          $ref: "#/components/schemas/UUID"
+        dismissalReason:
+          $ref: "#/components/schemas/DismissalReason"
+        dueAt:
+          $ref: "#/components/schemas/Instant"
+        completedAt:
+          $ref: "#/components/schemas/Instant"
+        pointsAwarded:
+          type: integer
+          format: int32
+    TaskStatus:
+      type: string
+      enum:
+      - open
+      - done
+      - dismissed
+      - reverted
+    TemplateResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        title:
+          type: string
+        emoji:
+          type: string
+        description:
+          type: string
+        points:
+          type: integer
+          format: int32
+        latePoints:
+          type: integer
+          format: int32
+        defaultDueOffsetMinutes:
+          type: integer
+          format: int32
+        rotationId:
+          $ref: "#/components/schemas/UUID"
+        archivedAt:
+          $ref: "#/components/schemas/Instant"
+    UUID:
+      type: string
+      format: uuid
+      pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+    UpdateTemplateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        emoji:
+          type: string
+        description:
+          type: string
+        points:
+          type: integer
+          format: int32
+          minimum: 0
+        latePoints:
+          type: integer
+          format: int32
+          minimum: 0
+        defaultDueOffsetMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+    UpsertRecurrenceRequest:
+      type: object
+      required:
+      - rrule
+      - assignmentMode
+      properties:
+        rrule:
+          type: string
+          pattern: \S
+        assignmentMode:
+          $ref: "#/components/schemas/AssignmentMode"
+        fixedAssigneeId:
+          $ref: "#/components/schemas/UUID"
+        startsAt:
+          $ref: "#/components/schemas/Instant"
+        endsAt:
+          $ref: "#/components/schemas/Instant"
+  securitySchemes:
+    bearerAuth:
+      description: Authentication
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 paths:
-  /v1/households/{householdId}/templates:
-    parameters:
-      - $ref: "#/components/parameters/householdId"
+  /v1/households/{householdId}/tasks:
     get:
-      operationId: listTemplates
-      tags: [templates]
+      summary: "List tasks, optionally by status or assignee"
+      operationId: listTasks
+      tags:
+      - tasks
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: mine
+        in: query
+        schema:
+          type: boolean
+          default: false
+      - name: status
+        in: query
+        schema:
+          $ref: "#/components/schemas/TaskStatus"
       responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "200":
-          description: Active templates
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TaskResponse"
+      security:
+      - bearerAuth: []
     post:
-      operationId: createTemplate
-      tags: [templates]
+      summary: Create an open task from a template (admin)
+      operationId: createOpenTask
+      tags:
+      - tasks
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOpenTaskRequest"
+        required: true
       responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "201":
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflicts with the current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/dismiss-away/{userId}:
+    post:
+      summary: Dismiss the open tasks of a member marked away (admin)
+      operationId: dismissAwayMemberTasks
+      tags:
+      - tasks
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DismissedCount"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/manual:
+    post:
+      summary: "Log a chore just done: created already done for the caller"
+      operationId: quickLogTask
+      tags:
+      - tasks
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickLogRequest"
+        required: true
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "400":
+          description: Bad Request
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/reassign-away/{userId}:
+    post:
+      summary: "Deprecated: reassign the open tasks of an away member (admin)"
+      operationId: reassignAwayMemberTasks
+      deprecated: true
+      tags:
+      - tasks
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReassignedCount"
+        "409":
+          description: Conflicts with the current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/{taskId}/complete:
+    post:
+      summary: Complete a task (assignee or admin)
+      operationId: completeTask
+      tags:
+      - tasks
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "409":
+          description: Conflicts with the current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/{taskId}/dismiss:
+    post:
+      summary: "Dismiss a task, irreversibly (assignee or admin)"
+      operationId: dismissTask
+      tags:
+      - tasks
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "409":
+          description: Conflicts with the current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/{taskId}/reassign:
+    post:
+      summary: Reassign a task round robin (admin)
+      operationId: reassignTask
+      tags:
+      - tasks
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "409":
+          description: Conflicts with the current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/{taskId}/revert:
+    post:
+      summary: Revert a done task with a reason (admin)
+      operationId: revertTask
+      tags:
+      - tasks
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: taskId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevertRequest"
+        required: true
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflicts with the current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/templates:
+    get:
+      summary: List active templates
+      operationId: listTemplates
+      tags:
+      - templates
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TemplateResponse"
+      security:
+      - bearerAuth: []
+    post:
+      summary: Create a template (admin)
+      operationId: createTemplate
+      tags:
+      - templates
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTemplateRequest"
+        required: true
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
   /v1/households/{householdId}/templates/{templateId}:
     patch:
+      summary: Update a template (admin); existing tasks are unchanged
       operationId: updateTemplate
-      tags: [templates]
-      responses:
-        "200":
-          description: Updated
-  /v1/households/{householdId}/templates/{templateId}/archive:
-    post:
-      operationId: archiveTemplate
-      tags: [templates]
-      responses:
-        "200":
-          description: Archived
-  /v1/households/{householdId}/templates/{templateId}/recurrence:
-    parameters:
-      - $ref: "#/components/parameters/householdId"
+      tags:
+      - templates
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
       - name: templateId
         in: path
         required: true
         schema:
-          type: string
-          format: uuid
-    get:
-      operationId: getTemplateRecurrence
-      tags: [recurrence]
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTemplateRequest"
+        required: true
       responses:
-        "200":
-          description: Recurrence schedule for the template
-        "404":
-          description: No recurrence configured
-    put:
-      operationId: upsertTemplateRecurrence
-      tags: [recurrence]
-      responses:
-        "200":
-          description: Recurrence created or updated
-  /v1/households/{householdId}/tasks:
-    get:
-      operationId: listTasks
-      tags: [tasks]
-      parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [open, done, dismissed, reverted]
-        - name: mine
-          in: query
-          schema:
-            type: boolean
-      responses:
-        "200":
-          description: Tasks
-    post:
-      operationId: createOpenTask
-      tags: [tasks]
-      responses:
-        "201":
-          description: Open task created
-  /v1/households/{householdId}/tasks/manual:
-    post:
-      operationId: quickLogManualTask
-      tags: [tasks]
-      responses:
-        "201":
-          description: Manual task logged as done
-  /v1/households/{householdId}/tasks/{taskId}/complete:
-    post:
-      operationId: completeTask
-      tags: [tasks]
-      responses:
-        "200":
-          description: Completed
-  /v1/households/{householdId}/tasks/{taskId}/dismiss:
-    post:
-      operationId: dismissTask
-      tags: [tasks]
-      responses:
-        "200":
-          description: Dismissed
-  /v1/households/{householdId}/tasks/{taskId}/revert:
-    post:
-      operationId: revertTask
-      tags: [tasks]
-      responses:
-        "200":
-          description: Admin reversion; points reversed via scoring ledger client
-  /v1/households/{householdId}/tasks/{taskId}/reassign:
-    post:
-      operationId: reassignTask
-      tags: [tasks]
-      responses:
-        "200":
-          description: Reassigned
-  /v1/households/{householdId}/tasks/dismiss-away/{userId}:
-    post:
-      operationId: dismissAwayMemberTasks
-      summary: Dismiss the open tasks of a member marked away (admin)
-      tags: [tasks]
-      responses:
-        "200":
-          description: Count of dismissed open tasks (reason assignee_away)
+        "401":
+          description: Not authenticated
         "403":
-          description: Caller is not an admin of the household
-  /v1/households/{householdId}/tasks/reassign-away/{userId}:
-    post:
-      operationId: reassignAwayMemberTasks
-      deprecated: true
-      summary: Replaced by dismiss-away; no longer called when a member is marked away
-      tags: [tasks]
-      responses:
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "200":
-          description: Count of reassigned open tasks
-components:
-  parameters:
-    householdId:
-      name: householdId
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-security:
-  - bearerAuth: []
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/templates/{templateId}/archive:
+    post:
+      summary: Archive a template and stop its recurrence (admin)
+      operationId: archiveTemplate
+      tags:
+      - templates
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: templateId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/templates/{templateId}/recurrence:
+    put:
+      summary: Create or replace a template recurrence (admin)
+      operationId: upsertRecurrence
+      tags:
+      - recurrence
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: templateId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertRecurrenceRequest"
+        required: true
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurrenceResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+    get:
+      summary: Get a template recurrence
+      operationId: getRecurrence
+      tags:
+      - recurrence
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: templateId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurrenceResponse"
+      security:
+      - bearerAuth: []
+  /v1/meta:
+    get:
+      summary: "Service name, server time and caller subject"
+      operationId: getTasksServiceInfo
+      tags:
+      - meta
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceInfo"
+      security:
+      - bearerAuth:
+        - member
+        - admin
+info:
+  title: BetterHome tasks API
+  version: 1.0.0-SNAPSHOT

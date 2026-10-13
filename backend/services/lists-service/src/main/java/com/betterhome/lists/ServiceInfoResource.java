@@ -9,13 +9,20 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/v1/meta")
 @Produces(MediaType.APPLICATION_JSON)
+@Tag(name = "meta")
+@APIResponse(responseCode = "401", description = "Not authenticated")
+@APIResponse(responseCode = "403", description = "Not allowed to do this")
 public class ServiceInfoResource {
 
     private final String serviceName;
@@ -32,14 +39,21 @@ public class ServiceInfoResource {
         this.clock = clock;
     }
 
+    @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content = @Content(schema = @Schema(implementation = ServiceInfo.class)))
+    @Operation(
+            operationId = "getListsServiceInfo",
+            summary = "Service name, server time and caller subject")
     @GET
     @RolesAllowed({"member", "admin"})
-    public Map<String, Object> info() {
+    public ServiceInfo info() {
         Optional<UUID> subject = authVerifier.currentAuthSubject();
         Instant now = clock.now();
-        return Map.of(
-                "service", serviceName,
-                "now", now.toString(),
-                "authSubject", subject.map(UUID::toString).orElse(""));
+        return new ServiceInfo(serviceName, now.toString(), subject.map(UUID::toString).orElse(""));
     }
+
+    /** Who answered, when, and which subject the caller authenticated as (empty if unknown). */
+    public record ServiceInfo(String service, String now, String authSubject) {}
 }

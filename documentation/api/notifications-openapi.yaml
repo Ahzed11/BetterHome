@@ -1,0 +1,46 @@
+---
+openapi: 3.1.0
+tags:
+- name: meta
+components:
+  schemas:
+    ServiceInfo:
+      type: object
+      properties:
+        service:
+          type: string
+        now:
+          type: string
+        authSubject:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      description: Authentication
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /v1/meta:
+    get:
+      summary: "Service name, server time and caller subject"
+      operationId: getNotificationsServiceInfo
+      tags:
+      - meta
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceInfo"
+      security:
+      - bearerAuth:
+        - member
+        - admin
+info:
+  title: BetterHome notifications API
+  version: 1.0.0-SNAPSHOT

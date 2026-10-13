@@ -120,4 +120,6 @@ public final class ScoringDtos {
     }
 
     public record CloseMonthRequest(@NotBlank String yearMonth) {}
+
+    public record CelebrationSeen(boolean seen) {}
 }

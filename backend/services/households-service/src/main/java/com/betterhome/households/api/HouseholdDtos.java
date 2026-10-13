@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 public final class HouseholdDtos {
 
@@ -15,14 +17,19 @@ public final class HouseholdDtos {
     public record CreateHouseholdRequest(@NotBlank String name, @NotBlank String timezone) {}
 
     public record UpdateHouseholdRequest(
-            String name, String timezone, Integer reminderDaysBefore, LocalTime reminderTime) {}
+            String name,
+            String timezone,
+            Integer reminderDaysBefore,
+            @Schema(type = SchemaType.STRING, format = "time", example = "08:00:00")
+                    LocalTime reminderTime) {}
 
     public record HouseholdResponse(
             UUID id,
             String name,
             String timezone,
             int reminderDaysBefore,
-            LocalTime reminderTime,
+            @Schema(type = SchemaType.STRING, format = "time", example = "08:00:00")
+                    LocalTime reminderTime,
             UUID createdBy) {
 
         public static HouseholdResponse from(Household household) {

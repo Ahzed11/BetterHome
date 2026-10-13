@@ -10,7 +10,7 @@ export PATH := $(JAVA_HOME)/bin:$(PATH)
 export DOCKER_HOST ?= unix://$(XDG_RUNTIME_DIR)/podman/podman.sock
 export TESTCONTAINERS_RYUK_DISABLED ?= true
 
-.PHONY: up down migrate seed test-backend test-app test-docs test-policy test-guard e2e check update-goldens
+.PHONY: up down migrate seed openapi test-backend test-app test-docs test-policy test-guard e2e check update-goldens
 
 up: ## Start Postgres and Keycloak via Podman Compose
 	$(COMPOSE) up -d
@@ -24,6 +24,9 @@ migrate: ## Apply Flyway SQL to all service databases
 
 seed: ## Load demo data (optional local helpers)
 	@echo "seed: use deploy/keycloak/README.md for a demo Keycloak user; DB seed TBD"
+
+openapi: ## Regenerate documentation/api/*-openapi.yaml from the annotated code
+	cd $(BACKEND) && ./mvnw -B verify -Dtest=OpenApiContractTest -Dopenapi.update=true -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true -Denforcer.skip=true
 
 test-backend: ## Spotless, Checkstyle, Quarkus tests and coverage floor (dependency audit: T-0005)
 	cd $(BACKEND) && ./mvnw -B verify

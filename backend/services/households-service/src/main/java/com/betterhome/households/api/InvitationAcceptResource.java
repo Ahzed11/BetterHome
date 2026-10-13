@@ -10,6 +10,11 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.media.Content;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 /**
  * Kept apart from {@link InvitationResource}: a class rooted at {@code /v1} loses to {@code
@@ -19,6 +24,16 @@ import jakarta.ws.rs.core.MediaType;
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "invitations")
+@APIResponse(responseCode = "401", description = "Not authenticated")
+@APIResponse(
+        responseCode = "403",
+        description = "Not allowed to do this",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+@APIResponse(
+        responseCode = "404",
+        description = "Not found",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
 public class InvitationAcceptResource {
 
     private final InvitationService invitationService;
@@ -28,6 +43,15 @@ public class InvitationAcceptResource {
         this.invitationService = invitationService;
     }
 
+    @Operation(operationId = "acceptInvitation", summary = "Accept an invitation with its token")
+    @APIResponse(
+            responseCode = "200",
+            description = "OK",
+            content = @Content(schema = @Schema(implementation = MembershipResponse.class)))
+    @APIResponse(
+            responseCode = "409",
+            description = "Conflicts with the current state",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
     public MembershipResponse accept(@PathParam("token") String token) {
         return MembershipResponse.from(invitationService.accept(token));

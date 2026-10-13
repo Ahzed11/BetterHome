@@ -114,13 +114,13 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Spec: AGENTS §6.2
 * Acceptance criteria: GitHub Actions workflow with pinned tool versions runs `make check` (docs, backend, app, policy, guard) on pull requests and on `master`. Podman or Docker available for Testcontainers. The e2e job is added by T-0021.
 
-### T-0019 · One app contract: merge per-service OpenAPI files
+### T-0019 · One app contract: merge the generated per-service OpenAPI documents
 
 * Status: todo
 * Issue / PR: #12
 * Depends on: T-0010
 * Spec: §7 API style, ADR 0006, ADR 0007
-* Acceptance criteria: `documentation/api/openapi.yaml` describes every app-facing endpoint of all services (households, tasks, scoring, later lists and notifications) with full schemas; per-service files are either generated from it or removed. Internal endpoints stay in separate internal documents. The drift check of T-0005 runs against it.
+* Acceptance criteria: `documentation/api/openapi.yaml` is produced by merging the per-service documents generated in T-0005 (app-facing operations of all services; operations tagged `internal` excluded) and is guarded the same way (a test fails when the committed aggregate differs from the merge). Operation ids and schema names must stay unique across services.
 
 ### T-0020 · Generated Dart client replaces hand-written repositories
 
@@ -272,13 +272,17 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Spec: §7, ADR 0003
 * Acceptance criteria: Deployments, Routes, ConfigMaps/Secrets, health probes, and migration Jobs for each service on OpenShift Local or a cluster.
 
-### T-0005 · OWASP dependency-check and OpenAPI client drift guard
+### T-0005 · Generate OpenAPI from code and guard it against drift
 
-* Status: todo
+* Status: in-review
 * Issue / PR: #2
 * Depends on: T-0001
-* Spec: AGENTS §5.3, ADR 0006 / 0007
-* Acceptance criteria: `make test-policy` and `make test-guard` fail closed when advisories or OpenAPI/client drift cannot be verified.
+* Spec: AGENTS §5.1 (API contract), ADR 0006 / 0007 / 0015
+* Acceptance criteria: Changed from the original issue (OWASP audit and generated-client guard) by the product owner: the OpenAPI documents are generated from annotations in the Java code instead of being written by hand, and the build fails when the committed documents differ from what the services serve. The OWASP audit moves to T-0038 (parked); the generated-client guard stays with T-0020.
+* Summary: All 45 operations of the five services carry `@Operation` (stable `operationId`), `@APIResponse` (success, error and 401/403/404 codes with the `ErrorResponse` body) and `@Tag`; a bearer scheme is configured once in `common-domain`. Untyped `Map` answers became records (`ServiceInfo`, `DismissedCount`, `ReassignedCount`, `CelebrationSeen`) with identical JSON. `documentation/api/<service>-openapi.yaml` are generated and committed; the hand-written `openapi.yaml`, `tasks-`, `scoring-` and `households-internal-` files are removed (internal operations are tagged `internal` in the households document). Each service has `OpenApiContractTest` (shared `OpenApiContract` helper in the `common-domain` test-jar). `make openapi` regenerates. ADR 0015.
+* Decisions and deviations: Contract is per service until T-0019 merges it into `documentation/api/openapi.yaml`, so AGENTS §5.1 and ADR 0006/0007 still name a file that does not exist yet. Comparison is on parsed trees (formatting never fails it); regenerate with `make openapi`. Operations with any explicit `@APIResponse` must declare their 2xx too (SmallRye drops the default). `LocalTime` fields carry an explicit string schema because the default example is read as a base-60 number by YAML parsers. `make` runs need `jbang` on `PATH` so the Makefile finds JDK 21.
+* Verification: `make test-backend` (Spotless, Checkstyle, all tests, coverage floors, contract tests) passes on JDK 21. Negative checks run and reverted: adding an undocumented field to a response makes `OpenApiContractTest` fail with "no longer matches"; deleting a committed file fails with "does not exist"; regenerating twice produced identical files. The first households run exposed a parse problem that generation alone hid (fixed). Flutter, e2e and CI were not run.
+* Follow-ups: T-0038 (OWASP audit, parked), T-0039 (check real answers against the contract), T-0019 (aggregate), T-0020 (Dart client + `make test-guard`).
 
 ### T-0006 · Keycloak AppAuth in Flutter and e2e household journeys
 
@@ -359,3 +363,19 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0017
 * Spec: AGENTS §5.1, §5.3
 * Acceptance criteria: common-domain line coverage is 9% (only `SystemClock`); `OidcAuthVerifier`, `NoOpPushSender` and the other seams are exercised only through the services' tests. Add direct unit tests for them and raise the `jacoco.line.minimum` floor in `common-domain/pom.xml`.
+
+### T-0038 · OWASP Dependency-Check and `make test-policy`
+
+* Status: blocked (parked by the product owner: "we'll add this later"; needs a free NVD API key, kept as a CI secret and in `NVD_API_KEY` locally)
+* Issue / PR: #31
+* Depends on: T-0017
+* Spec: AGENTS §5.3, §8
+* Acceptance criteria: OWASP Dependency-Check runs inside `make test-backend` and `make test-policy`, reading the NVD key from `NVD_API_KEY`, and fails (not passes) when it cannot update or reach its database or when the key is missing. Covers the Maven dependencies now; Dart dependencies follow once Flutter is installed (T-0015).
+
+### T-0039 · Check real HTTP responses against the generated contract
+
+* Status: todo
+* Issue / PR: #32
+* Depends on: T-0005
+* Spec: AGENTS §5.1 (API contract)
+* Acceptance criteria: Quarkus tests validate every real response (status, headers, body) against `documentation/api/<service>-openapi.yaml` with a request/response validator and fail when an answer has a field or status the document does not declare; additional properties are forbidden in schemas. T-0005 keeps the document equal to the code; this keeps the answers equal to the document.

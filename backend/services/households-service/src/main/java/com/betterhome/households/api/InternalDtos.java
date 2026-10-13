@@ -5,6 +5,8 @@ import com.betterhome.households.domain.MembershipRole;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 /** Payloads for service-to-service calls (see {@link InternalHouseholdResource}). */
 public final class InternalDtos {
@@ -15,7 +17,10 @@ public final class InternalDtos {
             UUID userId, UUID authSubject, MembershipRole role, boolean away, Instant joinedAt) {}
 
     public record InternalSettingsResponse(
-            String timezone, int reminderDaysBefore, LocalTime reminderTime) {
+            String timezone,
+            int reminderDaysBefore,
+            @Schema(type = SchemaType.STRING, format = "time", example = "08:00:00")
+                    LocalTime reminderTime) {
 
         public static InternalSettingsResponse from(Household household) {
             return new InternalSettingsResponse(

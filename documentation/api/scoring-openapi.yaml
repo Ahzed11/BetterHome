@@ -1,105 +1,568 @@
-openapi: 3.0.3
-info:
-  title: BetterHome Scoring API
-  version: 0.4.0
-  description: Phase 3 scoring-service (port 8083). Aggregate index remains openapi.yaml.
-servers:
-  - url: http://localhost:8083
+---
+openapi: 3.1.0
+tags:
+- name: meta
+- name: points
+- name: scoreboard
+components:
+  schemas:
+    AdjustRequest:
+      type: object
+      required:
+      - userId
+      properties:
+        userId:
+          $ref: "#/components/schemas/UUID"
+        delta:
+          type: integer
+          format: int32
+    AwardRequest:
+      type: object
+      required:
+      - userId
+      - taskId
+      - reason
+      properties:
+        userId:
+          $ref: "#/components/schemas/UUID"
+        taskId:
+          $ref: "#/components/schemas/UUID"
+        points:
+          type: integer
+          format: int32
+          exclusiveMinimum: 0
+        reason:
+          $ref: "#/components/schemas/PointReason"
+    CelebrationSeen:
+      type: object
+      properties:
+        seen:
+          type: boolean
+    CloseMonthRequest:
+      type: object
+      required:
+      - yearMonth
+      properties:
+        yearMonth:
+          type: string
+          pattern: \S
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    Instant:
+      type: string
+      format: date-time
+      examples:
+      - 2022-03-10T16:15:50Z
+    PointReason:
+      type: string
+      enum:
+      - task_completed
+      - task_completed_late
+      - reversal
+      - manual_adjust
+    ReverseRequest:
+      type: object
+      required:
+      - taskId
+      - assigneeUserId
+      - reason
+      - resultingStatus
+      properties:
+        taskId:
+          $ref: "#/components/schemas/UUID"
+        assigneeUserId:
+          $ref: "#/components/schemas/UUID"
+        points:
+          type: integer
+          format: int32
+          exclusiveMinimum: 0
+        reason:
+          type: string
+          pattern: \S
+        resultingStatus:
+          $ref: "#/components/schemas/ReversionResultingStatus"
+    ReversionResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        taskId:
+          $ref: "#/components/schemas/UUID"
+        adminUserId:
+          $ref: "#/components/schemas/UUID"
+        reason:
+          type: string
+        pointsReversed:
+          type: integer
+          format: int32
+        resultingStatus:
+          $ref: "#/components/schemas/ReversionResultingStatus"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+    ReversionResultingStatus:
+      type: string
+      enum:
+      - reverted
+      - open
+      - dismissed
+    ScoreEntryResponse:
+      type: object
+      properties:
+        userId:
+          $ref: "#/components/schemas/UUID"
+        points:
+          type: integer
+          format: int32
+        effortShare:
+          type: number
+          format: double
+        rank:
+          type: integer
+          format: int32
+    ScorePeriod:
+      type: string
+      enum:
+      - week
+      - month
+      - year
+      - all
+    ScoreboardResponse:
+      type: object
+      properties:
+        period:
+          $ref: "#/components/schemas/ScorePeriod"
+        yearMonth:
+          type: string
+        from:
+          $ref: "#/components/schemas/Instant"
+        to:
+          $ref: "#/components/schemas/Instant"
+        totalPoints:
+          type: integer
+          format: int32
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoreEntryResponse"
+        podium:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScoreEntryResponse"
+    ServiceInfo:
+      type: object
+      properties:
+        service:
+          type: string
+        now:
+          type: string
+        authSubject:
+          type: string
+    TransactionResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        userId:
+          $ref: "#/components/schemas/UUID"
+        taskId:
+          $ref: "#/components/schemas/UUID"
+        reversionId:
+          $ref: "#/components/schemas/UUID"
+        points:
+          type: integer
+          format: int32
+        reason:
+          $ref: "#/components/schemas/PointReason"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+    UUID:
+      type: string
+      format: uuid
+      pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+    WinnerResponse:
+      type: object
+      properties:
+        yearMonth:
+          type: string
+        winnerUserId:
+          $ref: "#/components/schemas/UUID"
+        winnerPoints:
+          type: integer
+          format: int32
+        totalPoints:
+          type: integer
+          format: int32
+  securitySchemes:
+    bearerAuth:
+      description: Authentication
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 paths:
-  /v1/households/{householdId}/points/award:
-    parameters:
-      - $ref: "#/components/parameters/householdId"
-    post:
-      operationId: awardPoints
-      tags: [ledger]
-      responses:
-        "201":
-          description: Award appended to ledger
-  /v1/households/{householdId}/points/reverse:
-    parameters:
-      - $ref: "#/components/parameters/householdId"
-    post:
-      operationId: reversePoints
-      tags: [ledger]
-      responses:
-        "201":
-          description: Reversion and negative ledger row created
   /v1/households/{householdId}/points/adjust:
-    parameters:
-      - $ref: "#/components/parameters/householdId"
     post:
+      summary: Manually adjust a member score (admin)
       operationId: adjustPoints
-      tags: [ledger]
-      responses:
-        "201":
-          description: Manual adjustment appended
-  /v1/households/{householdId}/scoreboard:
-    parameters:
-      - $ref: "#/components/parameters/householdId"
-    get:
-      operationId: getScoreboard
-      tags: [scoreboard]
+      tags:
+      - points
       parameters:
-        - name: period
-          in: query
-          schema:
-            type: string
-            enum: [week, month, year, all]
-            default: month
-        - name: yearMonth
-          in: query
-          schema:
-            type: string
-            pattern: '^[0-9]{4}-[0-9]{2}$'
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjustRequest"
+        required: true
       responses:
-        "200":
-          description: Scoreboard with podium and effort shares
-  /v1/households/{householdId}/scoreboard/winners:
-    parameters:
-      - $ref: "#/components/parameters/householdId"
-    get:
-      operationId: listWinners
-      tags: [scoreboard]
-      responses:
-        "200":
-          description: Hall of past monthly winners
-  /v1/households/{householdId}/scoreboard/close-month:
-    parameters:
-      - $ref: "#/components/parameters/householdId"
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflicts with the current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/points/award:
     post:
-      operationId: closeMonth
-      tags: [scoreboard]
+      summary: Append an award to the ledger (service call)
+      operationId: awardPoints
+      tags:
+      - points
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AwardRequest"
+        required: true
       responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/points/reverse:
+    post:
+      summary: Append a reversal linked to its reversion record (service call)
+      operationId: reversePoints
+      tags:
+      - points
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReverseRequest"
+        required: true
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReversionResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Conflicts with the current state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/scoreboard:
+    get:
+      summary: Scoreboard for a period with podium and effort shares
+      operationId: getScoreboard
+      tags:
+      - scoreboard
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: period
+        in: query
+        schema:
+          allOf:
+          - $ref: "#/components/schemas/ScorePeriod"
+          - default: month
+      - name: yearMonth
+        in: query
+        schema:
+          type: string
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "200":
-          description: Monthly recap persisted
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreboardResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/scoreboard/close-month:
+    post:
+      summary: Close a month and record its winner (admin)
+      operationId: closeMonth
+      tags:
+      - scoreboard
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloseMonthRequest"
+        required: true
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: Closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WinnerResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
   /v1/households/{householdId}/scoreboard/recaps/{yearMonth}/celebrate:
-    parameters:
-      - $ref: "#/components/parameters/householdId"
+    post:
+      summary: Record that the caller has seen the month confetti
+      operationId: markRecapCelebrated
+      tags:
+      - scoreboard
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
       - name: yearMonth
         in: path
         required: true
         schema:
           type: string
-          pattern: '^[0-9]{4}-[0-9]{2}$'
-    post:
-      operationId: celebrateRecap
-      tags: [scoreboard]
       responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "200":
-          description: Confetti marked as seen for caller
-components:
-  parameters:
-    householdId:
-      name: householdId
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-security:
-  - bearerAuth: []
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CelebrationSeen"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/scoreboard/winners:
+    get:
+      summary: Hall of past monthly winners
+      operationId: listWinners
+      tags:
+      - scoreboard
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WinnerResponse"
+      security:
+      - bearerAuth: []
+  /v1/meta:
+    get:
+      summary: "Service name, server time and caller subject"
+      operationId: getScoringServiceInfo
+      tags:
+      - meta
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceInfo"
+      security:
+      - bearerAuth:
+        - member
+        - admin
+info:
+  title: BetterHome scoring API
+  version: 1.0.0-SNAPSHOT

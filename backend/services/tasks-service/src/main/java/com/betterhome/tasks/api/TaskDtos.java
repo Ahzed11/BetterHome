@@ -64,6 +64,10 @@ public final class TaskDtos {
 
     public record QuickLogRequest(@NotNull UUID templateId) {}
 
+    public record DismissedCount(int dismissed) {}
+
+    public record ReassignedCount(int reassigned) {}
+
     public record RevertRequest(@NotBlank String reason) {}
 
     public record UpsertRecurrenceRequest(
