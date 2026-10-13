@@ -157,7 +157,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0023 · lists-service: checklists, items and bulk reset
 
 * Status: in-review
-* Issue / PR: #16 / PR_NUMBER
+* Issue / PR: #16 / #53
 * Depends on: T-0008, T-0016
 * Spec: §4, §2 permissions, §6.2 LIST/ITEM
 * Acceptance criteria: Flyway schema for LIST and ITEM with constraints; admins create, rename and archive lists; any member adds, edits, checks, unchecks and soft-deletes items (who and when); bulk reset unchecks all items. Membership through households internal endpoints with a service account (ADR 0014). Authorization matrix tests for every endpoint (admin, member, non-member, left member, other household). OpenAPI updated.
