@@ -10,20 +10,27 @@ export PATH := $(JAVA_HOME)/bin:$(PATH)
 export DOCKER_HOST ?= unix://$(XDG_RUNTIME_DIR)/podman/podman.sock
 export TESTCONTAINERS_RYUK_DISABLED ?= true
 
-.PHONY: up down migrate seed openapi test-backend test-app test-docs test-policy test-guard e2e check update-goldens
+.PHONY: up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-guard e2e check update-goldens
 
-up: ## Start Postgres and Keycloak via Podman Compose
-	$(COMPOSE) up -d
-	@echo "Postgres :5432  Keycloak :8180 (admin/admin)"
+up: ## Build the services and start Postgres, Keycloak, migrations and the five services
+	cd $(BACKEND) && ./mvnw -B -q -DskipTests package
+	$(COMPOSE) up -d postgres keycloak
+	@$(MAKE) --no-print-directory migrate
+	$(COMPOSE) up -d --build
+	@bash $(ROOT)/deploy/smoke.sh
+	@echo "Postgres :5432  Keycloak :8180 (admin/admin)  services :8081-:8085"
 
-down: ## Stop and remove local Compose stack
-	$(COMPOSE) down -v
+down: ## Stop and remove the local Compose stack, its volumes and built images
+	$(COMPOSE) down -v --rmi local
 
-migrate: ## Apply Flyway SQL to all service databases
+migrate: ## Apply Flyway migrations to every service database (one-shot containers)
 	@bash $(ROOT)/deploy/migrate.sh
 
-seed: ## Load demo data (optional local helpers)
-	@echo "seed: use deploy/keycloak/README.md for a demo Keycloak user; DB seed TBD"
+seed: ## Load a demo household with two members and sample templates through the public APIs
+	@bash $(ROOT)/deploy/seed.sh
+
+smoke: ## Wait for all services to be ready and make one authenticated call
+	@bash $(ROOT)/deploy/smoke.sh
 
 openapi: ## Regenerate documentation/api/*-openapi.yaml from the annotated code
 	cd $(BACKEND) && ./mvnw -B verify -Dtest=OpenApiContractTest -Dopenapi.update=true -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true -Denforcer.skip=true
