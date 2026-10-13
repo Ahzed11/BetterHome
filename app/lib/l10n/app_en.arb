@@ -37,5 +37,17 @@
   "errorGeneric": "Something went wrong",
   "retry": "Retry",
   "useDemoData": "Continue with demo data",
-  "loading": "Loading…"
+  "loading": "Loading…",
+  "choresTitle": "Chores",
+  "allChores": "All chores",
+  "myChores": "My chores",
+  "choresEmpty": "No chores yet. Quick-log something you just did.",
+  "quickLog": "I just did…",
+  "completeTask": "Complete",
+  "dismissTask": "Dismiss",
+  "dismissConfirmTitle": "Dismiss this chore?",
+  "dismissConfirmBody": "Dismissal is permanent and awards no points.",
+  "createTemplate": "New chore template",
+  "templateTitle": "Title",
+  "openChores": "Open chores"
 }

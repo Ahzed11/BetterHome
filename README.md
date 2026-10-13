@@ -8,6 +8,7 @@ See [documentation/project-specification.md](documentation/project-specification
 
 - **Phase 0** done (T-0001): monorepo, five Quarkus services, Compose + Keycloak, Flyway.
 - **Phase 1** done (T-0002): households API + Flutter FR/EN household flows (demo repository by default).
+- **Phase 2** done (T-0007): tasks-service templates / quick-log / complete / dismiss / reassign + Flutter chores screen.
 
 ## Prerequisites
 

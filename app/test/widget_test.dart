@@ -73,4 +73,29 @@ void main() {
     expect(AppLocalizations.supportedLocales, contains(const Locale('en')));
     expect(AppLocalizations.supportedLocales, contains(const Locale('fr')));
   });
+
+  testWidgets('quick-log chore from household detail', (tester) async {
+    final session = AppSession(repository: FakeHouseholdsRepository());
+    await tester.pumpWidget(
+      BetterHomeApp(session: session, initialLocale: const Locale('en')),
+    );
+    await tester.tap(find.text('Continue with demo data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create household'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Flat');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flat'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Open chores'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('I just did…'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chore'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Chore'), findsWidgets);
+  });
 }

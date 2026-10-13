@@ -26,15 +26,20 @@ Shared memory for agents and humans. Read before starting; update before finishi
 * Verification: `make test-docs`; `make test-backend`; `make test-app` (widget tests EN/FR + repository unit tests). Demo-mode app launched on Chrome (`flutter run -d chrome`). Emulator e2e against Keycloak not run.
 * Follow-ups: T-0003, T-0006.
 
-## In progress
-
 ### T-0007 · Phase 2 tasks domain (templates, quick-log, complete, dismiss, reassign)
 
-* Status: in-progress
-* Issue / PR: —
+* Status: done
+* Issue / PR: — / on `master`
 * Depends on: T-0002
 * Spec: §3.1–3.3 (except scheduler spawning / reversion), §10 Phase 2
-* Acceptance criteria: Admin templates (CRUD/archive); members quick-log manual tasks; complete (on-time/late); dismiss with confirmation; admin reassign via round-robin among eligible members; Flutter FR/EN chores surfaces; tests at service and widget levels. Recurrence scheduler and scoring ledger are Phase 4 / 3.
+* Summary: tasks-service Flyway V2 (templates, rotations, tasks); admin templates; create open occurrence; member quick-log (manual done); complete (on-time/late via `points_awarded`); dismiss; admin reassign + `reassign-away` hook. Flutter chores screen (All/Mine, quick-log, complete/dismiss with confirm). OpenAPI in `tasks-openapi.yaml`.
+* Decisions and deviations: Membership checks use `InMemoryMembershipGateway` (HTTP client to households-service is T-0008). Scoring ledger not written (Phase 3). Recurrence scheduler not run (Phase 4). Points stored on the task row as `points_awarded` for later ledgering.
+* Verification: `make test-docs`; `make test-backend` (incl. TaskPhase2Test + RoundRobinTest); `make test-app` (chores widget + tasks repository tests).
+* Follow-ups: T-0003 (wire households away → reassign-away), T-0008 (HTTP MembershipGateway).
+
+## In progress
+
+_(none)_
 
 ## Todo
 
@@ -46,9 +51,9 @@ _(none)_
 
 * Status: todo
 * Issue / PR: —
-* Depends on: T-0002, Phase 2 tasks domain
+* Depends on: T-0007
 * Spec: §2 Away, §3.3 Reassignment
-* Acceptance criteria: Admin sets away in households-service; open tasks for that assignee are reassigned round-robin (tasks-service), with notification outbox later.
+* Acceptance criteria: When an admin sets away in households-service, call tasks-service `POST .../tasks/reassign-away/{userId}` (endpoint exists) so open tasks move to eligible members.
 
 ### T-0004 · OpenShift / CRC deploy manifests for microservices
 
@@ -73,3 +78,11 @@ _(none)_
 * Depends on: T-0002
 * Spec: §2, §9, AGENTS §6.2
 * Acceptance criteria: App authenticates via Keycloak (PKCE); e2e covers sign-up/create household/invite/join against the real stack.
+
+### T-0008 · HTTP MembershipGateway from tasks-service to households-service
+
+* Status: todo
+* Issue / PR: —
+* Depends on: T-0007
+* Spec: §7 service boundaries
+* Acceptance criteria: Replace in-memory membership directory with token-propagating REST client; keep test double for Quarkus tests.

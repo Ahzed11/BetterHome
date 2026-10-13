@@ -110,4 +110,42 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get loading => 'Chargement…';
+
+  @override
+  String get choresTitle => 'Tâches';
+
+  @override
+  String get allChores => 'Toutes';
+
+  @override
+  String get myChores => 'Les miennes';
+
+  @override
+  String get choresEmpty =>
+      'Aucune tâche. Enregistrez quelque chose que vous venez de faire.';
+
+  @override
+  String get quickLog => 'Je viens de…';
+
+  @override
+  String get completeTask => 'Terminer';
+
+  @override
+  String get dismissTask => 'Ignorer';
+
+  @override
+  String get dismissConfirmTitle => 'Ignorer cette tâche ?';
+
+  @override
+  String get dismissConfirmBody =>
+      'L’action est définitive et n’attribue aucun point.';
+
+  @override
+  String get createTemplate => 'Nouveau modèle';
+
+  @override
+  String get templateTitle => 'Titre';
+
+  @override
+  String get openChores => 'Ouvrir les tâches';
 }

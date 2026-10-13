@@ -109,4 +109,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loading => 'Loading…';
+
+  @override
+  String get choresTitle => 'Chores';
+
+  @override
+  String get allChores => 'All chores';
+
+  @override
+  String get myChores => 'My chores';
+
+  @override
+  String get choresEmpty => 'No chores yet. Quick-log something you just did.';
+
+  @override
+  String get quickLog => 'I just did…';
+
+  @override
+  String get completeTask => 'Complete';
+
+  @override
+  String get dismissTask => 'Dismiss';
+
+  @override
+  String get dismissConfirmTitle => 'Dismiss this chore?';
+
+  @override
+  String get dismissConfirmBody =>
+      'Dismissal is permanent and awards no points.';
+
+  @override
+  String get createTemplate => 'New chore template';
+
+  @override
+  String get templateTitle => 'Title';
+
+  @override
+  String get openChores => 'Open chores';
 }

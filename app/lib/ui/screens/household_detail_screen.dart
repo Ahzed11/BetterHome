@@ -2,6 +2,7 @@ import 'package:betterhome/data/models.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/screens/chores_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -166,6 +167,20 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               Text(data.household.timezone),
+              const SizedBox(height: AppTokens.spaceMd),
+              FilledButton.tonal(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ChoresScreen(
+                        session: widget.session,
+                        householdId: widget.householdId,
+                      ),
+                    ),
+                  );
+                },
+                child: Text(l10n.openChores),
+              ),
               const SizedBox(height: AppTokens.spaceLg),
               Text(
                 l10n.members,

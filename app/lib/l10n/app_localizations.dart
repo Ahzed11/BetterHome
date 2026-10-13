@@ -295,6 +295,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading…'**
   String get loading;
+
+  /// No description provided for @choresTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chores'**
+  String get choresTitle;
+
+  /// No description provided for @allChores.
+  ///
+  /// In en, this message translates to:
+  /// **'All chores'**
+  String get allChores;
+
+  /// No description provided for @myChores.
+  ///
+  /// In en, this message translates to:
+  /// **'My chores'**
+  String get myChores;
+
+  /// No description provided for @choresEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No chores yet. Quick-log something you just did.'**
+  String get choresEmpty;
+
+  /// No description provided for @quickLog.
+  ///
+  /// In en, this message translates to:
+  /// **'I just did…'**
+  String get quickLog;
+
+  /// No description provided for @completeTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get completeTask;
+
+  /// No description provided for @dismissTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismissTask;
+
+  /// No description provided for @dismissConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss this chore?'**
+  String get dismissConfirmTitle;
+
+  /// No description provided for @dismissConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismissal is permanent and awards no points.'**
+  String get dismissConfirmBody;
+
+  /// No description provided for @createTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'New chore template'**
+  String get createTemplate;
+
+  /// No description provided for @templateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get templateTitle;
+
+  /// No description provided for @openChores.
+  ///
+  /// In en, this message translates to:
+  /// **'Open chores'**
+  String get openChores;
 }
 
 class _AppLocalizationsDelegate

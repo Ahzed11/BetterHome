@@ -32,5 +32,17 @@
   "errorGeneric": "Une erreur s’est produite",
   "retry": "Réessayer",
   "useDemoData": "Continuer avec des données de démo",
-  "loading": "Chargement…"
+  "loading": "Chargement…",
+  "choresTitle": "Tâches",
+  "allChores": "Toutes",
+  "myChores": "Les miennes",
+  "choresEmpty": "Aucune tâche. Enregistrez quelque chose que vous venez de faire.",
+  "quickLog": "Je viens de…",
+  "completeTask": "Terminer",
+  "dismissTask": "Ignorer",
+  "dismissConfirmTitle": "Ignorer cette tâche ?",
+  "dismissConfirmBody": "L’action est définitive et n’attribue aucun point.",
+  "createTemplate": "Nouveau modèle",
+  "templateTitle": "Titre",
+  "openChores": "Ouvrir les tâches"
 }
