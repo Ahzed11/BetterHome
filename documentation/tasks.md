@@ -88,11 +88,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0016 · `make up` and `make seed` run the full local stack
 
-* Status: todo
-* Issue / PR: #9
+* Status: in-review
+* Issue / PR: #9 / PR_NUMBER
 * Depends on: T-0013, T-0014, T-0015
 * Spec: §7, AGENTS §6.1, ADR 0003
 * Acceptance criteria: Podman Compose starts Postgres, Keycloak (realm import) and all five services as containers built with the Quarkus container extension; services get their DB URL, OIDC settings and service-account secrets from environment variables (no committed secrets: realm secrets injected at import). `make migrate` runs Flyway per service as one-shot containers. `make seed` creates a demo household with two members and sample templates through the public APIs. `make down` cleans everything. Verified by a scripted smoke check.
+* Summary: `deploy/podman-compose.yml` now runs Postgres, Keycloak and the five services (prod profile, images from the existing `Dockerfile.jvm` files over the fast-jar in `target/quarkus-app`; no new Quarkus extension or library). `make up` packages the jars, starts Postgres and Keycloak, runs `make migrate`, starts the services, then runs `deploy/smoke.sh`. `make migrate` (`deploy/migrate.sh`) now runs the official Flyway image once per service database on the Compose network (real checksums; replaces the hand-rolled psql loader). `make seed` (`deploy/seed.sh`) creates users alice and bob with kcadm, then uses password-grant tokens to call `PUT /v1/me`, create "Demo Home", invite and accept, and add three templates; rerunning skips what exists. `make smoke` waits for `/q/health/ready` on :8081-:8085 and sends one Keycloak token to every service. `make down` removes containers, volumes and built images.
+* Decisions and deviations: Issuer: Keycloak runs with `KC_HOSTNAME=http://localhost:8180` and `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`, so `iss` is always `http://localhost:8180/realms/betterhome` while services fetch discovery and JWKS at `keycloak:8180`; issuer validation stays on. Secrets: only the local-dev placeholder already in the realm file (`local-dev-only-change-me`), supplied to tasks-service through `OIDC_SERVICE_CLIENT_SECRET` (overridable from the host environment); demo users use the password `demo`, created at seed time, never in the realm file. Services start after migrations, which is why `make up` orders it that way. Compose project name stays `betterhome` (fixed), so two stacks cannot run at once. Kept Flyway outside the services (`migrate-at-start=false` unchanged).
+* Verification: see the PR description for the commands run. Not run: Flutter, e2e, CI. Limit found: after completing a task as the assignee, `GET :8083/v1/households/{id}/scoreboard` returns 403 because scoring-service has no real membership gateway yet and tasks-service does not call scoring over HTTP (T-0010); points on the scoreboard cannot be shown until then.
+* Follow-ups: T-0010 (scoring wiring, needed for the scoreboard step), T-0046 (#37: image build in `make check`/CI, Dockerfile EXPOSE).
 
 ### T-0017 · Backend quality gates: format, lint, coverage
 
@@ -390,3 +394,11 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0010
 * Spec: AGENTS §7 (points ledger, completion)
 * Acceptance criteria: Awarding the same task and reason twice appends one row (unique constraint plus idempotent endpoint), or tasks writes awards through an outbox in the same transaction. A commit failure in tasks after scoring committed can no longer leave points for an open task or double-award on retry. Tests cover the retry.
+
+### T-0046 · Build the five container images in make check and CI
+
+* Status: todo
+* Issue / PR: #37
+* Depends on: T-0016, T-0018
+* Spec: AGENTS §5.3
+* Acceptance criteria: `make check` / CI builds the five images from the packaged jars and runs `make smoke`; the Dockerfiles' `EXPOSE 8080` matches the real service ports (8081-8085).

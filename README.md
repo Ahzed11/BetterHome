@@ -19,12 +19,16 @@ See [documentation/project-specification.md](documentation/project-specification
 ## Quick start
 
 ```bash
-make up          # Postgres :5432, Keycloak :8180
-make migrate     # Flyway SQL into each service DB (host psql or podman exec)
+make up          # builds the jars and images, starts Postgres :5432, Keycloak :8180, runs Flyway, starts the five services, then smoke-checks them
+make seed        # demo household: users alice and bob (password demo), "Demo Home", three templates; safe to rerun
+make migrate     # Flyway as one-shot containers per service DB (make up already runs it)
+make down        # remove containers, volumes and built images
 make test-backend   # Spotless, Checkstyle, tests, coverage floor; fix formatting with: cd backend && ./mvnw spotless:apply
 make test-app
 cd app && flutter run   # demo data unless dart-defines set
 ```
+
+Tokens from the host (`localhost:8180`) and services inside Compose (`keycloak:8180`) share one issuer: Keycloak runs with `KC_HOSTNAME=http://localhost:8180` and `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true` (see `deploy/podman-compose.yml`); issuer validation stays on. `make smoke` re-runs the readiness and authenticated-call check.
 
 Service HTTP ports: households `8081`, tasks `8082`, scoring `8083`, lists `8084`, notifications `8085`.
 
@@ -36,4 +40,4 @@ cd app && flutter run \
   --dart-define=ACCESS_TOKEN=<keycloak-access-token>
 ```
 
-Keycloak demo user setup: [deploy/keycloak/README.md](deploy/keycloak/README.md).
+`make seed` creates its demo users itself. Manual Keycloak user setup: [deploy/keycloak/README.md](deploy/keycloak/README.md).
