@@ -148,11 +148,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0022 · Golden and accessibility baseline for existing screens
 
-* Status: todo
-* Issue / PR: #15
+* Status: in-review
+* Issue / PR: #15 / PR_NUMBER
 * Depends on: T-0015
 * Spec: AGENTS §5.2, spec §8
 * Acceptance criteria: Golden tests (light mode, Linux per ADR 0012) for design-system widgets and the households, chores and leaderboard screens. Accessibility checks: 44 px touch targets, text contrast, semantic labels, 200% text scaling without overflow, in FR and EN.
+* Summary: `app/test/screens_baseline_test.dart` renders profile sync, households, create household, household detail, chores and leaderboard in their loading, empty, error and populated states (where reachable), each in FR and EN: a golden, the four Flutter accessibility guidelines (Android and iOS tap targets, labeled tap targets, text contrast) and a 200% text-scale overflow check. `app/test/design_system_test.dart` does the same for a showcase of the theme and tokens. 37 goldens live in `app/test/goldens/`; test doubles for loading and failing repositories are in `app/test/support/`.
+* Decisions and deviations: Goldens use Flutter's default Ahem test font, so text is blocks (deterministic on Linux, layout-only protection); readable fonts are a follow-up. The repo has no standalone design-system widgets, so the showcase composes the themed Material widgets and token swatches. Defect fixed: household detail member rows overflowed at 200% text scale in French (ListTile trailing button consumed the tile); rows are now a Row with an expanded label column and a flexible action button. Not reachable without production changes: non-admin views (the households fake hosts only one member). No new dependency.
+* Verification: `make test-app` (format, analyze, 125 tests including 37 goldens); `make update-goldens` run twice with no diff; a deliberate +1 px change to `AppTokens.spaceMd` failed 21 tests and was reverted. Not run: integration_test, emulator (T-0045), dark mode.
+* Follow-ups: T-0057, T-0058, T-0059.
 
 ### T-0023 · lists-service: checklists, items and bulk reset
 
@@ -418,3 +422,27 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0015
 * Spec: AGENTS §6.2
 * Acceptance criteria: `tooling/start-emulator.sh` boots the AVD to `sys.boot_completed=1` on the dev VM, or the e2e job is moved to CI with a documented reason, and `make doctor` gains a boot check. Observed: SIGSEGV in `qemu-system-x86_64-headless` about 25-30 s after start, when the guest `media` service starts (guest kernel boots fine); emulator 37.2.12, Android 35 google_apis x86_64, AMD Ryzen 7 5800X VM on Fedora 44. Same result with `-gpu swiftshader_indirect`, `-gpu guest`, `-feature -Vulkan`, `-accel off`, cameras off and `-feature -HardwareDecoder`. Not yet tried: another emulator build, another system image (API 34, non-google_apis), a gdb backtrace, an AVD without audio hardware.
+
+### T-0057 · Render readable text and icons in app golden images
+
+* Status: todo
+* Issue / PR: #44
+* Depends on: T-0022
+* Spec: AGENTS §5.2
+* Acceptance criteria: Goldens show real text and icons by loading a bundled test font in `app/test/support/screen_harness.dart`; regenerated on Linux (ADR 0012).
+
+### T-0058 · Externalize remaining hard-coded strings and raw ids in app screens
+
+* Status: todo
+* Issue / PR: #45
+* Depends on: T-0022
+* Spec: AGENTS §9
+* Acceptance criteria: Chores status and points labels, the default template title and member labels (currently raw user ids) come from ARB keys or the members API in FR and EN; goldens regenerated.
+
+### T-0059 · Golden and accessibility coverage for dialogs and non-admin views
+
+* Status: todo
+* Issue / PR: #46
+* Depends on: T-0022
+* Spec: AGENTS §5.2
+* Acceptance criteria: Scenarios for the non-admin household detail and chores views and for every dialog and snackbar, with goldens and accessibility checks in FR and EN.
