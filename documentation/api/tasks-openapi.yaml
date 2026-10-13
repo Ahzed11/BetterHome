@@ -1,0 +1,111 @@
+openapi: 3.0.3
+info:
+  title: BetterHome Tasks API
+  version: 0.3.0
+  description: Phase 2 tasks-service (port 8082). Aggregate index remains openapi.yaml.
+servers:
+  - url: http://localhost:8082
+paths:
+  /v1/households/{householdId}/templates:
+    parameters:
+      - $ref: "#/components/parameters/householdId"
+    get:
+      operationId: listTemplates
+      tags: [templates]
+      responses:
+        "200":
+          description: Active templates
+    post:
+      operationId: createTemplate
+      tags: [templates]
+      responses:
+        "201":
+          description: Created
+  /v1/households/{householdId}/templates/{templateId}:
+    patch:
+      operationId: updateTemplate
+      tags: [templates]
+      responses:
+        "200":
+          description: Updated
+  /v1/households/{householdId}/templates/{templateId}/archive:
+    post:
+      operationId: archiveTemplate
+      tags: [templates]
+      responses:
+        "200":
+          description: Archived
+  /v1/households/{householdId}/tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, done, dismissed, reverted]
+        - name: mine
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Tasks
+    post:
+      operationId: createOpenTask
+      tags: [tasks]
+      responses:
+        "201":
+          description: Open task created
+  /v1/households/{householdId}/tasks/manual:
+    post:
+      operationId: quickLogManualTask
+      tags: [tasks]
+      responses:
+        "201":
+          description: Manual task logged as done
+  /v1/households/{householdId}/tasks/{taskId}/complete:
+    post:
+      operationId: completeTask
+      tags: [tasks]
+      responses:
+        "200":
+          description: Completed
+  /v1/households/{householdId}/tasks/{taskId}/dismiss:
+    post:
+      operationId: dismissTask
+      tags: [tasks]
+      responses:
+        "200":
+          description: Dismissed
+  /v1/households/{householdId}/tasks/{taskId}/reassign:
+    post:
+      operationId: reassignTask
+      tags: [tasks]
+      responses:
+        "200":
+          description: Reassigned
+  /v1/households/{householdId}/tasks/reassign-away/{userId}:
+    post:
+      operationId: reassignAwayMemberTasks
+      tags: [tasks]
+      responses:
+        "200":
+          description: Count of reassigned open tasks
+components:
+  parameters:
+    householdId:
+      name: householdId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
