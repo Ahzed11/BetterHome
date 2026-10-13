@@ -99,6 +99,16 @@ public class TaskResource {
     }
 
     @POST
+    @Path("/dismiss-away/{userId}")
+    public Map<String, Integer> dismissAway(
+            @PathParam("householdId") UUID householdId, @PathParam("userId") UUID userId) {
+        int count = taskService.dismissOpenTasksForAwayMember(householdId, userId);
+        return Map.of("dismissed", count);
+    }
+
+    /** Replaced by {@link #dismissAway}: marking a member away now dismisses their open tasks. */
+    @Deprecated
+    @POST
     @Path("/reassign-away/{userId}")
     public Map<String, Integer> reassignAway(
             @PathParam("householdId") UUID householdId, @PathParam("userId") UUID userId) {

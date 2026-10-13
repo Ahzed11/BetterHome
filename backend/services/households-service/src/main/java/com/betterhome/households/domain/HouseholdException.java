@@ -42,4 +42,10 @@ public abstract class HouseholdException extends RuntimeException {
             super("unauthorized", message);
         }
     }
+
+    public static final class ServiceUnavailable extends HouseholdException {
+        public ServiceUnavailable(String message) {
+            super("service_unavailable", message);
+        }
+    }
 }

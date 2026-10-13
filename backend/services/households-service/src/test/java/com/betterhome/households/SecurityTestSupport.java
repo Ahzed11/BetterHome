@@ -1,5 +1,6 @@
 package com.betterhome.households;
 
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
@@ -20,6 +21,7 @@ public class SecurityTestSupport {
                 QuarkusSecurityIdentity.builder()
                         .setPrincipal(() -> authSubject.toString())
                         .addRole("member")
+                        .addCredential(new AccessTokenCredential("test-access-token"))
                         .build();
         identityAssociation.setIdentity(identity);
         try {

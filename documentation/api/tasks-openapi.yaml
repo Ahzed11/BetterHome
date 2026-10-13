@@ -118,9 +118,21 @@ paths:
       responses:
         "200":
           description: Reassigned
+  /v1/households/{householdId}/tasks/dismiss-away/{userId}:
+    post:
+      operationId: dismissAwayMemberTasks
+      summary: Dismiss the open tasks of a member marked away (admin)
+      tags: [tasks]
+      responses:
+        "200":
+          description: Count of dismissed open tasks (reason assignee_away)
+        "403":
+          description: Caller is not an admin of the household
   /v1/households/{householdId}/tasks/reassign-away/{userId}:
     post:
       operationId: reassignAwayMemberTasks
+      deprecated: true
+      summary: Replaced by dismiss-away; no longer called when a member is marked away
       tags: [tasks]
       responses:
         "200":

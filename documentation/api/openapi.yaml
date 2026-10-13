@@ -215,7 +215,7 @@ paths:
       - $ref: "#/components/parameters/userId"
     post:
       operationId: setMemberAway
-      summary: Mark a member away (admin)
+      summary: Mark a member away (admin); their open tasks are dismissed
       tags: [memberships]
       security:
         - bearerAuth: []
@@ -232,6 +232,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Membership"
+        "503":
+          description: tasks-service unavailable; the away change was not saved
     delete:
       operationId: clearMemberAway
       summary: Clear away status (admin)

@@ -61,8 +61,9 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 
 - **Spawning:** the scheduler creates a task at each occurrence. In the same transaction, it dismisses any still-open recurrence task of the same template (`superseded`) and notifies its assignee.
 - **Completion:** by the assignee or an admin. Points always go to the assignee. The person who clicked is stored as `completer_id` for audit. Completing before `due_at` awards points, after it awards `late_points`.
-- **Dismissal:** by the assignee on their own task or by an admin on any task. The UI asks for confirmation, since it is irreversible. Dismissed tasks never award points. Reasons: `manual`, `superseded`, `nobody_available`, `reverted_overdue`.
-- **Reassignment:** admin only, round robin among eligible members. Also happens automatically for open tasks when their assignee is marked away.
+- **Dismissal:** by the assignee on their own task or by an admin on any task. The UI asks for confirmation, since it is irreversible. Dismissed tasks never award points. Reasons: `manual`, `superseded`, `nobody_available`, `reverted_overdue`, `assignee_away`.
+- **Reassignment:** admin only, round robin among eligible members.
+- **Away:** when a member is marked away, their open tasks are dismissed (`assignee_away`, recorded against the admin who set the member away) instead of being reassigned. If tasks-service cannot be reached, marking the member away fails and nothing is saved. Later assignment (round robin, fixed-assignee fallback) ignores away members.
 - **Manual tasks:** a member logs a chore they just did ("I took out the garbage"). It is created already done, assigned to its creator, with full points and no due date. It does not affect recurring tasks.
 - **Reversion (admin, reason required):**
   - The completion's points are reversed with a negative ledger entry.

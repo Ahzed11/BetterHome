@@ -12,10 +12,10 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 @Path("/v1/households/{householdId}/tasks")
 public interface TasksClient {
 
-    /** Moves the open tasks of an away member to eligible members (round robin). */
+    /** Dismisses the open tasks of a member who was marked away. */
     @POST
-    @Path("/reassign-away/{userId}")
-    void reassignAway(
+    @Path("/dismiss-away/{userId}")
+    void dismissAway(
             @HeaderParam("Authorization") String authorization,
             @PathParam("householdId") UUID householdId,
             @PathParam("userId") UUID userId);

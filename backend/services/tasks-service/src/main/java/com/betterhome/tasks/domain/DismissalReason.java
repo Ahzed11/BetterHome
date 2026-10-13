@@ -4,5 +4,6 @@ public enum DismissalReason {
     manual,
     superseded,
     nobody_available,
-    reverted_overdue
+    reverted_overdue,
+    assignee_away
 }

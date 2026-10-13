@@ -6,7 +6,6 @@ import com.betterhome.households.domain.HouseholdException;
 import com.betterhome.households.domain.Membership;
 import com.betterhome.households.domain.MembershipRole;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
@@ -19,18 +18,18 @@ public class MembershipService {
     private final CurrentUserService currentUserService;
     private final MembershipGuard membershipGuard;
     private final Clock clock;
-    private final Event<MemberAway> memberAway;
+    private final AwayTaskDismissal awayTaskDismissal;
 
     @Inject
     public MembershipService(
             CurrentUserService currentUserService,
             MembershipGuard membershipGuard,
             Clock clock,
-            Event<MemberAway> memberAway) {
+            AwayTaskDismissal awayTaskDismissal) {
         this.currentUserService = currentUserService;
         this.membershipGuard = membershipGuard;
         this.clock = clock;
-        this.memberAway = memberAway;
+        this.awayTaskDismissal = awayTaskDismissal;
     }
 
     public List<Membership> list(UUID householdId) {
@@ -81,7 +80,7 @@ public class MembershipService {
         target.awayUntil = awayUntil;
         target.awaySetBy = actor.id;
         if (!from.isAfter(clock.now())) {
-            memberAway.fire(new MemberAway(householdId, targetUserId));
+            awayTaskDismissal.dismissOpenTasks(householdId, targetUserId);
         }
         return target;
     }

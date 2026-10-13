@@ -17,6 +17,7 @@ public class HouseholdExceptionMapper implements ExceptionMapper<HouseholdExcept
                     case HouseholdException.NotFound ignored -> 404;
                     case HouseholdException.Conflict ignored -> 409;
                     case HouseholdException.BadRequest ignored -> 400;
+                    case HouseholdException.ServiceUnavailable ignored -> 503;
                     default -> 500;
                 };
         return Response.status(status)

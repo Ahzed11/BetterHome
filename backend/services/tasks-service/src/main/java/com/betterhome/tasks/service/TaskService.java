@@ -213,6 +213,21 @@ public class TaskService {
         return count;
     }
 
+    /** Dismisses every open task of a member who was marked away (admin only). */
+    @Transactional
+    public int dismissOpenTasksForAwayMember(UUID householdId, UUID awayUserId) {
+        MemberView admin = callerService.requireAdmin(householdId);
+        Instant now = clock.now();
+        List<Task> open = Task.listOpenForAssignee(householdId, awayUserId);
+        for (Task task : open) {
+            task.status = TaskStatus.dismissed;
+            task.dismissedBy = admin.userId();
+            task.dismissalReason = DismissalReason.assignee_away;
+            task.updatedAt = now;
+        }
+        return open.size();
+    }
+
     private void reassignInternal(UUID householdId, Task task) {
         TaskTemplate template =
                 TaskTemplate.findInHousehold(householdId, task.templateId)

@@ -193,7 +193,7 @@ These are summarized from the spec. When they conflict with code, the spec wins.
 
 - **Round robin** skips members who left or are away. Fixed assignee away falls back to round robin. If everyone is away, the task is created and dismissed as `nobody_available`.
 
-- **Away:** setting a member away reassigns their open tasks round robin. Only admins can do it.
+- **Away:** setting a member away dismisses their open tasks (`assignee_away`). Only admins can do it. If the tasks service cannot be reached, the away change fails.
 
 - **Reversion** (admin, reason required): only on `done` tasks. Manual task becomes `reverted`. Recurrence task reopens with its original `due_at`, or is dismissed as `reverted_overdue` if that date has passed. Notify only if reopened with a future date.
 

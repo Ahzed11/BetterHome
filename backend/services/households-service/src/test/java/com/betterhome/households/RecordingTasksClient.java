@@ -19,13 +19,13 @@ public class RecordingTasksClient implements TasksClient {
     public record Call(String authorization, UUID householdId, UUID userId) {}
 
     private final List<Call> calls = new CopyOnWriteArrayList<>();
-    private volatile boolean failing;
+    private volatile RuntimeException failure;
 
     @Override
-    public void reassignAway(String authorization, UUID householdId, UUID userId) {
+    public void dismissAway(String authorization, UUID householdId, UUID userId) {
         calls.add(new Call(authorization, householdId, userId));
-        if (failing) {
-            throw new jakarta.ws.rs.ProcessingException("tasks-service unavailable");
+        if (failure != null) {
+            throw failure;
         }
     }
 
@@ -33,12 +33,12 @@ public class RecordingTasksClient implements TasksClient {
         return List.copyOf(calls);
     }
 
-    public void failWith(boolean failing) {
-        this.failing = failing;
+    public void failWith(RuntimeException failure) {
+        this.failure = failure;
     }
 
     public void reset() {
         calls.clear();
-        failing = false;
+        failure = null;
     }
 }

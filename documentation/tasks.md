@@ -69,17 +69,17 @@ _(none)_
 
 ## Discovered
 
-### T-0003 · Reassign open tasks when a member is marked away
+### T-0003 · Away members: dismiss their open tasks when marked away
 
 * Status: in-review
 * Issue / PR: —
-* Depends on: T-0007
-* Spec: §2 Away, §3.3 Reassignment
-* Acceptance criteria: When an admin sets away in households-service, call tasks-service `POST .../tasks/reassign-away/{userId}` (endpoint exists) so open tasks move to eligible members.
-* Summary: `MembershipService.setAway` fires `MemberAway`; `AwayReassignment` observes it after commit and calls tasks-service through the `TasksClient` REST client (`TASKS_SERVICE_URL`), forwarding the admin's bearer token. No call when `away_from` is in the future.
-* Decisions and deviations: Synchronous, no retry; a failed call is logged and does not undo the away change. A future-dated away is not reassigned when it begins (see T-0012). If every other member is away, tasks-service answers 409 and the tasks stay with their assignee; the spec does not define this case, so a spec decision is needed (T-0012). Not functional end to end until T-0008, because tasks-service membership data is still the in-memory directory.
-* Verification: `./mvnw -B verify` in `backend/` on JDK 21 (all services pass; `AwayReassignmentTest` covers token forwarding, future-dated away, tasks-service failure, rejected non-admin). `make` is not installed here, so `make test-backend`, `make check`, the Flutter checks and e2e were not run; the app was not launched against Keycloak.
-* Follow-ups: T-0012.
+* Depends on: T-0007, T-0008
+* Spec: §2 Away, §3.3 Dismissal and Away
+* Acceptance criteria: When an admin marks a member away in households-service, tasks-service closes that member's open tasks. Changed from the original issue (reassign) by a product decision: open tasks are dismissed with reason `assignee_away`, and later assignment ignores away members.
+* Summary: tasks-service V4 adds `assignee_away` to the dismissal-reason CHECK; new admin-only `POST …/tasks/dismiss-away/{userId}` dismisses the member's open tasks (`dismissed_by` is the admin). `reassign-away` stays, marked deprecated in code and OpenAPI. `MembershipService.setAway` calls the new endpoint through `AwayTaskDismissal` inside its own transaction with the admin's token; a tasks-service failure returns 503 and rolls the away change back. Spec §3.3 and AGENTS §7 updated.
+* Decisions and deviations: Failure policy (fail, no retry/outbox) and the dismiss-instead-of-reassign rule come from the product owner. A future-dated `away_from` is not dismissed when it begins (T-0012). No notification is sent for the dismissal (the spec does not define one). If the households commit fails after tasks were dismissed, the tasks stay dismissed; the window is small and accepted for now.
+* Verification: `./mvnw -B verify` in `backend/` on JDK 21 (tasks `TaskAwayDismissalTest`, V4 applied from scratch on Postgres; households `AwayTaskDismissalTest` incl. rollback and 503). Live on real Keycloak 26 + Postgres 16 with both services in dev mode: non-admin got 403 and nothing changed; admin marked a member away, both open tasks became `dismissed/assignee_away`; with tasks-service stopped the call returned 503 and `away_from` stayed null. The live run needed `-Dquarkus.oidc.token.principal-claim=sub` (T-0013) and a direct SQL membership insert (T-0014). `make` is not installed, so `make check`, spotless/checkstyle, the dependency audit, Flutter checks and e2e were not run.
+* Follow-ups: T-0012, T-0013, T-0014.
 
 ### T-0004 · OpenShift / CRC deploy manifests for microservices
 
@@ -125,13 +125,13 @@ _(none)_
 * Spec: §7 service boundaries, §3.4
 * Acceptance criteria: tasks-service calls scoring-service award/reverse over REST with service or user token; scoring-service resolves membership via households-service HTTP client; keep in-memory doubles for Quarkus tests.
 
-### T-0012 · Away reassignment: future start, retries, and nobody left
+### T-0012 · Dismiss open tasks when a future-dated away period starts
 
 * Status: todo
 * Issue / PR: —
-* Depends on: T-0003, T-0008
-* Spec: §2 Away, §3.3 Reassignment
-* Acceptance criteria: Decide and implement (1) reassignment when a future `away_from` arrives, (2) reliable delivery of the households → tasks call (outbox or retry) instead of a logged best-effort call, (3) what happens to open tasks when no other member is eligible; the spec must define (3) first.
+* Depends on: T-0003
+* Spec: §2 Away, §3.3 Away
+* Acceptance criteria: A member marked away with a future `away_from` has their open tasks dismissed (`assignee_away`) when that instant arrives. Needs a households scheduler (claims due rows with `FOR UPDATE SKIP LOCKED`, one transaction per job) and a way to call tasks-service without a user token, which means a write-capable service role that ADR 0014 does not grant yet; decide that first. The job must also mark what it has handled so a restart does not repeat it.
 
 ### T-0013 · Services reject every real Keycloak user: principal is not the `sub` UUID
 
@@ -140,3 +140,11 @@ _(none)_
 * Depends on: T-0001
 * Spec: §2, §9 (auth), AGENTS §3 (Auth)
 * Acceptance criteria: `OidcAuthVerifier` expects the principal name to be the Keycloak `sub` UUID, but quarkus-oidc defaults to `preferred_username`, so with a real token every service answers 401 "Authentication required". Set `quarkus.oidc.token.principal-claim=sub` in each service (found during T-0008; reproduced with the demo user from `deploy/keycloak/README.md` and fixed at runtime only), and add a test that fails without it.
+
+### T-0014 · Invitation endpoints return 404 on a running server
+
+* Status: todo
+* Issue / PR: —
+* Depends on: T-0002
+* Spec: §2 (invitations)
+* Acceptance criteria: `POST/GET /v1/households/{id}/invitations` answer 404 "Resource Not Found" when the service runs, although they are listed in the route table and the service-level tests pass. `InvitationResource` is rooted at `@Path("/v1")` and appears to lose to `HouseholdResource` at `/v1/households`. Add an HTTP-level test that fails today (create then accept an invitation through REST) and fix the routing.
