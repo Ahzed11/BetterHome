@@ -1,8 +1,10 @@
 package com.betterhome.tasks.api;
 
+import com.betterhome.tasks.domain.AssignmentMode;
 import com.betterhome.tasks.domain.DismissalReason;
 import com.betterhome.tasks.domain.Task;
 import com.betterhome.tasks.domain.TaskOrigin;
+import com.betterhome.tasks.domain.TaskRecurrence;
 import com.betterhome.tasks.domain.TaskStatus;
 import com.betterhome.tasks.domain.TaskTemplate;
 import jakarta.validation.constraints.Min;
@@ -64,6 +66,42 @@ public final class TaskDtos {
     public record QuickLogRequest(@NotNull UUID templateId) {}
 
     public record RevertRequest(@NotBlank String reason) {}
+
+    public record UpsertRecurrenceRequest(
+            @NotBlank String rrule,
+            @NotNull AssignmentMode assignmentMode,
+            UUID fixedAssigneeId,
+            Instant startsAt,
+            Instant endsAt) {}
+
+    public record RecurrenceResponse(
+            UUID id,
+            UUID householdId,
+            UUID templateId,
+            String rrule,
+            AssignmentMode assignmentMode,
+            UUID fixedAssigneeId,
+            String timezone,
+            Instant startsAt,
+            Instant endsAt,
+            Instant lastGeneratedAt,
+            Instant nextRunAt) {
+
+        public static RecurrenceResponse from(TaskRecurrence recurrence) {
+            return new RecurrenceResponse(
+                    recurrence.id,
+                    recurrence.householdId,
+                    recurrence.templateId,
+                    recurrence.rrule,
+                    recurrence.assignmentMode,
+                    recurrence.fixedAssigneeId,
+                    recurrence.timezone,
+                    recurrence.startsAt,
+                    recurrence.endsAt,
+                    recurrence.lastGeneratedAt,
+                    recurrence.nextRunAt);
+        }
+    }
 
     public record TaskResponse(
             UUID id,

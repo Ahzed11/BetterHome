@@ -113,4 +113,13 @@ public class Task extends PanacheEntityBase {
                 assigneeId,
                 TaskStatus.open);
     }
+
+    public static List<Task> listOpenRecurrenceForTemplate(UUID householdId, UUID templateId) {
+        return list(
+                "householdId = ?1 and templateId = ?2 and origin = ?3 and status = ?4",
+                householdId,
+                templateId,
+                TaskOrigin.recurrence,
+                TaskStatus.open);
+    }
 }

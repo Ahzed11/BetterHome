@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: BetterHome API
-  version: 0.4.0
+  version: 0.5.0
   description: >
     Aggregate OpenAPI surface for BetterHome microservices.
-    Phase 1: households-service (:8081). Tasks: tasks-openapi.yaml (:8082).
+    Phase 1: households-service (:8081). Tasks + recurrence: tasks-openapi.yaml (:8082).
     Scoring: scoring-openapi.yaml (:8083).
 servers:
   - url: http://localhost:8081

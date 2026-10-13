@@ -16,11 +16,14 @@ import java.util.UUID;
 public class TemplateService {
 
     private final CallerService callerService;
+    private final RecurrenceService recurrenceService;
     private final Clock clock;
 
     @Inject
-    public TemplateService(CallerService callerService, Clock clock) {
+    public TemplateService(
+            CallerService callerService, RecurrenceService recurrenceService, Clock clock) {
         this.callerService = callerService;
+        this.recurrenceService = recurrenceService;
         this.clock = clock;
     }
 
@@ -124,6 +127,7 @@ public class TemplateService {
         Instant now = clock.now();
         template.archivedAt = now;
         template.updatedAt = now;
+        recurrenceService.stopForTemplate(householdId, templateId);
         return template;
     }
 

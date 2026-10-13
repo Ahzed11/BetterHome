@@ -1,8 +1,10 @@
 openapi: 3.0.3
 info:
   title: BetterHome Tasks API
-  version: 0.4.0
-  description: Tasks-service (port 8082), including Phase 3 admin revert. Aggregate index remains openapi.yaml.
+  version: 0.5.0
+  description: >
+    Tasks-service (port 8082): templates, tasks, revert, and Phase 4 recurrence.
+    Aggregate index remains openapi.yaml.
 servers:
   - url: http://localhost:8082
 paths:
@@ -35,6 +37,29 @@ paths:
       responses:
         "200":
           description: Archived
+  /v1/households/{householdId}/templates/{templateId}/recurrence:
+    parameters:
+      - $ref: "#/components/parameters/householdId"
+      - name: templateId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getTemplateRecurrence
+      tags: [recurrence]
+      responses:
+        "200":
+          description: Recurrence schedule for the template
+        "404":
+          description: No recurrence configured
+    put:
+      operationId: upsertTemplateRecurrence
+      tags: [recurrence]
+      responses:
+        "200":
+          description: Recurrence created or updated
   /v1/households/{householdId}/tasks:
     get:
       operationId: listTasks
