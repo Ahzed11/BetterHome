@@ -9,6 +9,7 @@ import com.betterhome.tasks.domain.TaskException;
 import com.betterhome.tasks.domain.TaskOrigin;
 import com.betterhome.tasks.domain.TaskStatus;
 import com.betterhome.tasks.domain.TaskTemplate;
+import com.betterhome.tasks.ledger.PointsLedgerClient;
 import com.betterhome.tasks.membership.MembershipGateway;
 import com.betterhome.tasks.membership.MembershipGateway.MemberView;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,13 +25,18 @@ public class TaskService {
 
     private final CallerService callerService;
     private final MembershipGateway membershipGateway;
+    private final PointsLedgerClient pointsLedgerClient;
     private final Clock clock;
 
     @Inject
     public TaskService(
-            CallerService callerService, MembershipGateway membershipGateway, Clock clock) {
+            CallerService callerService,
+            MembershipGateway membershipGateway,
+            PointsLedgerClient pointsLedgerClient,
+            Clock clock) {
         this.callerService = callerService;
         this.membershipGateway = membershipGateway;
+        this.pointsLedgerClient = pointsLedgerClient;
         this.clock = clock;
     }
 
@@ -71,6 +77,8 @@ public class TaskService {
         task.completedAt = now;
         task.pointsAwarded = template.points;
         task.persist();
+        pointsLedgerClient.award(
+                householdId, caller.userId(), task.id, template.points, false);
         return task;
     }
 
@@ -91,6 +99,8 @@ public class TaskService {
         task.completedAt = now;
         task.pointsAwarded = late ? task.latePoints : task.points;
         task.updatedAt = now;
+        pointsLedgerClient.award(
+                householdId, task.assigneeId, task.id, task.pointsAwarded, late);
         return task;
     }
 
@@ -140,6 +150,53 @@ public class TaskService {
         task.assigneeId = next;
         task.updatedAt = clock.now();
         advanceRotation(template.rotationId, next);
+        return task;
+    }
+
+
+    @Transactional
+    public Task revert(UUID householdId, UUID taskId, String reason) {
+        MemberView admin = callerService.requireAdmin(householdId);
+        Task task = requireTask(householdId, taskId);
+        if (task.status != TaskStatus.done) {
+            throw new TaskException.Conflict("Only done tasks can be reverted");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new TaskException.BadRequest("Reversion reason is required");
+        }
+        if (task.pointsAwarded == null || task.pointsAwarded <= 0) {
+            throw new TaskException.Conflict("Task has no points to reverse");
+        }
+        Instant now = clock.now();
+        TaskStatus resultingStatus;
+        DismissalReason dismissalReason = null;
+        if (task.origin == TaskOrigin.manual) {
+            resultingStatus = TaskStatus.reverted;
+        } else if (task.dueAt != null && !now.isAfter(task.dueAt)) {
+            resultingStatus = TaskStatus.open;
+        } else {
+            resultingStatus = TaskStatus.dismissed;
+            dismissalReason = DismissalReason.reverted_overdue;
+        }
+
+        pointsLedgerClient.reverse(
+                householdId,
+                task.id,
+                task.assigneeId,
+                task.pointsAwarded,
+                admin.userId(),
+                reason.trim(),
+                resultingStatus.name());
+
+        task.status = resultingStatus;
+        task.completerId = null;
+        task.completedAt = null;
+        task.pointsAwarded = null;
+        if (resultingStatus == TaskStatus.dismissed) {
+            task.dismissedBy = admin.userId();
+            task.dismissalReason = dismissalReason;
+        }
+        task.updatedAt = now;
         return task;
     }
 

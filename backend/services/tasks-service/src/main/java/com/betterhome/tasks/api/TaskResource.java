@@ -2,6 +2,7 @@ package com.betterhome.tasks.api;
 
 import com.betterhome.tasks.api.TaskDtos.CreateOpenTaskRequest;
 import com.betterhome.tasks.api.TaskDtos.QuickLogRequest;
+import com.betterhome.tasks.api.TaskDtos.RevertRequest;
 import com.betterhome.tasks.api.TaskDtos.TaskResponse;
 import com.betterhome.tasks.domain.TaskStatus;
 import com.betterhome.tasks.service.TaskService;
@@ -79,6 +80,15 @@ public class TaskResource {
     public TaskResponse dismiss(
             @PathParam("householdId") UUID householdId, @PathParam("taskId") UUID taskId) {
         return TaskResponse.from(taskService.dismiss(householdId, taskId));
+    }
+
+    @POST
+    @Path("/{taskId}/revert")
+    public TaskResponse revert(
+            @PathParam("householdId") UUID householdId,
+            @PathParam("taskId") UUID taskId,
+            @Valid RevertRequest request) {
+        return TaskResponse.from(taskService.revert(householdId, taskId, request.reason()));
     }
 
     @POST

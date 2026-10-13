@@ -63,6 +63,8 @@ public final class TaskDtos {
 
     public record QuickLogRequest(@NotNull UUID templateId) {}
 
+    public record RevertRequest(@NotBlank String reason) {}
+
     public record TaskResponse(
             UUID id,
             UUID householdId,

@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: BetterHome Tasks API
-  version: 0.3.0
-  description: Phase 2 tasks-service (port 8082). Aggregate index remains openapi.yaml.
+  version: 0.4.0
+  description: Tasks-service (port 8082), including Phase 3 admin revert. Aggregate index remains openapi.yaml.
 servers:
   - url: http://localhost:8082
 paths:
@@ -79,6 +79,13 @@ paths:
       responses:
         "200":
           description: Dismissed
+  /v1/households/{householdId}/tasks/{taskId}/revert:
+    post:
+      operationId: revertTask
+      tags: [tasks]
+      responses:
+        "200":
+          description: Admin reversion; points reversed via scoring ledger client
   /v1/households/{householdId}/tasks/{taskId}/reassign:
     post:
       operationId: reassignTask
