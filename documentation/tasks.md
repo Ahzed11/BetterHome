@@ -89,7 +89,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0016 · `make up` and `make seed` run the full local stack
 
 * Status: in-review
-* Issue / PR: #9 / PR_NUMBER
+* Issue / PR: #9 / #38
 * Depends on: T-0013, T-0014, T-0015
 * Spec: §7, AGENTS §6.1, ADR 0003
 * Acceptance criteria: Podman Compose starts Postgres, Keycloak (realm import) and all five services as containers built with the Quarkus container extension; services get their DB URL, OIDC settings and service-account secrets from environment variables (no committed secrets: realm secrets injected at import). `make migrate` runs Flyway per service as one-shot containers. `make seed` creates a demo household with two members and sample templates through the public APIs. `make down` cleans everything. Verified by a scripted smoke check.
