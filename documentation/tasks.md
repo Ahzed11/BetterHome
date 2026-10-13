@@ -390,7 +390,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0039 · Check real HTTP responses against the generated contract
 
 * Status: in-review
-* Issue / PR: #32 / PR_PLACEHOLDER
+* Issue / PR: #32 / 42
 * Depends on: T-0005
 * Spec: AGENTS §5.1 (API contract)
 * Acceptance criteria: Quarkus tests validate every real response (status, headers, body) against `documentation/api/<service>-openapi.yaml` with a request/response validator and fail when an answer has a field or status the document does not declare; additional properties are forbidden in schemas. T-0005 keeps the document equal to the code; this keeps the answers equal to the document.
