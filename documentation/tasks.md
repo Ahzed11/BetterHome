@@ -307,7 +307,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0010 · HTTP PointsLedgerClient and scoring MembershipGateway
 
 * Status: in-review
-* Issue / PR: #4 / PR_NUMBER
+* Issue / PR: #4 / #34
 * Depends on: T-0009
 * Spec: §7 service boundaries, §3.4
 * Summary: tasks-service writes the ledger through `HttpPointsLedgerClient` (REST to scoring award/reverse with its service token); scoring-service resolves membership through `HttpMembershipGateway` (households internal members endpoint with its own service token). The in-memory doubles moved to `src/test` as `@Alternative @Priority(1)` beans. New Keycloak client `betterhome-scoring-service` (service role) in the realm export; secret via `OIDC_SERVICE_CLIENT_SECRET`, local-dev placeholder only in `%dev`/realm. Scoring contract regenerated (`adminUserId`, 503); scoring coverage floor raised 0.62 to 0.75.
