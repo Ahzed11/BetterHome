@@ -51,7 +51,11 @@ class ScoringHttpTest {
     }
 
     @Test
-    @TestSecurity(user = ADMIN_SUBJECT, roles = "admin")
+    // award and reverse need the service role, adjust and the scoreboard a household admin; one
+    // identity with both roles walks the happy path (the split is tested in LedgerResourceAuthTest)
+    @TestSecurity(
+            user = ADMIN_SUBJECT,
+            roles = {"admin", "service"})
     void adminRunsTheLedgerAndReadsTheScoreboardAndRecap() {
         UUID taskId = UUID.randomUUID();
         json().body(award(taskId, 5)).post(POINTS + "/award").then().statusCode(201);
@@ -65,6 +69,8 @@ class ScoringHttpTest {
                                 taskId,
                                 "assigneeUserId",
                                 MEMBER_USER,
+                                "adminUserId",
+                                ADMIN_USER,
                                 "points",
                                 2,
                                 "reason",
@@ -87,7 +93,9 @@ class ScoringHttpTest {
     }
 
     @Test
-    @TestSecurity(user = ADMIN_SUBJECT, roles = "admin")
+    @TestSecurity(
+            user = ADMIN_SUBJECT,
+            roles = {"admin", "service"})
     void invalidAndConflictingRequestsAnswerDocumentedErrors() {
         json().body(Map.of("userId", MEMBER_USER, "delta", 0))
                 .post(POINTS + "/adjust")
