@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!--
+  Lint rules taken from AGENTS.md section 2 (Forbidden). Layout and import order belong to
+  Spotless; this file does not repeat them.
+-->
+<module name="Checker">
+    <property name="severity" value="warning"/>
+    <property name="fileExtensions" value="java"/>
+
+    <!-- The one place allowed to read the system clock is the Clock implementation. -->
+    <module name="SuppressionSingleFilter">
+        <property name="files" value="SystemClock\.java"/>
+        <property name="id" value="systemClock"/>
+    </module>
+    <!-- Tests may build fixed instants and tokens from the real clock. -->
+    <module name="SuppressionSingleFilter">
+        <property name="files" value="[\\/]src[\\/]test[\\/]"/>
+        <property name="id" value="systemClock"/>
+    </module>
+
+    <module name="RegexpSingleline">
+        <property name="id" value="suppressWarnings"/>
+        <property name="format" value="@SuppressWarnings\b"/>
+        <property name="message" value="@SuppressWarnings is forbidden: fix the cause"/>
+    </module>
+    <module name="RegexpSingleline">
+        <property name="id" value="disabledTests"/>
+        <property name="format" value="@(Disabled|Ignore)\b"/>
+        <property name="message" value="Skipping or disabling tests is forbidden"/>
+    </module>
+    <module name="RegexpSingleline">
+        <property name="id" value="systemClock"/>
+        <property name="format"
+                  value="\b(Instant|LocalDate|LocalDateTime|LocalTime|ZonedDateTime|OffsetDateTime)\.now\(|System\.currentTimeMillis\("/>
+        <property name="message" value="Read time from the Clock bean, not the system clock"/>
+    </module>
+
+    <module name="TreeWalker">
+        <module name="IllegalCatch">
+            <property name="illegalClassNames" value="Throwable"/>
+        </module>
+        <module name="EmptyBlock">
+            <property name="option" value="statement"/>
+            <property name="tokens" value="LITERAL_CATCH"/>
+        </module>
+        <module name="TodoComment">
+            <property name="format" value="(TODO|FIXME)(?!.*#[0-9]+)"/>
+            <property name="severity" value="warning"/>
+        </module>
+        <module name="AvoidStarImport"/>
+        <module name="UnusedImports"/>
+    </module>
+</module>

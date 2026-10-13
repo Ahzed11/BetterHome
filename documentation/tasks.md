@@ -96,11 +96,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0017 · Backend quality gates: format, lint, coverage
 
-* Status: todo
+* Status: in-review
 * Issue / PR: #10
 * Depends on: T-0015
 * Spec: AGENTS §5.3
 * Acceptance criteria: `make test-backend` runs spotless check, checkstyle (or PMD/SpotBugs) and JaCoCo with a coverage floor that cannot drop, then the Quarkus tests. Existing violations are fixed in the same change, no suppressions. Gate failures fail `make check`.
+* Summary: Root `backend/pom.xml` now runs, in `validate`, Spotless (google-java-format 1.28.0, AOSP style, unused imports removed) and Checkstyle 10.21.4 with `backend/config/checkstyle.xml`, and in `verify` JaCoCo report + line-coverage floor. Checkstyle encodes AGENTS §2 Forbidden: `@SuppressWarnings`, `@Disabled`/`@Ignore`, `catch (Throwable)`, empty catch blocks, TODO/FIXME without an issue number, system-clock calls (only `SystemClock` and tests exempt), star and unused imports. Services use `quarkus-jacoco`; a Maven Enforcer rule fails the build when the coverage file is missing. `.mvn/jvm.config` opens the compiler modules google-java-format needs. Floors (line coverage, just below measured): households 0.82, tasks 0.70, scoring 0.62, lists 0.90, notifications 0.90, common-domain 0.09.
+* Decisions and deviations: Checkstyle only (no PMD/SpotBugs), since the AGENTS gate lists them as alternatives; revisit if needed. Existing violations fixed: a formatting sweep of 44 files (own commit, no behavior change) and one `@SuppressWarnings` in `RecurrenceSpawnService` that was unnecessary and is removed. google-java-format 1.37.0 does not run on this JDK, hence the 1.28.0 pin. The floors are measured values, not targets: raise them as tests land. The dependency audit stays in T-0005. Coverage tooling is not wired into the aggregate `make check` beyond `make test-backend`.
+* Verification: `./mvnw -B clean verify` in `backend/` on JDK 21 passes. Negative checks run and reverted: each Checkstyle rule trips on a deliberately bad file (including `@Disabled` and unused import in tests); a floor of 0.99 fails scoring with "Rule violated"; a clean build without tests fails with "No coverage data". `make`, Flutter, e2e and CI were not run.
+* Follow-ups: T-0037 (common-domain direct unit tests and a higher floor).
 
 ### T-0018 · CI: run `make check` on every pull request
 
@@ -347,3 +351,11 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: No production change. The stricter fixture stays, so the five tests now prove role mapping from `realm_access.roles`. The households `role-claim-path` line is redundant but harmless and was left alone (not made obsolete by this task); drop it in a later cleanup if desired.
 * Verification: `./mvnw -B verify` in `backend/` on JDK 21 (all services pass). Gotcha: a stale `common-domain` test-jar in `~/.m2` can hide fixture changes; use `verify` (reactor jar), not `test`, when changing the fixture.
 * Follow-ups: none.
+
+### T-0037 · Unit tests for common-domain seams
+
+* Status: todo
+* Issue / PR: #30
+* Depends on: T-0017
+* Spec: AGENTS §5.1, §5.3
+* Acceptance criteria: common-domain line coverage is 9% (only `SystemClock`); `OidcAuthVerifier`, `NoOpPushSender` and the other seams are exercised only through the services' tests. Add direct unit tests for them and raise the `jacoco.line.minimum` floor in `common-domain/pom.xml`.

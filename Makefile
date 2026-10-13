@@ -25,7 +25,7 @@ migrate: ## Apply Flyway SQL to all service databases
 seed: ## Load demo data (optional local helpers)
 	@echo "seed: use deploy/keycloak/README.md for a demo Keycloak user; DB seed TBD"
 
-test-backend: ## Format check placeholder, unit and Quarkus tests
+test-backend: ## Spotless, Checkstyle, Quarkus tests and coverage floor (dependency audit: T-0005)
 	cd $(BACKEND) && ./mvnw -B verify
 
 test-app: ## Flutter analyze and tests

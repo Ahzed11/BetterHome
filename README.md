@@ -21,7 +21,7 @@ See [documentation/project-specification.md](documentation/project-specification
 ```bash
 make up          # Postgres :5432, Keycloak :8180
 make migrate     # Flyway SQL into each service DB (host psql or podman exec)
-make test-backend
+make test-backend   # Spotless, Checkstyle, tests, coverage floor; fix formatting with: cd backend && ./mvnw spotless:apply
 make test-app
 cd app && flutter run   # demo data unless dart-defines set
 ```

@@ -15,6 +15,10 @@
     <packaging>quarkus</packaging>
     <name>BetterHome Tasks Service</name>
 
+    <properties>
+        <jacoco.line.minimum>0.70</jacoco.line.minimum>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.betterhome</groupId>
@@ -80,6 +84,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jacoco</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
@@ -97,6 +106,13 @@
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-enforcer-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>quarkus-maven-plugin</artifactId>

@@ -62,7 +62,6 @@ public class RecurrenceSpawnService {
                         """);
         query.setParameter("now", java.sql.Timestamp.from(now));
         query.setParameter("lim", Math.max(limit, 1));
-        @SuppressWarnings("unchecked")
         List<?> rawIds = query.getResultList();
         int spawned = 0;
         for (Object rawId : rawIds) {
