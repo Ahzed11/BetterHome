@@ -1,6 +1,7 @@
 import 'package:betterhome/data/api_support.dart';
 import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome_api/api.dart' as api;
@@ -127,4 +128,22 @@ ChecklistItem checklistItemFromApi(api.ItemResponse r) => ChecklistItem(
   title: need(r.title, 'title'),
   position: need(r.position, 'position'),
   completedAt: r.completedAt,
+);
+
+AppNotification appNotificationFromApi(api.NotificationResponse r) =>
+    AppNotification(
+      id: need(r.id, 'id'),
+      type: NotificationType.values.byName(need(r.type, 'type').name),
+      title: need(r.title, 'title'),
+      body: need(r.body, 'body'),
+      createdAt: need(r.createdAt, 'createdAt'),
+      readAt: r.readAt,
+    );
+
+NotificationPreference notificationPreferenceFromApi(
+  api.PreferenceResponse r,
+) => NotificationPreference(
+  type: NotificationType.values.byName(need(r.type, 'type').name),
+  channel: NotificationChannel.values.byName(need(r.channel, 'channel').name),
+  enabled: need(r.enabled, 'enabled'),
 );

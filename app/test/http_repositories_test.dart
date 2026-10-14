@@ -1,6 +1,7 @@
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome_api/api.dart' as api;
@@ -285,6 +286,80 @@ void main() {
     });
   });
 
+  group('notifications', () {
+    HttpNotificationsRepository notifications() => HttpNotificationsRepository(
+      baseUrl: 'http://notifications.test',
+      accessToken: () => 'test-token',
+      client: server.client,
+    );
+
+    test('lists the inbox with the declared paging parameters', () async {
+      final list = await notifications().list(
+        before: _sampleId,
+        limit: 5,
+        unreadOnly: true,
+      );
+
+      expect(list.single.type, NotificationType.taskAssigned);
+      expect(list.single.title, 'text');
+      expect(server.requests, ['GET /v1/notifications']);
+      expect(
+        server.lastQuery['listMyNotifications'],
+        'before=$_sampleId&limit=5&unreadOnly=true',
+      );
+    });
+
+    test('marks one read and all read', () async {
+      final repo = notifications();
+
+      final read = await repo.markRead(_sampleId);
+      final changed = await repo.markAllRead();
+
+      expect(read.isRead, isTrue);
+      expect(changed, 1);
+      expect(server.requests, [
+        'POST /v1/notifications/$_sampleId/read',
+        'POST /v1/notifications/read-all',
+      ]);
+    });
+
+    test(
+      'reads and changes a preference with the API values in the path',
+      () async {
+        final repo = notifications();
+
+        final all = await repo.preferences();
+        final saved = await repo.setPreference(
+          NotificationType.markedAway,
+          NotificationChannel.inApp,
+          enabled: false,
+        );
+
+        expect(all.single.enabled, isTrue);
+        expect(saved.channel, NotificationChannel.push);
+        expect(server.lastBody['updateMyNotificationPreference'], {
+          'enabled': false,
+        });
+        expect(server.requests, [
+          'GET /v1/notification-preferences',
+          'PUT /v1/notification-preferences/marked_away/in_app',
+        ]);
+      },
+    );
+
+    test('an error answer becomes an ApiException', () async {
+      server.respondWith('markMyNotificationRead', 404, {
+        'code': 'not_found',
+        'message': 'none',
+      });
+
+      await expectLater(
+        notifications().markRead(_sampleId),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 404)),
+      );
+    });
+  });
+
   group('scoring', () {
     test('scoreboard and winners', () async {
       final board = await scoring().getScoreboard(
@@ -327,6 +402,12 @@ void main() {
       check('TaskOrigin', api.TaskOrigin.values, TaskOrigin.values);
       check('AssignmentMode', api.AssignmentMode.values, AssignmentMode.values);
       check('ScorePeriod', api.ScorePeriod.values, ScorePeriod.values);
+      check(
+        'NotificationType',
+        api.NotificationType.values,
+        NotificationType.values,
+      );
+      check('Channel', api.Channel.values, NotificationChannel.values);
     });
   });
 }

@@ -3,9 +3,12 @@ import 'package:betterhome/ui/widgets/add_field.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
+import 'package:betterhome/ui/widgets/notification_row.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
+import 'package:betterhome/ui/widgets/toggle_row.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/screen_harness.dart';
@@ -69,6 +72,37 @@ class _Showcase extends StatelessWidget {
               checked: true,
               semanticLabel: 'Uncheck Bread',
               onChanged: () {},
+            ),
+          ),
+          const SizedBox(height: AppTokens.spaceMd),
+          AppCard(
+            child: Column(
+              children: [
+                NotificationRow(
+                  title: 'New chore',
+                  body: '"Bins" is yours.',
+                  time: 'Oct 14, 2026 10:00',
+                  unread: true,
+                  unreadLabel: 'unread',
+                  onOpen: () {},
+                ),
+                NotificationRow(
+                  title: 'Reminder',
+                  body: '"Bins" is due soon.',
+                  time: 'Oct 13, 2026 08:00',
+                  unread: false,
+                  unreadLabel: 'unread',
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppTokens.spaceMd),
+          AppCard(
+            child: ToggleRow(
+              label: 'Push',
+              value: true,
+              semanticLabel: 'Reminders, Push',
+              onChanged: (_) {},
             ),
           ),
         ],
@@ -265,6 +299,112 @@ void main() {
         tester.getSemantics(find.text('Lists')),
         matchesSemantics(label: 'Lists', isHeader: true),
       );
+      handle.dispose();
+    });
+  });
+
+  group('ToggleRow', () {
+    testWidgets(
+      'a tap on the row or on the switch flips it, and it has a name',
+      (tester) async {
+        final changes = <bool>[];
+        final handle = tester.ensureSemantics();
+        await pumpScreen(
+          tester,
+          home: Scaffold(
+            body: ToggleRow(
+              label: 'Push',
+              value: true,
+              semanticLabel: 'Reminders, Push',
+              onChanged: changes.add,
+            ),
+          ),
+          locale: const Locale('en'),
+        );
+
+        expect(
+          tester.getSemantics(find.byType(ToggleRow)),
+          isSemantics(
+            label: 'Reminders, Push',
+            hasToggledState: true,
+            isToggled: true,
+          ),
+        );
+        expect(
+          tester.getSize(find.byType(ToggleRow)).height,
+          greaterThanOrEqualTo(AppTokens.minTapTarget),
+        );
+        await tester.tap(find.text('Push'));
+        await tester.tap(find.byType(Switch));
+
+        expect(changes, [false, false]);
+        handle.dispose();
+      },
+    );
+  });
+
+  group('NotificationRow', () {
+    testWidgets('an unread row can be opened and says it is unread', (
+      tester,
+    ) async {
+      var opened = 0;
+      final handle = tester.ensureSemantics();
+      await pumpScreen(
+        tester,
+        home: Scaffold(
+          body: NotificationRow(
+            title: 'New chore',
+            body: 'Bins',
+            time: 'now',
+            unread: true,
+            unreadLabel: 'unread',
+            onOpen: () => opened++,
+          ),
+        ),
+        locale: const Locale('en'),
+      );
+
+      expect(
+        tester.getSemantics(find.byType(NotificationRow)),
+        isSemantics(
+          label: 'New chore. Bins. now. unread',
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      await tester.tap(find.text('New chore'));
+
+      expect(opened, 1);
+      handle.dispose();
+    });
+
+    testWidgets('a read row is not a button and ignores taps', (tester) async {
+      var opened = 0;
+      final handle = tester.ensureSemantics();
+      await pumpScreen(
+        tester,
+        home: Scaffold(
+          body: NotificationRow(
+            title: 'Reminder',
+            body: 'Bins',
+            time: 'now',
+            unread: false,
+            unreadLabel: 'unread',
+            onOpen: () => opened++,
+          ),
+        ),
+        locale: const Locale('en'),
+      );
+
+      final semantics = tester.getSemantics(find.byType(NotificationRow));
+      expect(semantics.label, 'Reminder. Bins. now');
+      expect(
+        semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+        isFalse,
+      );
+      await tester.tap(find.text('Reminder'));
+
+      expect(opened, 0);
       handle.dispose();
     });
   });

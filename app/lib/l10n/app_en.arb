@@ -121,5 +121,23 @@
     "placeholders": {
       "title": {"type": "String"}
     }
-  }
+  },
+  "notificationsTitle": "Notifications",
+  "notificationsEmpty": "You're all caught up.",
+  "markAllRead": "Mark all read",
+  "loadMore": "Load more",
+  "notificationSettings": "Notification settings",
+  "channelPush": "Push",
+  "channelInApp": "In the app",
+  "notificationsBellUnread": "Notifications, unread",
+  "unreadLabel": "unread",
+  "typeTaskAssigned": "New chore",
+  "typeTaskReassigned": "Chore reassigned to you",
+  "typeDueReminder": "Reminders",
+  "typeOverdue": "Overdue chores",
+  "typeDismissed": "Chore dismissed",
+  "typeSuperseded": "Chore replaced",
+  "typeReverted": "Chore reopened",
+  "typeMarkedAway": "Marked away",
+  "typeInvitation": "Invitations"
 }

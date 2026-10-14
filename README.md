@@ -48,6 +48,7 @@ make client && cd app && flutter pub get && flutter run -d chrome --web-port 809
   --dart-define=TASKS_API_BASE_URL=http://localhost:8082 \
   --dart-define=SCORING_API_BASE_URL=http://localhost:8083 \
   --dart-define=LISTS_API_BASE_URL=http://localhost:8084 \
+  --dart-define=NOTIFICATIONS_API_BASE_URL=http://localhost:8085 \
   --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome
 ```
 

@@ -314,4 +314,58 @@ class AppLocalizationsEn extends AppLocalizations {
   String uncheckItem(String title) {
     return 'Uncheck $title';
   }
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsEmpty => 'You\'re all caught up.';
+
+  @override
+  String get markAllRead => 'Mark all read';
+
+  @override
+  String get loadMore => 'Load more';
+
+  @override
+  String get notificationSettings => 'Notification settings';
+
+  @override
+  String get channelPush => 'Push';
+
+  @override
+  String get channelInApp => 'In the app';
+
+  @override
+  String get notificationsBellUnread => 'Notifications, unread';
+
+  @override
+  String get unreadLabel => 'unread';
+
+  @override
+  String get typeTaskAssigned => 'New chore';
+
+  @override
+  String get typeTaskReassigned => 'Chore reassigned to you';
+
+  @override
+  String get typeDueReminder => 'Reminders';
+
+  @override
+  String get typeOverdue => 'Overdue chores';
+
+  @override
+  String get typeDismissed => 'Chore dismissed';
+
+  @override
+  String get typeSuperseded => 'Chore replaced';
+
+  @override
+  String get typeReverted => 'Chore reopened';
+
+  @override
+  String get typeMarkedAway => 'Marked away';
+
+  @override
+  String get typeInvitation => 'Invitations';
 }

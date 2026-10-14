@@ -679,6 +679,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Uncheck {title}'**
   String uncheckItem(String title);
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re all caught up.'**
+  String get notificationsEmpty;
+
+  /// No description provided for @markAllRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all read'**
+  String get markAllRead;
+
+  /// No description provided for @loadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get loadMore;
+
+  /// No description provided for @notificationSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification settings'**
+  String get notificationSettings;
+
+  /// No description provided for @channelPush.
+  ///
+  /// In en, this message translates to:
+  /// **'Push'**
+  String get channelPush;
+
+  /// No description provided for @channelInApp.
+  ///
+  /// In en, this message translates to:
+  /// **'In the app'**
+  String get channelInApp;
+
+  /// No description provided for @notificationsBellUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications, unread'**
+  String get notificationsBellUnread;
+
+  /// No description provided for @unreadLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'unread'**
+  String get unreadLabel;
+
+  /// No description provided for @typeTaskAssigned.
+  ///
+  /// In en, this message translates to:
+  /// **'New chore'**
+  String get typeTaskAssigned;
+
+  /// No description provided for @typeTaskReassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore reassigned to you'**
+  String get typeTaskReassigned;
+
+  /// No description provided for @typeDueReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get typeDueReminder;
+
+  /// No description provided for @typeOverdue.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue chores'**
+  String get typeOverdue;
+
+  /// No description provided for @typeDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore dismissed'**
+  String get typeDismissed;
+
+  /// No description provided for @typeSuperseded.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore replaced'**
+  String get typeSuperseded;
+
+  /// No description provided for @typeReverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore reopened'**
+  String get typeReverted;
+
+  /// No description provided for @typeMarkedAway.
+  ///
+  /// In en, this message translates to:
+  /// **'Marked away'**
+  String get typeMarkedAway;
+
+  /// No description provided for @typeInvitation.
+  ///
+  /// In en, this message translates to:
+  /// **'Invitations'**
+  String get typeInvitation;
 }
 
 class _AppLocalizationsDelegate

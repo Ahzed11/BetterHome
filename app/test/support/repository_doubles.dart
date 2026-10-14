@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 
@@ -117,4 +118,32 @@ class FailingListsRepository extends FakeListsRepository {
     String householdId,
     String listId,
   ) async => throw ApiException('boom', statusCode: 500);
+}
+
+/// Notifications repository whose reads never complete (loading state).
+class PendingNotificationsRepository extends FakeNotificationsRepository {
+  @override
+  Future<List<AppNotification>> list({
+    String? before,
+    int limit = 20,
+    bool unreadOnly = false,
+  }) => Completer<List<AppNotification>>().future;
+
+  @override
+  Future<List<NotificationPreference>> preferences() =>
+      Completer<List<NotificationPreference>>().future;
+}
+
+/// Notifications repository whose reads fail (error state).
+class FailingNotificationsRepository extends FakeNotificationsRepository {
+  @override
+  Future<List<AppNotification>> list({
+    String? before,
+    int limit = 20,
+    bool unreadOnly = false,
+  }) async => throw ApiException('boom', statusCode: 500);
+
+  @override
+  Future<List<NotificationPreference>> preferences() async =>
+      throw ApiException('boom', statusCode: 500);
 }
