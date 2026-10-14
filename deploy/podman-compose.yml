@@ -86,6 +86,7 @@ services:
       <<: *service-env
       DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_tasks
       HOUSEHOLDS_SERVICE_URL: http://households-service:8081
+      SCORING_SERVICE_URL: http://scoring-service:8083
       OIDC_SERVICE_CLIENT_ID: betterhome-tasks-service
       # Local-dev placeholder, same value as the secret in realm-betterhome.json
       OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
@@ -100,6 +101,10 @@ services:
     environment:
       <<: *service-env
       DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_scoring
+      HOUSEHOLDS_SERVICE_URL: http://households-service:8081
+      OIDC_SERVICE_CLIENT_ID: betterhome-scoring-service
+      # Local-dev placeholder, same value as the secret in realm-betterhome.json
+      OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
       - "8083:8083"
 

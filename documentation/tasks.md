@@ -159,7 +159,10 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Summary (first increment): `make e2e` runs the `integration_test` journey in `app/integration_test/` against the real Compose stack. Target is picked with `E2E_TARGET=web|android` (default `web`); `E2E_STACK=running` reuses a stack already up. `tooling/e2e.sh` boots the stack, creates the test user, gets a Keycloak token and launches the target; web uses headless Chrome for Testing + chromedriver, pinned with checksums in `tooling/versions.env`, installed by `install-dev-tools.sh`, checked by `make doctor`. Services allow the web origin through CORS in the local stack. The first journey is profile sync then create household, answered by the real services.
 * Decisions and deviations: web first by the product owner's decision (the Android emulator crashes on this VM, T-0045); ADR 0018; AGENTS §6.1/§6.2 reworded for the selectable target. The test user's token is injected with `--dart-define` because the app has no sign-in yet (T-0006) and `flutter_appauth` has no web support (T-0069).
 * Verification: from a cold start (`make down`, then `make e2e`) the web journey passed; again with `E2E_STACK=running`; an unknown target exits 2; `make test-app` and `make test-docs` pass. NOT run: the `android` target (never booted here), `make test-backend` (no backend code changed), CI.
-* Remaining: remaining journeys of AGENTS §6.2 (each feature task adds its own), sign-in through Keycloak in the app (T-0006), controllable clock and fake push endpoint, the CI job in the T-0018 workflow, and wiring `e2e` into `make check` once CI has Chrome.
+* Summary (journeys increment, after sign-in T-0006): the web target now runs three things against the real stack: the real Keycloak browser sign-in (`app/test_driver/web_sign_in.dart`), then `integration_test` driving the UI with tokens for alice and bob: sign in/profile sync and create a household; admin creates a template and quick-logs a manual task; an open task is completed by its assignee; a second one is dismissed after confirmation; the admin reverts a completion with a reason; the leaderboard shows 10 then 5 points (tasks to scoring over HTTP, scoring to households); alice invites bob and bob joins with the token. `tooling/e2e.sh` fetches the tokens right before the journeys (they expire in about five minutes, shorter than the builds before them).
+* Product bugs found by the journeys and fixed: the Compose stack gave tasks-service no `SCORING_SERVICE_URL` and scoring-service neither the households URL nor its service client, so completing a task and reading the scoreboard answered 503 (the T-0016 scoreboard limit); fixed in `deploy/podman-compose.yml`.
+* Verification (journeys): cold `make down` then `make e2e` passed (sign-in journey and both `integration_test` journeys); `make test-app`, `make test-guard`, `make test-docs` pass. A first cold run once timed out waiting for the app to start in the sign-in journey and passed on rerun (see T-0074). NOT run: the `android` target, CI.
+* Remaining: journeys that need a scheduler or controllable clock (spawn and assignment by round robin, supersede, away reassignment, month-end recap), leaderboard period views, checklists (T-0023/T-0024), household switcher with two households, French and English journeys; the controllable clock and fake push endpoint; the CI job (T-0073); wiring `e2e` into `make check`.
 
 
 ### T-0022 · Golden and accessibility baseline for existing screens
@@ -590,4 +593,20 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0006
 * Spec: §9, AGENTS §8
 * Acceptance criteria: Decide between the library's default (browser `localStorage`, session survives a reload, readable by any script injected into the page) and an in-memory store (needs a re-login on reload, and the sign-in must then avoid a full-page redirect); implement the choice and record it in ADR 0020.
+
+### T-0074 · e2e: the sign-in journey timed out once while the app was starting
+
+* Status: todo
+* Issue / PR: — (suggested: "web sign-in e2e is flaky on a cold start")
+* Depends on: T-0021
+* Spec: AGENTS §6.2
+* Acceptance criteria: `app/test_driver/web_sign_in.dart` waits for the app to be ready instead of a fixed 60 s for the accessibility placeholder (observed once on a cold run in a fresh worktree: "Timed out waiting for the app to start"; the rerun passed). Find the cause (release build still being served, or semantics placeholder) and remove the flake.
+
+### T-0075 · App: no way to create an open task or a template, and accepting an invitation needs a household
+
+* Status: todo
+* Issue / PR: — (suggested: "Chores screen cannot create tasks or templates")
+* Depends on: —
+* Spec: §3.1, §8.2
+* Acceptance criteria: The e2e creates open tasks through the repository because the UI has no such action, and templates exist only through the quick-log dialog when a household has none. Accepting an invitation is an action inside an existing household's screen, so a new user must create a household first. Needs a product decision on the intended screens (spec §8.2) before any UI change.
 

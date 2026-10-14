@@ -31,17 +31,22 @@ if [[ "$E2E_STACK" == start ]]; then
   CORS_ORIGINS="http://localhost:${E2E_WEB_PORT}" make -C "$ROOT" up
 fi
 ensure_user "$E2E_USER" "$E2E_PASSWORD" "${E2E_USER}@betterhome.local" "$E2E_USER"
-token="$(get_token "$E2E_USER" "$E2E_PASSWORD")"
+ensure_user bob "$E2E_PASSWORD" "bob@betterhome.local" bob
 
 # On the Android emulator the host is 10.0.2.2; Chrome reaches it as localhost.
 host=localhost
 [[ "$E2E_TARGET" == android ]] && host=10.0.2.2
-defines=(
-  "--dart-define=E2E_HOUSEHOLDS_URL=http://${host}:8081"
-  "--dart-define=E2E_TASKS_URL=http://${host}:8082"
-  "--dart-define=E2E_SCORING_URL=http://${host}:8083"
-  "--dart-define=E2E_ACCESS_TOKEN=${token}"
-)
+# Tokens last about five minutes and the builds before a journey take longer, so they are fetched
+# right before the journey that uses them.
+set_defines() {
+  defines=(
+    "--dart-define=E2E_HOUSEHOLDS_URL=http://${host}:8081"
+    "--dart-define=E2E_TASKS_URL=http://${host}:8082"
+    "--dart-define=E2E_SCORING_URL=http://${host}:8083"
+    "--dart-define=E2E_ACCESS_TOKEN=$(get_token "$E2E_USER" "$E2E_PASSWORD")"
+    "--dart-define=E2E_ACCESS_TOKEN_BOB=$(get_token bob "$E2E_PASSWORD")"
+  )
+}
 
 cd "$ROOT/app"
 flutter pub get >/dev/null
@@ -67,11 +72,13 @@ if [[ "$E2E_TARGET" == web ]]; then
   kill "$server_pid"; wait "$server_pid" 2>/dev/null || true
   server_pid=
 
-  # Journey 2, repository calls with the token fetched above (the app cannot sign in from the test).
+  # Journey 2, the household and chores journeys with tokens fetched now (the test cannot sign in).
+  set_defines
   flutter drive --driver=test_driver/integration_test.dart \
     --target=integration_test/household_journey_test.dart \
     -d web-server --browser-name=chrome --chrome-binary="$CHROME_EXECUTABLE" --headless --web-port="$E2E_WEB_PORT" "${defines[@]}"
 else
+  set_defines
   flutter drive --driver=test_driver/integration_test.dart \
     --target=integration_test/household_journey_test.dart \
     -d emulator-5554 "${defines[@]}"
