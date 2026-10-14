@@ -295,8 +295,8 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0089 · App: a reverted task shows its reason to the assignee
 
-* Status: in-review
-* Issue / PR: #24 / PR pending
+* Status: done
+* Issue / PR: #24 / #87
 * Depends on: T-0031
 * Spec: §3.3 (reversion), §8
 * Acceptance criteria: When an admin reverts a task, the assignee sees the reason on the task in the app (the task API exposes the latest reversion reason, documented in OpenAPI, spec and contract tests). FR/EN, widget and golden tests, and an e2e journey "admin reverts with a reason and the assignee sees it".
