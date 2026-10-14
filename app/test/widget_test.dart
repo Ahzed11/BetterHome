@@ -16,7 +16,7 @@ void main() {
     await tester.tap(find.text('Continue with demo data'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Your households'), findsOneWidget);
+    expect(find.textContaining('No households yet'), findsOneWidget);
     expect(find.textContaining('No households yet'), findsOneWidget);
   });
 
@@ -29,7 +29,7 @@ void main() {
     await tester.tap(find.text('Continuer avec des données de démo'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Vos foyers'), findsOneWidget);
+    expect(find.textContaining('Aucun foyer'), findsOneWidget);
     await tester.tap(find.text('Créer un foyer'));
     await tester.pumpAndSettle();
 
@@ -51,7 +51,9 @@ void main() {
     );
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Flat'));
+    await tester.tap(find.bySemanticsLabel('Household Flat, switch household'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Household details'));
     await tester.pumpAndSettle();
 
     expect(find.text('Members'), findsOneWidget);
@@ -74,7 +76,7 @@ void main() {
     expect(AppLocalizations.supportedLocales, contains(const Locale('fr')));
   });
 
-  testWidgets('quick-log chore from household detail', (tester) async {
+  testWidgets('quick-log a chore from the chores tab', (tester) async {
     final session = AppSession(repository: FakeHouseholdsRepository());
     await tester.pumpWidget(
       BetterHomeApp(session: session, initialLocale: const Locale('en')),
@@ -85,10 +87,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Flat');
     await tester.tap(find.text('Save'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Flat'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Open chores'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('I just did…'));
     await tester.pumpAndSettle();
@@ -111,9 +109,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Flat');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Flat'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Leaderboard'));
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Leaderboard'));
     await tester.pumpAndSettle();
     expect(find.text('Podium'), findsOneWidget);
     expect(find.text('Shared effort'), findsOneWidget);
@@ -131,10 +127,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Flat');
     await tester.tap(find.text('Save'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Flat'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Open chores'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(PopupMenuButton<String>));
     await tester.pumpAndSettle();
@@ -159,9 +151,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Coloc');
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Coloc'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Classement'));
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Classement'));
     await tester.pumpAndSettle();
     expect(find.text('Podium'), findsOneWidget);
     expect(find.text('Effort partagé'), findsOneWidget);

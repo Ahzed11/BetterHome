@@ -104,12 +104,6 @@ abstract class AppLocalizations {
   /// **'BetterHome'**
   String get appTitle;
 
-  /// No description provided for @householdsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Your households'**
-  String get householdsTitle;
-
   /// No description provided for @householdsEmpty.
   ///
   /// In en, this message translates to:
@@ -362,23 +356,11 @@ abstract class AppLocalizations {
   /// **'Title'**
   String get templateTitle;
 
-  /// No description provided for @openChores.
-  ///
-  /// In en, this message translates to:
-  /// **'Open chores'**
-  String get openChores;
-
   /// No description provided for @leaderboardTitle.
   ///
   /// In en, this message translates to:
   /// **'Leaderboard'**
   String get leaderboardTitle;
-
-  /// No description provided for @openLeaderboard.
-  ///
-  /// In en, this message translates to:
-  /// **'Leaderboard'**
-  String get openLeaderboard;
 
   /// No description provided for @periodWeek.
   ///
@@ -614,12 +596,6 @@ abstract class AppLocalizations {
   /// **'Use this to start the list over, for example a packing list.'**
   String get resetListConfirmBody;
 
-  /// No description provided for @openLists.
-  ///
-  /// In en, this message translates to:
-  /// **'Lists'**
-  String get openLists;
-
   /// No description provided for @listsTitle.
   ///
   /// In en, this message translates to:
@@ -823,6 +799,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nice!'**
   String get recapClose;
+
+  /// No description provided for @switchHousehold.
+  ///
+  /// In en, this message translates to:
+  /// **'Household {name}, switch household'**
+  String switchHousehold(String name);
+
+  /// No description provided for @householdDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Household details'**
+  String get householdDetails;
 }
 
 class _AppLocalizationsDelegate

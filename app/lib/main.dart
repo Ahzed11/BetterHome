@@ -7,6 +7,7 @@ import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Entry point. Runs in demo mode (in-memory repositories) unless both are set:
 /// API: `--dart-define=API_BASE_URL=http://localhost:8081` (households), optionally
@@ -17,8 +18,9 @@ import 'package:flutter/material.dart';
 ///   optionally `KEYCLOAK_CLIENT_ID` (default `betterhome-app`).
 /// On the Android emulator use 10.0.2.2 for the API and run `adb reverse tcp:8180 tcp:8180`, because
 /// Keycloak advertises `localhost:8180` in its discovery document.
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final preferences = await SharedPreferences.getInstance();
   const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
   const tasksApiBaseUrl = String.fromEnvironment('TASKS_API_BASE_URL');
   const scoringApiBaseUrl = String.fromEnvironment('SCORING_API_BASE_URL');
@@ -35,7 +37,10 @@ void main() {
   if (apiBaseUrl.isEmpty || keycloakIssuer.isEmpty) {
     runApp(
       BetterHomeApp(
-        session: AppSession(repository: FakeHouseholdsRepository()),
+        session: AppSession(
+          repository: FakeHouseholdsRepository(),
+          preferences: preferences,
+        ),
       ),
     );
     return;
@@ -49,6 +54,7 @@ void main() {
     BetterHomeApp(
       auth: auth,
       session: AppSession(
+        preferences: preferences,
         repository: HttpHouseholdsRepository(
           baseUrl: apiBaseUrl,
           accessToken: auth.accessToken,

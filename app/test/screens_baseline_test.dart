@@ -6,14 +6,15 @@ import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/chores_screen.dart';
 import 'package:betterhome/ui/screens/create_household_screen.dart';
+import 'package:betterhome/ui/screens/home_shell.dart';
 import 'package:betterhome/ui/screens/household_detail_screen.dart';
-import 'package:betterhome/ui/screens/households_screen.dart';
 import 'package:betterhome/ui/screens/leaderboard_screen.dart';
 import 'package:betterhome/ui/screens/lists_screen.dart';
 import 'package:betterhome/ui/screens/notification_preferences_screen.dart';
 import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
 import 'package:betterhome/ui/screens/sign_in_screen.dart';
+import 'package:betterhome/ui/widgets/household_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -132,25 +133,43 @@ final List<_Scenario> _scenarios = [
     ),
   ),
   _Scenario(
-    'households_loading',
-    () async => HouseholdsScreen(
+    'home_loading',
+    () async => HomeShell(
       session: await _sessionWith(households: PendingHouseholdsRepository()),
     ),
   ),
   _Scenario(
-    'households_empty',
-    () async =>
-        HouseholdsScreen(session: await _sessionWith(withHousehold: false)),
+    'home_no_household',
+    () async => HomeShell(session: await _sessionWith(withHousehold: false)),
   ),
   _Scenario(
-    'households_error',
-    () async => HouseholdsScreen(
+    'home_error',
+    () async => HomeShell(
       session: await _sessionWith(households: FailingHouseholdsRepository()),
     ),
   ),
   _Scenario(
-    'households_populated',
-    () async => HouseholdsScreen(session: await _sessionWith()),
+    'home_populated',
+    () async => HomeShell(session: await _sessionWith()),
+  ),
+  _Scenario('household_sheet', () async {
+    final session = await _sessionWith();
+    final second = await session.repository.createHousehold(
+      name: 'Cabin',
+      timezone: 'Europe/Paris',
+    );
+    final households = await session.repository.listHouseholds();
+    return Scaffold(
+      body: HouseholdSheet(current: second, households: households),
+    );
+  }),
+  _Scenario(
+    'chores_mine',
+    () async => ChoresScreen(
+      session: await _choresSession(populated: true),
+      householdId: _household,
+      mine: true,
+    ),
   ),
   _Scenario(
     'create_household',

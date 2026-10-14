@@ -40,7 +40,7 @@ void main() {
 
     expect(find.text('Welcome to BetterHome'), findsOneWidget);
     expect(find.text('Sign in'), findsOneWidget);
-    expect(find.text('Your households'), findsNothing);
+    expect(find.textContaining('No households yet'), findsNothing);
   });
 
   testWidgets(
@@ -53,7 +53,7 @@ void main() {
       await tester.tap(find.text('Sign in'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Your households'), findsOneWidget);
+      expect(find.textContaining('No households yet'), findsOneWidget);
       expect(session.profile?.email, 'ada@example.com');
       expect(session.profile?.givenName, 'Ada');
       expect(session.profile?.language, 'en');
@@ -75,7 +75,7 @@ void main() {
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Your households'), findsOneWidget);
+    expect(find.textContaining('No households yet'), findsOneWidget);
     expect(session.profile?.givenName, 'Saved');
     expect(session.profile?.language, 'fr');
     expect(session.profile?.timezone, 'Europe/Paris');
@@ -88,7 +88,7 @@ void main() {
 
     await _pump(tester, auth: auth);
 
-    expect(find.text('Your households'), findsOneWidget);
+    expect(find.textContaining('No households yet'), findsOneWidget);
     expect(auth.signInCalls, 0);
   });
 
@@ -121,7 +121,7 @@ void main() {
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Your households'), findsOneWidget);
+    expect(find.textContaining('No households yet'), findsOneWidget);
   });
 
   testWidgets('signing out returns to the sign-in screen', (tester) async {

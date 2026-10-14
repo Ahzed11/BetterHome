@@ -1,7 +1,6 @@
 {
   "@@locale": "fr",
   "appTitle": "BetterHome",
-  "householdsTitle": "Vos foyers",
   "householdsEmpty": "Aucun foyer pour l’instant. Créez-en un pour commencer.",
   "createHousehold": "Créer un foyer",
   "householdName": "Nom du foyer",
@@ -34,8 +33,8 @@
   "useDemoData": "Continuer avec des données de démo",
   "loading": "Chargement…",
   "choresTitle": "Tâches",
-  "allChores": "Toutes",
-  "myChores": "Les miennes",
+  "allChores": "Toutes les tâches",
+  "myChores": "Mes tâches",
   "choresEmpty": "Aucune tâche. Enregistrez quelque chose que vous venez de faire.",
   "quickLog": "Je viens de…",
   "completeTask": "Terminer",
@@ -44,9 +43,7 @@
   "dismissConfirmBody": "L’action est définitive et n’attribue aucun point.",
   "createTemplate": "Nouveau modèle",
   "templateTitle": "Titre",
-  "openChores": "Ouvrir les tâches",
   "leaderboardTitle": "Classement",
-  "openLeaderboard": "Classement",
   "periodWeek": "Semaine",
   "periodMonth": "Mois",
   "periodYear": "Année",
@@ -96,7 +93,6 @@
   "resetList": "Tout décocher",
   "resetListConfirmTitle": "Décocher tous les éléments ?",
   "resetListConfirmBody": "Pratique pour repartir de zéro, par exemple une liste de valise.",
-  "openLists": "Listes",
   "listsTitle": "Listes",
   "listsEmpty": "Aucune liste pour le moment. Un admin peut en créer une.",
   "newList": "Nouvelle liste",
@@ -130,5 +126,8 @@
   "recapWinnerOther": "{name} a remporté {month} avec {points} points.",
   "recapTotal": "À vous tous, vous avez gagné {total} points.",
   "recapNobody": "Personne n’a marqué de points en {month}.",
-  "recapClose": "Super !"
+  "recapClose": "Super !",
+  "switchHousehold": "Foyer {name}, changer de foyer",
+  "@switchHousehold": {"placeholders": {"name": {"type": "String"}}},
+  "householdDetails": "Détails du foyer"
 }

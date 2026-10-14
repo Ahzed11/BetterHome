@@ -228,7 +228,6 @@ class _ListsScreenState extends State<ListsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(),
       body: FutureBuilder<List<Checklist>>(
         future: _lists,
         builder: (context, snapshot) {

@@ -5,6 +5,7 @@ import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppSession extends ChangeNotifier {
   AppSession({
@@ -13,13 +14,16 @@ class AppSession extends ChangeNotifier {
     ScoringRepository? scoringRepository,
     ListsRepository? listsRepository,
     NotificationsRepository? notificationsRepository,
-  }) : _repository = repository,
+    SharedPreferences? preferences,
+  }) : _preferences = preferences,
+       _repository = repository,
        _tasksRepository = tasksRepository ?? FakeTasksRepository(),
        _scoringRepository = scoringRepository ?? FakeScoringRepository(),
        _listsRepository = listsRepository ?? FakeListsRepository(),
        _notificationsRepository =
            notificationsRepository ?? FakeNotificationsRepository();
 
+  final SharedPreferences? _preferences;
   HouseholdsRepository _repository;
   TasksRepository _tasksRepository;
   ScoringRepository _scoringRepository;
@@ -29,12 +33,42 @@ class AppSession extends ChangeNotifier {
   Object? lastError;
   bool busy = false;
 
+  /// The household every tab shows. Remembered per user, so it is the same after a restart.
+  String? selectedHouseholdId;
+
   HouseholdsRepository get repository => _repository;
   TasksRepository get tasksRepository => _tasksRepository;
   ScoringRepository get scoringRepository => _scoringRepository;
   ListsRepository get listsRepository => _listsRepository;
   NotificationsRepository get notificationsRepository =>
       _notificationsRepository;
+
+  String get _selectionKey => 'selected_household_${profile?.id}';
+
+  /// Keeps the selected household while it is still one of [households]; otherwise falls back to
+  /// the remembered one, then to the first, and to none when there are no households.
+  void ensureSelection(List<Household> households) {
+    final ids = households.map((h) => h.id).toList();
+    final remembered = _preferences?.getString(_selectionKey);
+    final next = ids.contains(selectedHouseholdId)
+        ? selectedHouseholdId
+        : ids.contains(remembered)
+        ? remembered
+        : ids.isEmpty
+        ? null
+        : ids.first;
+    if (next != selectedHouseholdId) {
+      selectedHouseholdId = next;
+      notifyListeners();
+    }
+  }
+
+  /// Switches every tab to [householdId] and remembers the choice.
+  Future<void> selectHousehold(String householdId) async {
+    selectedHouseholdId = householdId;
+    notifyListeners();
+    await _preferences?.setString(_selectionKey, householdId);
+  }
 
   void useRepository(HouseholdsRepository repository) {
     _repository = repository;

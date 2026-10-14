@@ -3,6 +3,7 @@ import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:flutter/material.dart';
 
 class ChoresScreen extends StatefulWidget {
@@ -10,33 +11,28 @@ class ChoresScreen extends StatefulWidget {
     super.key,
     required this.session,
     required this.householdId,
+    this.mine = false,
   });
 
   final AppSession session;
   final String householdId;
 
+  /// Only the chores assigned to the signed-in member (the "My chores" tab).
+  final bool mine;
+
   @override
   State<ChoresScreen> createState() => _ChoresScreenState();
 }
 
-class _ChoresScreenState extends State<ChoresScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabs;
+class _ChoresScreenState extends State<ChoresScreen> {
   late Future<List<ChoreTask>> _future;
   bool _isAdmin = false;
 
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 2, vsync: this);
     _loadAdmin();
     _reload();
-  }
-
-  @override
-  void dispose() {
-    _tabs.dispose();
-    super.dispose();
   }
 
   Future<void> _loadAdmin() async {
@@ -55,10 +51,9 @@ class _ChoresScreenState extends State<ChoresScreen>
   }
 
   void _reload() {
-    final mine = _tabs.index == 1;
     _future = widget.session.tasksRepository.listTasks(
       widget.householdId,
-      mine: mine,
+      mine: widget.mine,
     );
   }
 
@@ -256,139 +251,144 @@ class _ChoresScreenState extends State<ChoresScreen>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.choresTitle),
-        actions: [
-          if (_isAdmin)
-            PopupMenuButton<String>(
-              onSelected: (value) async {
-                if (value == 'recurring') {
-                  await _makeRecurring();
-                } else if (value == 'spawn') {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final count = await widget.session.tasksRepository
-                      .runDueRecurrences(widget.householdId);
-                  if (!mounted) {
-                    return;
-                  }
-                  messenger.showSnackBar(
-                    SnackBar(content: Text(l10n.spawnedCount(count))),
-                  );
-                  setState(_reload);
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'recurring',
-                  child: Text(l10n.makeRecurring),
-                ),
-                PopupMenuItem(value: 'spawn', child: Text(l10n.runDueNow)),
-              ],
-            ),
-        ],
-        bottom: TabBar(
-          controller: _tabs,
-          onTap: (_) => setState(_reload),
-          tabs: [
-            Tab(text: l10n.allChores),
-            Tab(text: l10n.myChores),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _quickLog,
         icon: const Icon(Icons.bolt),
         label: Text(l10n.quickLog),
       ),
-      body: FutureBuilder<List<ChoreTask>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return Center(child: Text(l10n.loading));
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text(l10n.errorGeneric));
-          }
-          final tasks = snapshot.data ?? const [];
-          if (tasks.isEmpty) {
-            return Center(child: Text(l10n.choresEmpty));
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
-            itemCount: tasks.length,
-            separatorBuilder: (_, _) =>
-                const SizedBox(height: AppTokens.spaceSm),
-            itemBuilder: (context, index) {
-              final task = tasks[index];
-              return ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-                ),
-                tileColor: Colors.white,
-                title: Text('${task.emoji ?? ''} ${task.title}'.trim()),
-                subtitle: Text(
-                  '${task.status.name} · ${task.pointsAwarded ?? task.points} pts',
-                ),
-                trailing: task.status == TaskStatus.open
-                    ? Wrap(
-                        spacing: 4,
-                        children: [
-                          IconButton(
-                            tooltip: l10n.completeTask,
-                            onPressed: () async {
-                              await widget.session.tasksRepository.complete(
-                                widget.householdId,
-                                task.id,
-                              );
-                              setState(_reload);
-                            },
-                            icon: const Icon(Icons.check_circle_outline),
-                          ),
-                          IconButton(
-                            tooltip: l10n.dismissTask,
-                            onPressed: () async {
-                              final ok = await showDialog<bool>(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text(l10n.dismissConfirmTitle),
-                                  content: Text(l10n.dismissConfirmBody),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, false),
-                                      child: Text(l10n.cancel),
-                                    ),
-                                    FilledButton(
-                                      onPressed: () =>
-                                          Navigator.pop(context, true),
-                                      child: Text(l10n.dismissTask),
-                                    ),
-                                  ],
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppTokens.spaceMd,
+              AppTokens.spaceSm,
+              AppTokens.spaceMd,
+              AppTokens.spaceSm,
+            ),
+            child: ScreenHeader(
+              title: widget.mine ? l10n.myChores : l10n.allChores,
+              actions: [
+                if (_isAdmin)
+                  PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'recurring') {
+                        await _makeRecurring();
+                      } else if (value == 'spawn') {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final count = await widget.session.tasksRepository
+                            .runDueRecurrences(widget.householdId);
+                        if (!mounted) {
+                          return;
+                        }
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(l10n.spawnedCount(count))),
+                        );
+                        setState(_reload);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: 'recurring',
+                        child: Text(l10n.makeRecurring),
+                      ),
+                      PopupMenuItem(
+                        value: 'spawn',
+                        child: Text(l10n.runDueNow),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<ChoreTask>>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return Center(child: Text(l10n.loading));
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Text(l10n.errorGeneric));
+                }
+                final tasks = snapshot.data ?? const [];
+                if (tasks.isEmpty) {
+                  return Center(child: Text(l10n.choresEmpty));
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.all(AppTokens.spaceMd),
+                  itemCount: tasks.length,
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: AppTokens.spaceSm),
+                  itemBuilder: (context, index) {
+                    final task = tasks[index];
+                    return ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+                      ),
+                      tileColor: Colors.white,
+                      title: Text('${task.emoji ?? ''} ${task.title}'.trim()),
+                      subtitle: Text(
+                        '${task.status.name} · ${task.pointsAwarded ?? task.points} pts',
+                      ),
+                      trailing: task.status == TaskStatus.open
+                          ? Wrap(
+                              spacing: 4,
+                              children: [
+                                IconButton(
+                                  tooltip: l10n.completeTask,
+                                  onPressed: () async {
+                                    await widget.session.tasksRepository
+                                        .complete(widget.householdId, task.id);
+                                    setState(_reload);
+                                  },
+                                  icon: const Icon(Icons.check_circle_outline),
                                 ),
-                              );
-                              if (ok == true) {
-                                await widget.session.tasksRepository.dismiss(
-                                  widget.householdId,
-                                  task.id,
-                                );
-                                setState(_reload);
-                              }
-                            },
-                            icon: const Icon(Icons.cancel_outlined),
-                          ),
-                        ],
-                      )
-                    : task.status == TaskStatus.done && _isAdmin
-                    ? IconButton(
-                        tooltip: l10n.revertTask,
-                        onPressed: () => _revert(task),
-                        icon: const Icon(Icons.undo),
-                      )
-                    : null,
-              );
-            },
-          );
-        },
+                                IconButton(
+                                  tooltip: l10n.dismissTask,
+                                  onPressed: () async {
+                                    final ok = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: Text(l10n.dismissConfirmTitle),
+                                        content: Text(l10n.dismissConfirmBody),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: Text(l10n.cancel),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: Text(l10n.dismissTask),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (ok == true) {
+                                      await widget.session.tasksRepository
+                                          .dismiss(widget.householdId, task.id);
+                                      setState(_reload);
+                                    }
+                                  },
+                                  icon: const Icon(Icons.cancel_outlined),
+                                ),
+                              ],
+                            )
+                          : task.status == TaskStatus.done && _isAdmin
+                          ? IconButton(
+                              tooltip: l10n.revertTask,
+                              onPressed: () => _revert(task),
+                              icon: const Icon(Icons.undo),
+                            )
+                          : null,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

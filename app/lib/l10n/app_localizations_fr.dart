@@ -12,9 +12,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get appTitle => 'BetterHome';
 
   @override
-  String get householdsTitle => 'Vos foyers';
-
-  @override
   String get householdsEmpty =>
       'Aucun foyer pour l’instant. Créez-en un pour commencer.';
 
@@ -115,10 +112,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get choresTitle => 'Tâches';
 
   @override
-  String get allChores => 'Toutes';
+  String get allChores => 'Toutes les tâches';
 
   @override
-  String get myChores => 'Les miennes';
+  String get myChores => 'Mes tâches';
 
   @override
   String get choresEmpty =>
@@ -147,13 +144,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get templateTitle => 'Titre';
 
   @override
-  String get openChores => 'Ouvrir les tâches';
-
-  @override
   String get leaderboardTitle => 'Classement';
-
-  @override
-  String get openLeaderboard => 'Classement';
 
   @override
   String get periodWeek => 'Semaine';
@@ -282,9 +273,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pratique pour repartir de zéro, par exemple une liste de valise.';
 
   @override
-  String get openLists => 'Listes';
-
-  @override
   String get listsTitle => 'Listes';
 
   @override
@@ -400,4 +388,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get recapClose => 'Super !';
+
+  @override
+  String switchHousehold(String name) {
+    return 'Foyer $name, changer de foyer';
+  }
+
+  @override
+  String get householdDetails => 'Détails du foyer';
 }

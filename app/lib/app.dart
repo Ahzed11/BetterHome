@@ -3,7 +3,7 @@ import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/app_theme.dart';
-import 'package:betterhome/ui/screens/households_screen.dart';
+import 'package:betterhome/ui/screens/home_shell.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
 import 'package:betterhome/ui/screens/sign_in_screen.dart';
 import 'package:flutter/material.dart';
@@ -102,7 +102,7 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
   Widget _home() {
     if (widget.auth == null) {
       return _synced
-          ? HouseholdsScreen(session: widget.session)
+          ? HomeShell(session: widget.session)
           : _demoProfileScreen();
     }
     return switch (_phase) {
@@ -114,10 +114,7 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
         busy: _phase == _Phase.signingIn,
         failed: _signInFailed,
       ),
-      _Phase.ready => HouseholdsScreen(
-        session: widget.session,
-        onSignOut: _signOut,
-      ),
+      _Phase.ready => HomeShell(session: widget.session, onSignOut: _signOut),
     };
   }
 

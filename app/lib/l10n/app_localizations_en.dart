@@ -12,9 +12,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'BetterHome';
 
   @override
-  String get householdsTitle => 'Your households';
-
-  @override
   String get householdsEmpty => 'No households yet. Create one to get started.';
 
   @override
@@ -145,13 +142,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get templateTitle => 'Title';
 
   @override
-  String get openChores => 'Open chores';
-
-  @override
   String get leaderboardTitle => 'Leaderboard';
-
-  @override
-  String get openLeaderboard => 'Leaderboard';
 
   @override
   String get periodWeek => 'Week';
@@ -279,9 +270,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use this to start the list over, for example a packing list.';
 
   @override
-  String get openLists => 'Lists';
-
-  @override
   String get listsTitle => 'Lists';
 
   @override
@@ -396,4 +384,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get recapClose => 'Nice!';
+
+  @override
+  String switchHousehold(String name) {
+    return 'Household $name, switch household';
+  }
+
+  @override
+  String get householdDetails => 'Household details';
 }
