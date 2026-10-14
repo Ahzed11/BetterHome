@@ -235,7 +235,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0028 · App: notification inbox and preferences
 
 * Status: done
-* Issue / PR: #21 / PR pending
+* Issue / PR: #21 / #79
 * Depends on: T-0025, T-0020, T-0024
 * Spec: §5
 * Acceptance criteria: Split by the product owner on 2026-10-14: this task is the inbox and the preferences, which need only the notifications API that exists (T-0025); the push permission prompt and token registration moved to T-0086. Inbox screen reachable from the home screen with an unread count, read state (open one to mark it read, mark all read) and paging; a preferences screen with a toggle per notification type and channel. Built from the shared widgets and tokens (ADR 0021); the design canvas has only a bell icon on the Chores board, no inbox board, so the screens extend its look. FR/EN, widget and golden tests, e2e journey (a member invited by an admin finds the invitation in the inbox).
