@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Installs the pinned Flutter SDK, Android SDK, emulator image and test AVD (idempotent).
+# Installs the pinned Flutter SDK, Chrome for Testing, Android SDK, emulator image and test AVD (idempotent).
 # System packages need sudo (Fedora/dnf); everything else lives under $HOME.
 set -euo pipefail
 # shellcheck source=dev-env.sh
@@ -33,6 +33,20 @@ if [[ "$(cat "$DEV_TOOLS_DIR/flutter/.betterhome-version" 2>/dev/null || true)" 
 fi
 flutter config --no-analytics >/dev/null
 flutter --version
+
+echo "== Chrome for Testing ${CHROME_VERSION} (web end-to-end target)"
+if [[ "$(cat "$DEV_TOOLS_DIR/chrome/.betterhome-version" 2>/dev/null || true)" != "$CHROME_VERSION" ]]; then
+  rm -rf "$DEV_TOOLS_DIR/chrome"
+  mkdir -p "$DEV_TOOLS_DIR/chrome"
+  for artifact in chrome:"$CHROME_SHA256" chromedriver:"$CHROMEDRIVER_SHA256"; do
+    name="${artifact%%:*}"
+    curl -fsSL -o "$WORK/$name.zip" \
+      "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/linux64/${name}-linux64.zip"
+    echo "${artifact#*:}  $WORK/$name.zip" | sha256sum -c -
+    unzip -q "$WORK/$name.zip" -d "$DEV_TOOLS_DIR/chrome"
+  done
+  echo "$CHROME_VERSION" > "$DEV_TOOLS_DIR/chrome/.betterhome-version"
+fi
 
 echo "== Android command-line tools ${ANDROID_CMDLINE_TOOLS_BUILD}"
 if [[ ! -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]]; then

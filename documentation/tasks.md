@@ -140,11 +140,16 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0021 · `make e2e`: real app on an emulator against the real stack
 
-* Status: todo
-* Issue / PR: #14
+* Status: in-progress
+* Issue / PR: #14 / PR_TBD
 * Depends on: T-0006, T-0016, T-0015
 * Spec: AGENTS §6.2
 * Acceptance criteria: `make e2e` boots the stack, applies migrations, launches the app on a headless Android emulator, signs in through Keycloak and runs `integration_test` journeys. Adds a controllable clock exposed only in the test environment and a fake push gateway endpoint. CI job added to the T-0018 workflow. Each later feature task adds its journey here.
+* Summary (first increment): `make e2e` runs the `integration_test` journey in `app/integration_test/` against the real Compose stack. Target is picked with `E2E_TARGET=web|android` (default `web`); `E2E_STACK=running` reuses a stack already up. `tooling/e2e.sh` boots the stack, creates the test user, gets a Keycloak token and launches the target; web uses headless Chrome for Testing + chromedriver, pinned with checksums in `tooling/versions.env`, installed by `install-dev-tools.sh`, checked by `make doctor`. Services allow the web origin through CORS in the local stack. The first journey is profile sync then create household, answered by the real services.
+* Decisions and deviations: web first by the product owner's decision (the Android emulator crashes on this VM, T-0045); ADR 0018; AGENTS §6.1/§6.2 reworded for the selectable target. The test user's token is injected with `--dart-define` because the app has no sign-in yet (T-0006) and `flutter_appauth` has no web support (T-0069).
+* Verification: from a cold start (`make down`, then `make e2e`) the web journey passed; again with `E2E_STACK=running`; an unknown target exits 2; `make test-app` and `make test-docs` pass. NOT run: the `android` target (never booted here), `make test-backend` (no backend code changed), CI.
+* Remaining: remaining journeys of AGENTS §6.2 (each feature task adds its own), sign-in through Keycloak in the app (T-0006), controllable clock and fake push endpoint, the CI job in the T-0018 workflow, and wiring `e2e` into `make check` once CI has Chrome.
+
 
 ### T-0022 · Golden and accessibility baseline for existing screens
 
@@ -418,3 +423,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0015
 * Spec: AGENTS §6.2
 * Acceptance criteria: `tooling/start-emulator.sh` boots the AVD to `sys.boot_completed=1` on the dev VM, or the e2e job is moved to CI with a documented reason, and `make doctor` gains a boot check. Observed: SIGSEGV in `qemu-system-x86_64-headless` about 25-30 s after start, when the guest `media` service starts (guest kernel boots fine); emulator 37.2.12, Android 35 google_apis x86_64, AMD Ryzen 7 5800X VM on Fedora 44. Same result with `-gpu swiftshader_indirect`, `-gpu guest`, `-feature -Vulkan`, `-accel off`, cameras off and `-feature -HardwareDecoder`. Not yet tried: another emulator build, another system image (API 34, non-google_apis), a gdb backtrace, an AVD without audio hardware.
+* Note: no longer blocks `make e2e`, which runs on the web target by default (ADR 0018); it still blocks the `android` target.
+
+### T-0069 · Web sign-in for the app
+
+* Status: todo
+* Issue / PR: #56
+* Depends on: T-0006
+* Spec: §2, §9, AGENTS §6.2
+* Acceptance criteria: decide and implement how the web build signs in to Keycloak (`flutter_appauth` has no web support), or record that web e2e stays token-injected. Needs a product decision first.

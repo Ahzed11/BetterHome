@@ -14,6 +14,9 @@ x-service-env: &service-env
   DB_USER: betterhome
   DB_PASSWORD: betterhome
   OIDC_AUTH_SERVER_URL: http://keycloak:8180/realms/betterhome
+  # Browsers on the web e2e target call the services cross-origin (E2E_WEB_PORT, tooling/e2e.sh)
+  QUARKUS_HTTP_CORS_ENABLED: "true"
+  QUARKUS_HTTP_CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8090}
 
 services:
   postgres:

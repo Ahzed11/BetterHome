@@ -14,10 +14,10 @@ See [documentation/project-specification.md](documentation/project-specification
 
 - JDK 21 (`jbang jdk install 21` works)
 - Podman with a compose provider, and its API socket: `systemctl --user enable --now podman.socket`
-- Flutter, the Android SDK and an emulator image for the app module
+- Flutter, Chrome for Testing (web end-to-end), the Android SDK and an emulator image for the app module
 
 Versions are pinned in [tooling/versions.env](tooling/versions.env). On Fedora, `tooling/install-dev-tools.sh`
-installs Flutter, the Android SDK, the emulator image and a `betterhome-test` AVD under your home directory
+installs Flutter, Chrome for Testing, the Android SDK, the emulator image and a `betterhome-test` AVD under your home directory
 (it uses `sudo dnf` only if system packages are missing and accepts the Android SDK licenses).
 `make doctor` reports anything missing. `source tooling/dev-env.sh` puts the tools on your shell `PATH`;
 the Makefile does this on its own. OpenShift Local is not needed: Podman Compose is the target platform for now.
@@ -47,3 +47,5 @@ cd app && flutter run \
 ```
 
 `make seed` creates its demo users itself. Manual Keycloak user setup: [deploy/keycloak/README.md](deploy/keycloak/README.md).
+
+End-to-end journeys: `make e2e` runs them on the web build in headless Chrome. Choose the target with `E2E_TARGET=web|android` and reuse a running stack with `E2E_STACK=running` (after `make up`).
