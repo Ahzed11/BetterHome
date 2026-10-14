@@ -2,6 +2,7 @@ package com.betterhome.tasks.service;
 
 import com.betterhome.common.Clock;
 import com.betterhome.tasks.domain.NotificationOutbox;
+import com.betterhome.tasks.domain.Task;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,6 +42,16 @@ public class OutboxService {
         row.availableAt = now;
         row.persist();
         return row.id;
+    }
+
+    /** Queues a task event ({@code taskId} and {@code taskTitle}) for {@code recipient}. */
+    @Transactional
+    public UUID enqueueForTask(Task task, UUID recipient, String type) {
+        return enqueue(
+                task.householdId,
+                recipient,
+                type,
+                Map.of("taskId", task.id.toString(), "taskTitle", task.title));
     }
 
     private String json(Map<String, String> payload) {

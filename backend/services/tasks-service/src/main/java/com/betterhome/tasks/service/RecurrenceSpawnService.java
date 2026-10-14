@@ -22,7 +22,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -145,11 +144,7 @@ public class RecurrenceSpawnService {
         } else {
             task.status = TaskStatus.open;
             advanceRotation(recurrence.rotationId, assignee);
-            outboxService.enqueue(
-                    recurrence.householdId,
-                    assignee,
-                    "task_assigned",
-                    payload(task.id, template.title));
+            outboxService.enqueueForTask(task, assignee, "task_assigned");
         }
         task.persist();
 
@@ -184,13 +179,8 @@ public class RecurrenceSpawnService {
             open.dismissedBy = SystemActors.AUTOMATION;
             open.dismissalReason = DismissalReason.superseded;
             open.updatedAt = now;
-            outboxService.enqueue(
-                    householdId, open.assigneeId, "superseded", payload(open.id, open.title));
+            outboxService.enqueueForTask(open, open.assigneeId, "superseded");
         }
-    }
-
-    private static Map<String, String> payload(UUID taskId, String taskTitle) {
-        return Map.of("taskId", taskId.toString(), "taskTitle", taskTitle);
     }
 
     private void advanceRotation(UUID rotationId, UUID assigneeId) {

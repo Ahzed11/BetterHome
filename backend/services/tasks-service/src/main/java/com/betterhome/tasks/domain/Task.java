@@ -65,6 +65,10 @@ public class Task extends PanacheEntityBase {
     @Column(name = "due_reminder_sent_at")
     public Instant dueReminderSentAt;
 
+    /** Set once the assignee was told the task is overdue. */
+    @Column(name = "overdue_notified_at")
+    public Instant overdueNotifiedAt;
+
     @Column(name = "completed_at")
     public Instant completedAt;
 
