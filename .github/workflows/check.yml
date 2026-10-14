@@ -183,7 +183,7 @@ jobs:
           dart run test_driver/web_sign_in.dart http://localhost:8090 alice demo 2>&1 | tail -6 || true
           date -u +%T
           echo "--- devtools exceptions/console ---"
-          grep -E "exceptionThrown|consoleAPICalled|entryAdded" /tmp/cd.log | cut -c1-500 | head -25
+          grep -A12 -E "Runtime.consoleAPICalled|Runtime.exceptionThrown|Log.entryAdded" /tmp/cd.log | grep -E '"(text|description|value|url|level|type)"' | cut -c1-300 | head -40
           echo "--- server log ---"; tail -15 /tmp/server.log
           echo "--- sandbox/gpu lines ---"; grep -iE "gpu|webgl|swiftshader|crash" /tmp/cd.log | cut -c1-300 | head -10
 
