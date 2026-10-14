@@ -321,13 +321,17 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Verification: `make test-backend` (Spotless, Checkstyle, all tests, coverage floors, contract tests) passes on JDK 21. Negative checks run and reverted: adding an undocumented field to a response makes `OpenApiContractTest` fail with "no longer matches"; deleting a committed file fails with "does not exist"; regenerating twice produced identical files. The first households run exposed a parse problem that generation alone hid (fixed). Flutter, e2e and CI were not run.
 * Follow-ups: T-0038 (OWASP audit, parked), T-0039 (check real answers against the contract), T-0019 (aggregate), T-0020 (Dart client + `make test-guard`).
 
-### T-0006 · Keycloak AppAuth in Flutter and e2e household journeys
+### T-0006 · Keycloak sign-in in Flutter (Android and web) and e2e sign-in
 
-* Status: todo
-* Issue / PR: #3
-* Depends on: T-0002
+* Status: in-review
+* Issue / PR: #3 / #64
+* Depends on: T-0002, T-0020
 * Spec: §2, §9, AGENTS §6.2
-* Acceptance criteria: App authenticates via Keycloak (PKCE); e2e covers sign-up/create household/invite/join against the real stack.
+* Acceptance criteria: App authenticates via Keycloak (PKCE); e2e covers sign-in against the real stack. Changed by the product owner on 2026-10-14: the same sign-in must work on web and Android, so T-0069 is merged into this task and `oidc` replaces `flutter_appauth`.
+* Summary: `AuthService` seam (`lib/auth/`) with `OidcAuthService` (`oidc` + `oidc_default_store`, code flow with PKCE, refresh by the library) and a fake for tests. `main.dart` runs the real app when `API_BASE_URL` and `KEYCLOAK_ISSUER` are set (demo mode otherwise; the fixed `ACCESS_TOKEN` define is gone). The repositories take `accessToken` as a supplier, so refreshed tokens are used. `BetterHomeApp` restores a session or shows `SignInScreen` (FR/EN), then loads the profile (`GET /v1/me`, `PUT /v1/me` from the claims on 404 only) and shows households with a sign-out action. Platform setup: `web/redirect.html`, Android `oidcRedirectScheme` placeholder and `FlutterFragmentActivity`, realm redirect URIs and web origin fixed to `localhost:8090`. `make e2e` (web) first runs `app/test_driver/web_sign_in.dart`, which signs in through Keycloak's login page in headless Chrome with WebDriver, then the repository journey.
+* Decisions and deviations: ADR 0020. T-0069 dismissed (merged here). Web tokens live in `localStorage` through the library's default store, unlike the in-memory storage first suggested (T-0072). Profile sync only on first sign-in so `PUT /v1/me` never overwrites saved settings. The WebDriver script is Dart (`webdriver` dev dependency) to avoid another language. The realm no longer allows `http://localhost:*`: Keycloak wildcards only work at the end of a URI. The repository journey still uses a token fetched by `tooling/e2e.sh`.
+* Verification: JDK 21, Podman, Flutter 3.47.7. `make test-docs`, `make test-app` (format, analyze, tests incl. claims, flow in EN/FR, sign-in goldens and accessibility checks), `make test-guard`; cold `make down` then `make e2e`: web sign-in journey (Keycloak login, households, sign out) and repository journey pass; a wrong password fails the journey. `flutter build web` and `flutter build apk --debug` succeed and the merged Android manifest declares the `com.betterhome.betterhome` redirect. NOT verified: sign-in on Android (emulator crash, T-0045), CI run (this PR), backend tests (no backend change).
+* Follow-ups: T-0072 (web token storage), T-0045 (Android run), T-0021 (more journeys after sign-in, CI job).
 
 ### T-0008 · HTTP MembershipGateway from tasks-service to households-service
 
@@ -553,7 +557,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0069 · Web sign-in for the app
 
-* Status: todo
+* Status: dismissed (merged into T-0006 by the product owner on 2026-10-14: `oidc` signs in on web and Android)
 * Issue / PR: #56
 * Depends on: T-0006
 * Spec: §2, §9, AGENTS §6.2
@@ -578,4 +582,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0019
 * Spec: AGENTS §5.1 (API contract), ADR 0006
 * Acceptance criteria: Response records of every service declare their always-present fields as required in the generated OpenAPI (for example `@Schema(required = true)` or `@NotNull`), so the generated Dart models are non-nullable and `need` in `app/lib/data/api_mappers.dart` can go. Contract and committed documents regenerated; the response validation (T-0039) keeps passing.
+
+### T-0072 · Decide where the web build keeps its tokens
+
+* Status: todo
+* Issue / PR: — (suggested: "Web tokens are stored in localStorage")
+* Depends on: T-0006
+* Spec: §9, AGENTS §8
+* Acceptance criteria: Decide between the library's default (browser `localStorage`, session survives a reload, readable by any script injected into the page) and an in-memory store (needs a re-login on reload, and the sign-in must then avoid a full-page redirect); implement the choice and record it in ADR 0020.
 

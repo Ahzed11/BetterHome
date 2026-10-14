@@ -225,4 +225,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String spawnedCount(int count) {
     return '$count tâche(s) générée(s)';
   }
+
+  @override
+  String get signInTitle => 'Bienvenue sur BetterHome';
+
+  @override
+  String get signInSubtitle =>
+      'Connectez-vous pour partager tâches, points et listes avec votre foyer.';
+
+  @override
+  String get signInButton => 'Se connecter';
+
+  @override
+  String get signingIn => 'Connexion…';
+
+  @override
+  String get signInFailed => 'La connexion n\'a pas abouti. Réessayez.';
+
+  @override
+  String get signOut => 'Se déconnecter';
 }

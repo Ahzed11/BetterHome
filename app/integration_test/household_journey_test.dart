@@ -22,15 +22,15 @@ void main() {
     final session = AppSession(
       repository: HttpHouseholdsRepository(
         baseUrl: _householdsUrl,
-        accessToken: _accessToken,
+        accessToken: () => _accessToken,
       ),
       tasksRepository: HttpTasksRepository(
         baseUrl: _tasksUrl,
-        accessToken: _accessToken,
+        accessToken: () => _accessToken,
       ),
       scoringRepository: HttpScoringRepository(
         baseUrl: _scoringUrl,
-        accessToken: _accessToken,
+        accessToken: () => _accessToken,
       ),
     );
 

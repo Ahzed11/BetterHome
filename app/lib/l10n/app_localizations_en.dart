@@ -223,4 +223,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String spawnedCount(int count) {
     return 'Spawned $count chore(s)';
   }
+
+  @override
+  String get signInTitle => 'Welcome to BetterHome';
+
+  @override
+  String get signInSubtitle =>
+      'Sign in to share chores, points and lists with your home.';
+
+  @override
+  String get signInButton => 'Sign in';
+
+  @override
+  String get signingIn => 'Signing in…';
+
+  @override
+  String get signInFailed => 'Sign-in did not complete. Try again.';
+
+  @override
+  String get signOut => 'Sign out';
 }

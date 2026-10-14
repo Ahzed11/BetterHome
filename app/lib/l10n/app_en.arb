@@ -83,5 +83,11 @@
     "placeholders": {
       "count": {"type": "int"}
     }
-  }
+  },
+  "signInTitle": "Welcome to BetterHome",
+  "signInSubtitle": "Sign in to share chores, points and lists with your home.",
+  "signInButton": "Sign in",
+  "signingIn": "Signing in…",
+  "signInFailed": "Sign-in did not complete. Try again.",
+  "signOut": "Sign out"
 }

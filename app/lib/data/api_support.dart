@@ -2,10 +2,11 @@ import 'package:betterhome/data/models.dart';
 import 'package:betterhome_api/api.dart' as api;
 import 'package:http/http.dart' as http;
 
-/// Builds a client for one service of the generated API. The bearer token is sent on every call.
+/// Builds a client for one service of the generated API. The bearer token comes from
+/// [accessToken], read on every call, so a refreshed token is used without rebuilding it.
 api.ApiClient buildApiClient({
   required String baseUrl,
-  required String accessToken,
+  required String Function() accessToken,
   http.Client? client,
 }) {
   final base = baseUrl.endsWith('/')

@@ -78,5 +78,11 @@
     "placeholders": {
       "count": {"type": "int"}
     }
-  }
+  },
+  "signInTitle": "Bienvenue sur BetterHome",
+  "signInSubtitle": "Connectez-vous pour partager tâches, points et listes avec votre foyer.",
+  "signInButton": "Se connecter",
+  "signingIn": "Connexion…",
+  "signInFailed": "La connexion n'a pas abouti. Réessayez.",
+  "signOut": "Se déconnecter"
 }

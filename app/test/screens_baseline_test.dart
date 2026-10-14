@@ -8,6 +8,7 @@ import 'package:betterhome/ui/screens/household_detail_screen.dart';
 import 'package:betterhome/ui/screens/households_screen.dart';
 import 'package:betterhome/ui/screens/leaderboard_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
+import 'package:betterhome/ui/screens/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -73,6 +74,15 @@ Future<AppSession> _choresSession({required bool populated}) async {
 }
 
 final List<_Scenario> _scenarios = [
+  _Scenario('sign_in', () async => SignInScreen(onSignIn: () {})),
+  _Scenario(
+    'sign_in_busy',
+    () async => SignInScreen(onSignIn: () {}, busy: true),
+  ),
+  _Scenario(
+    'sign_in_failed',
+    () async => SignInScreen(onSignIn: () {}, failed: true),
+  ),
   _Scenario(
     'profile_sync',
     () async => ProfileSyncScreen(

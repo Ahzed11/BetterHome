@@ -151,7 +151,7 @@ abstract class TasksRepository {
 class HttpTasksRepository implements TasksRepository {
   HttpTasksRepository({
     required String baseUrl,
-    required String accessToken,
+    required String Function() accessToken,
     http.Client? client,
   }) : _client = buildApiClient(
          baseUrl: baseUrl,

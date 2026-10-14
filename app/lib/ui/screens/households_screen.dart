@@ -7,9 +7,12 @@ import 'package:betterhome/ui/screens/household_detail_screen.dart';
 import 'package:flutter/material.dart';
 
 class HouseholdsScreen extends StatefulWidget {
-  const HouseholdsScreen({super.key, required this.session});
+  const HouseholdsScreen({super.key, required this.session, this.onSignOut});
 
   final AppSession session;
+
+  /// Shown as a sign-out action when the app signs in with an identity provider.
+  final VoidCallback? onSignOut;
 
   @override
   State<HouseholdsScreen> createState() => _HouseholdsScreenState();
@@ -43,7 +46,17 @@ class _HouseholdsScreenState extends State<HouseholdsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.householdsTitle)),
+      appBar: AppBar(
+        title: Text(l10n.householdsTitle),
+        actions: [
+          if (widget.onSignOut != null)
+            IconButton(
+              tooltip: l10n.signOut,
+              icon: const Icon(Icons.logout),
+              onPressed: widget.onSignOut,
+            ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _openCreate,
         icon: const Icon(Icons.add),

@@ -25,6 +25,8 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
+        // Scheme of the OIDC redirect (com.betterhome.betterhome:/oauth2redirect), registered in Keycloak.
+        manifestPlaceholders["oidcRedirectScheme"] = "com.betterhome.betterhome"
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

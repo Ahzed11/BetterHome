@@ -13,3 +13,5 @@ The services allow the web origin through CORS (`CORS_ORIGINS`, default `http://
 ## Consequences
 
 The suite runs wherever Chrome runs, so CI does not need an emulator for now. Web cannot prove Android-only behavior (AppAuth redirect, push registration, native layout), so those journeys need the `android` target once the emulator works. `flutter_appauth` does not support web, so the web target signs in with a Keycloak token obtained by the script until T-0006 settles a web sign-in.
+
+Update (T-0006, [ADR 0020](0020-app-signs-in-with-oidc-package.md)): the app now signs in through Keycloak on web too, so the web target runs a real browser sign-in journey before the token-based repository journey.

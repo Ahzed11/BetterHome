@@ -62,7 +62,7 @@ abstract class ScoringRepository {
 class HttpScoringRepository implements ScoringRepository {
   HttpScoringRepository({
     required String baseUrl,
-    required String accessToken,
+    required String Function() accessToken,
     http.Client? client,
   }) : _scoreboard = api.ScoreboardApi(
          buildApiClient(

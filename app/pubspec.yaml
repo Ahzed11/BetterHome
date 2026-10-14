@@ -16,6 +16,8 @@ dependencies:
     path: ../generated/betterhome_api
   http: ^1.5.0
   intl: any
+  oidc: ^5.0.2
+  oidc_default_store: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -24,6 +26,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   yaml: ^3.1.4
+  webdriver: ^3.2.0
 
 flutter:
   generate: true
