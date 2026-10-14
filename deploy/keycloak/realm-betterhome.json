@@ -70,6 +70,18 @@
       "secret": "local-dev-only-change-me"
     },
     {
+      "clientId": "betterhome-lists-service",
+      "name": "BetterHome lists service",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "secret": "local-dev-only-change-me"
+    },
+    {
       "clientId": "betterhome-notifications-service",
       "name": "BetterHome notifications service",
       "enabled": true,
@@ -93,6 +105,12 @@
       "username": "service-account-betterhome-scoring-service",
       "enabled": true,
       "serviceAccountClientId": "betterhome-scoring-service",
+      "realmRoles": ["service"]
+    },
+    {
+      "username": "service-account-betterhome-lists-service",
+      "enabled": true,
+      "serviceAccountClientId": "betterhome-lists-service",
       "realmRoles": ["service"]
     },
     {

@@ -116,11 +116,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0018 · CI: run `make check` on every pull request
 
-* Status: todo
-* Issue / PR: #11
+* Status: in-review
+* Issue / PR: #11 / #43
 * Depends on: T-0016, T-0017
 * Spec: AGENTS §6.2
 * Acceptance criteria: GitHub Actions workflow with pinned tool versions runs `make check` (docs, backend, app, policy, guard) on pull requests and on `master`. Podman or Docker available for Testcontainers. The e2e job is added by T-0021.
+* Summary: `.github/workflows/check.yml` runs `make check` (docs, backend with Spotless/Checkstyle/JaCoCo/OpenAPI contract tests, app with dart format/analyze/test) on every pull request and on pushes to `master`, on `ubuntu-24.04`, with `contents: read`, a 45 min timeout and `concurrency` cancelling superseded runs. JDK 21 Temurin and the Flutter version are read from `tooling/versions.env` (single source). Maven (setup-java cache) and pub (flutter-action cache) are cached. Testcontainers / Dev Services use the runner's Docker via `DOCKER_HOST=unix:///var/run/docker.sock` (overrides the Makefile's `?=` Podman default); nothing else in `check` needs Podman.
+* Decisions and deviations: Actions pinned to commit SHAs with the tag in a comment: `actions/checkout` v7.0.1, `actions/setup-java` v6.0.1 (first-party), `subosito/flutter-action` v2.23.0 (third-party, the de facto Flutter setup action; chosen over a manual SDK download to get version pinning plus caching; revisit if it becomes unmaintained). A `flutter pub get --enforce-lockfile` step precedes `make check` because a fresh checkout has no package config (without it `flutter_lints` did not resolve and `dart format` produced a false diff); the Makefile is untouched. `make check` does not include `test-policy`/`test-guard` (stubs, not part of `check`), e2e (T-0021), image builds (T-0046) or the OWASP audit (T-0038, needs an NVD key). The Flutter golden tests ran in `flutter test` on Linux per ADR 0012. No README badge added. Branch protection requiring the `check` job is a repository setting, not done here.
+* Verification: green run on PR #43: https://github.com/Ahzed11/BetterHome/actions/runs/38448075987 (all of `make check`, 5m29s). First run https://github.com/Ahzed11/BetterHome/actions/runs/38447223563 failed at `dart format` before the pub get step existed. Deliberately red run (throwaway PR #48, a badly formatted Java line, closed and branch deleted): https://github.com/Ahzed11/BetterHome/actions/runs/38448888249 failed in Spotless. Not run: e2e.
+* Follow-ups: T-0021 adds the e2e job here; T-0046 images; T-0038 audit. T-0053 (#49): require the `check` job on `master` (branch protection).
 
 ### T-0019 · One app contract: merge the generated per-service OpenAPI documents
 
@@ -148,19 +152,27 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0022 · Golden and accessibility baseline for existing screens
 
-* Status: todo
-* Issue / PR: #15
+* Status: in-review
+* Issue / PR: #15 / 47
 * Depends on: T-0015
 * Spec: AGENTS §5.2, spec §8
 * Acceptance criteria: Golden tests (light mode, Linux per ADR 0012) for design-system widgets and the households, chores and leaderboard screens. Accessibility checks: 44 px touch targets, text contrast, semantic labels, 200% text scaling without overflow, in FR and EN.
+* Summary: `app/test/screens_baseline_test.dart` renders profile sync, households, create household, household detail, chores and leaderboard in their loading, empty, error and populated states (where reachable), each in FR and EN: a golden, the four Flutter accessibility guidelines (Android and iOS tap targets, labeled tap targets, text contrast) and a 200% text-scale overflow check. `app/test/design_system_test.dart` does the same for a showcase of the theme and tokens. 37 goldens live in `app/test/goldens/`; test doubles for loading and failing repositories are in `app/test/support/`.
+* Decisions and deviations: Goldens use Flutter's default Ahem test font, so text is blocks (deterministic on Linux, layout-only protection); readable fonts are a follow-up. The repo has no standalone design-system widgets, so the showcase composes the themed Material widgets and token swatches. Defect fixed: household detail member rows overflowed at 200% text scale in French (ListTile trailing button consumed the tile); rows are now a Row with an expanded label column and a flexible action button. Not reachable without production changes: non-admin views (the households fake hosts only one member). No new dependency.
+* Verification: `make test-app` (format, analyze, 125 tests including 37 goldens); `make update-goldens` run twice with no diff; a deliberate +1 px change to `AppTokens.spaceMd` failed 21 tests and was reverted. Not run: integration_test, emulator (T-0045), dark mode.
+* Follow-ups: T-0057, T-0058, T-0059.
 
 ### T-0023 · lists-service: checklists, items and bulk reset
 
-* Status: todo
-* Issue / PR: #16
+* Status: in-review
+* Issue / PR: #16 / #53
 * Depends on: T-0008, T-0016
 * Spec: §4, §2 permissions, §6.2 LIST/ITEM
 * Acceptance criteria: Flyway schema for LIST and ITEM with constraints; admins create, rename and archive lists; any member adds, edits, checks, unchecks and soft-deletes items (who and when); bulk reset unchecks all items. Membership through households internal endpoints with a service account (ADR 0014). Authorization matrix tests for every endpoint (admin, member, non-member, left member, other household). OpenAPI updated.
+* Summary: Migration V2 adds `list` and `item` (FK item to list, NOT NULL, CHECKs for non-blank title, position >= 0, completer/completed_at and deleted_by/deleted_at set together, unique position per list; no cross-service FK). Endpoints under `/v1/households/{id}/lists`: list (`includeArchived`), create, rename, archive (admin) and, for any active member, list/add/rename/check/uncheck/delete items and `POST .../reset`. Rules live in the `Checklist`/`ChecklistItem` entities and `ChecklistService`/`ItemService`; membership comes from households-service through `HttpMembershipGateway` with the `betterhome-lists-service` service account (realm export and Compose updated).
+* Decisions and deviations: Archived lists answer 409 Conflict to rename, archive again and every item change (reading items stays allowed); deleted items answer 404. Checking a checked item (or unchecking an unchecked one) is a no-op, so the first completer is kept. Positions are append-only (max incl. deleted + 1, list row locked on add) and never reused. Delete returns 204; reset returns the items. Spec gap: who may reset is not stated; implemented as any active member (bulk uncheck), see Discovered T-0061. `@Consumes(JSON)` is on body-bearing methods only so body-less POST actions do not answer 415 (see T-0062). No ADR: it reuses ADR 0014/0015. After merging T-0039 (answer validation against the contract), lists-service also omits null fields (`quarkus.jackson.serialization-inclusion=non-null`) and answers bean validation failures with `ErrorResponse` through a `ConstraintViolationMapper`, like the other services.
+* Verification: `make test-backend` (JDK 21; Spotless, Checkstyle, all five services' tests, JaCoCo floors, contract tests) passed; lists-service has 64 tests, line coverage 98.3%, floor raised 0.90 to 0.97. `make test-docs` OK. Live: `make up`, `make seed`, then as alice (admin) and bob (member) over HTTP on :8084 created a list, added/checked/unchecked/renamed/soft-deleted items (row keeps deleted_by/deleted_at in Postgres), reset, archived; bob got 403 on create/rename/archive, 409 on adding to the archived list, anonymous 401, unknown household 403; `make down`. Not run: Flutter, e2e, CI.
+* Follow-ups: T-0061 (reset permission), T-0062 (415 on body-less POSTs elsewhere), T-0063 (anonymization on account deletion).
 
 ### T-0024 · App: Groceries tab
 
@@ -394,8 +406,8 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0039 · Check real HTTP responses against the generated contract
 
-* Status: todo
-* Issue / PR: #32
+* Status: in-review
+* Issue / PR: #32 / 42
 * Depends on: T-0005
 * Spec: AGENTS §5.1 (API contract)
 * Acceptance criteria: Quarkus tests validate every real response (status, headers, body) against `documentation/api/<service>-openapi.yaml` with a request/response validator and fail when an answer has a field or status the document does not declare; additional properties are forbidden in schemas. T-0005 keeps the document equal to the code; this keeps the answers equal to the document.
@@ -423,6 +435,95 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0015
 * Spec: AGENTS §6.2
 * Acceptance criteria: `tooling/start-emulator.sh` boots the AVD to `sys.boot_completed=1` on the dev VM, or the e2e job is moved to CI with a documented reason, and `make doctor` gains a boot check. Observed: SIGSEGV in `qemu-system-x86_64-headless` about 25-30 s after start, when the guest `media` service starts (guest kernel boots fine); emulator 37.2.12, Android 35 google_apis x86_64, AMD Ryzen 7 5800X VM on Fedora 44. Same result with `-gpu swiftshader_indirect`, `-gpu guest`, `-feature -Vulkan`, `-accel off`, cameras off and `-feature -HardwareDecoder`. Not yet tried: another emulator build, another system image (API 34, non-google_apis), a gdb backtrace, an AVD without audio hardware.
+
+* Summary: `ContractValidation` (common-domain test-jar) validates each REST-assured answer with the Atlassian `openapi-request-validator` against the committed contract. Every service installs it for all its tests through a `QuarkusTestBeforeEachCallback` (`ContractValidationCallback`), so existing and future HTTP tests are checked without per-test code (Quarkus `/q/` endpoints excluded). Negative tests (`lists-service` `ContractValidationTest`) show an undocumented field, a wrong type and an undocumented status each fail against tampered copies of the contract. New HTTP tests: `ScoringHttpTest`, `TasksHttpTest` (success and 400/401/403/404/409 answers), plus a households 400 case.
+* Decisions and deviations: new test dependency `com.atlassian.oai:openapi-request-validator-restassured` 3.0.0 (Apache-2.0, maintained by Atlassian, builds on swagger-parser; it reads the OpenAPI 3.1 documents SmallRye generates, verified by the green run), see ADR 0016. Only answers are judged, not requests, because tests send invalid requests on purpose and the validator cannot tell request schema errors from response ones by level (follow-up T-0041). Unknown fields are rejected by closing every object schema in memory (`additionalProperties: false`) instead of changing the committed documents, so generated clients stay tolerant. Real mismatches found and fixed: (1) `reminderTime` was `format: time` (RFC 3339 full-time with offset) but the API returns a local `08:00:00`; now `format: partial-time` plus a pattern, documents regenerated; (2) nullable fields were serialized as `null` while documented as plain types; services now omit nulls (`quarkus.jackson.serialization-inclusion=non-null`); (3) bean validation failures answered the framework violation report, not the documented `ErrorResponse`; each service with `@Valid` now has a `ConstraintViolationMapper`.
+* Verification: `make test-backend` (Spotless, Checkstyle, all unit and integration tests on real PostgreSQL, JaCoCo floors, OpenAPI contract tests) passed. Not run: Flutter, e2e, `make check`. No live stack run: the behavior changes are covered by `@QuarkusTest` HTTP calls.
+* Follow-ups: T-0041 (validate requests), T-0042 (HTTP tests for remaining endpoints).
+
+### T-0041 · Validate test requests against the contract
+
+* Status: todo
+* Issue / PR: #40
+* Depends on: T-0039
+* Spec: AGENTS §5.1 (API contract)
+* Acceptance criteria: Requests that tests send as valid are validated against the request schemas of the contract, while tests that send invalid requests on purpose are not rejected by the filter.
+
+### T-0042 · HTTP tests for endpoints without one
+
+* Status: todo
+* Issue / PR: #41
+* Depends on: T-0039
+* Spec: AGENTS §5.1 (API contract)
+* Acceptance criteria: Every endpoint of every service has at least one REST-assured call (success and error) so its answers are checked against the contract.
+
+### T-0053 · Require the CI `check` job on master
+
+* Status: todo
+* Issue / PR: #49
+* Depends on: T-0018
+* Spec: AGENTS §6.2
+* Acceptance criteria: Branch protection on `master` requires the `check` job from `.github/workflows/check.yml` to pass before merge. Repository setting (admin), no code change.
+
+### T-0047 · `reminderEnqueuesWhenDue` fails before 08:00 UTC
+
+* Status: in-review
+* Issue / PR: — (suggested: "Test depends on the wall clock") / #60
+* Depends on: —
+* Spec: AGENTS §5.1 (control time with the clock)
+* Acceptance criteria: `TaskPhase4AutomationTest.reminderEnqueuesWhenDue` passes at any time of day by using a fake `Clock`. Observed at 06:09 UTC: the test set `dueAt` to `Instant.now()+2h` and the household reminder time is 08:00 UTC, so no reminder was due yet.
+* Summary: tasks-service tests get a `TestClock` (`@Alternative`, follows system time until a test fixes it). The test fixes it at 2026-03-10T12:00Z and derives the recurrence start and due date from it.
+* Decisions and deviations: Only this test fixes the clock, so other tests keep system time and are unchanged.
+* Verification: JDK 21, `./mvnw verify -pl services/tasks-service -am` (42 tests pass, coverage floor met) at 06:44 UTC, a time at which the test failed before. Not run: `make check`, app, e2e.
+* Follow-ups: none.
+
+### T-0057 · Render readable text and icons in app golden images
+
+* Status: todo
+* Issue / PR: #44
+* Depends on: T-0022
+* Spec: AGENTS §5.2
+* Acceptance criteria: Goldens show real text and icons by loading a bundled test font in `app/test/support/screen_harness.dart`; regenerated on Linux (ADR 0012).
+
+### T-0058 · Externalize remaining hard-coded strings and raw ids in app screens
+
+* Status: todo
+* Issue / PR: #45
+* Depends on: T-0022
+* Spec: AGENTS §9
+* Acceptance criteria: Chores status and points labels, the default template title and member labels (currently raw user ids) come from ARB keys or the members API in FR and EN; goldens regenerated.
+
+### T-0059 · Golden and accessibility coverage for dialogs and non-admin views
+
+* Status: todo
+* Issue / PR: #46
+* Depends on: T-0022
+* Spec: AGENTS §5.2
+* Acceptance criteria: Scenarios for the non-admin household detail and chores views and for every dialog and snackbar, with goldens and accessibility checks in FR and EN.
+
+### T-0061 · Spec: who may reset a list, and archived-list rules
+
+* Status: todo
+* Issue / PR: #50
+* Depends on: T-0023
+* Spec: §2, §4
+* Acceptance criteria: Spec states who can bulk reset (T-0023 allows any active member), that items of an archived list are frozen (409), and that re-checking is a no-op; code follows if the decision differs.
+
+### T-0062 · tasks-service: body-less POST actions answer 415 without a Content-Type
+
+* Status: todo
+* Issue / PR: #51
+* Depends on: —
+* Spec: AGENTS §3 (API style)
+* Acceptance criteria: `@Consumes` moves from class level to body-bearing methods in tasks-service (and any other service with the same pattern); a test posts an action without Content-Type and gets 2xx.
+
+### T-0063 · lists-service: anonymize user ids on account deletion
+
+* Status: todo
+* Issue / PR: #52
+* Depends on: T-0023
+* Spec: AGENTS §8
+* Acceptance criteria: Internal service-role endpoint anonymizes `list.created_by` and `item.creator/completer/deleted_by` for a user; covered once the account-deletion flow exists.
 
 ### T-0065 · tasks-service: reminder test depends on the wall-clock time of day
 

@@ -2,6 +2,7 @@ package com.betterhome.scoring;
 
 import com.betterhome.common.AuthVerifier;
 import com.betterhome.common.Clock;
+import com.betterhome.scoring.api.ErrorResponse;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -22,7 +23,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "meta")
 @APIResponse(responseCode = "401", description = "Not authenticated")
-@APIResponse(responseCode = "403", description = "Not allowed to do this")
+@APIResponse(
+        responseCode = "403",
+        description = "Not allowed to do this",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
 public class ServiceInfoResource {
 
     private final String serviceName;
