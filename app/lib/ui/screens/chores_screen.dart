@@ -3,6 +3,7 @@ import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/widgets/overdue_badge.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:flutter/material.dart';
 
@@ -12,6 +13,7 @@ class ChoresScreen extends StatefulWidget {
     required this.session,
     required this.householdId,
     this.mine = false,
+    this.now = DateTime.now,
   });
 
   final AppSession session;
@@ -19,6 +21,9 @@ class ChoresScreen extends StatefulWidget {
 
   /// Only the chores assigned to the signed-in member (the "My chores" tab).
   final bool mine;
+
+  /// The current time, used to tell which open chores are overdue.
+  final DateTime Function() now;
 
   @override
   State<ChoresScreen> createState() => _ChoresScreenState();
@@ -55,6 +60,13 @@ class _ChoresScreenState extends State<ChoresScreen> {
       widget.householdId,
       mine: widget.mine,
     );
+  }
+
+  bool _isOverdue(ChoreTask task) {
+    final due = task.dueAt;
+    return task.status == TaskStatus.open &&
+        due != null &&
+        widget.now().isAfter(due);
   }
 
   Future<void> _quickLog() async {
@@ -327,9 +339,13 @@ class _ChoresScreenState extends State<ChoresScreen> {
                       ),
                       tileColor: Colors.white,
                       title: Text('${task.emoji ?? ''} ${task.title}'.trim()),
-                      subtitle: Text(
-                        '${task.status.name} · ${task.pointsAwarded ?? task.points} pts',
-                      ),
+                      subtitle: _isOverdue(task)
+                          ? OverdueBadge(
+                              label: l10n.overdueStill(task.latePoints),
+                            )
+                          : Text(
+                              '${task.status.name} · ${task.pointsAwarded ?? task.points} pts',
+                            ),
                       trailing: task.status == TaskStatus.open
                           ? Wrap(
                               spacing: 4,

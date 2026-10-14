@@ -172,5 +172,7 @@
   "recapClose": "Nice!",
   "switchHousehold": "Household {name}, switch household",
   "@switchHousehold": {"placeholders": {"name": {"type": "String"}}},
-  "householdDetails": "Household details"
+  "householdDetails": "Household details",
+  "overdueStill": "Overdue · still +{points}",
+  "@overdueStill": {"placeholders": {"points": {"type": "int"}}}
 }

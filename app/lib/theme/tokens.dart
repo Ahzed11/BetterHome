@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 abstract final class AppTokens {
   static const Color brand = Color(0xFF0B7A70);
   static const Color overdue = Color(0xFFE07A5F);
+
+  /// Soft background for overdue labels: dark text on it keeps the contrast the coral alone lacks.
+  static const Color overdueTint = Color(0xFFFBE7E1);
   static const Color surface = Color(0xFFF7FAF9);
   static const Color onBrand = Color(0xFFFFFFFF);
   static const Color ink = Color(0xFF12201D);

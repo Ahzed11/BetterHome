@@ -119,6 +119,7 @@ abstract class TasksRepository {
   Future<ChoreTask> createOpen({
     required String householdId,
     required String templateId,
+    DateTime? dueAt,
   });
 
   Future<ChoreTask> complete(String householdId, String taskId);
@@ -233,12 +234,13 @@ class HttpTasksRepository implements TasksRepository {
   Future<ChoreTask> createOpen({
     required String householdId,
     required String templateId,
+    DateTime? dueAt,
   }) async {
     return choreTaskFromApi(
       await call(
         () => _tasks.createOpenTask(
           householdId,
-          api.CreateOpenTaskRequest(templateId: templateId),
+          api.CreateOpenTaskRequest(templateId: templateId, dueAt: dueAt),
         ),
       ),
     );
@@ -414,6 +416,7 @@ class FakeTasksRepository implements TasksRepository {
   Future<ChoreTask> createOpen({
     required String householdId,
     required String templateId,
+    DateTime? dueAt,
   }) async {
     final template = (await listTemplates(
       householdId,
@@ -429,7 +432,7 @@ class FakeTasksRepository implements TasksRepository {
       latePoints: template.latePoints,
       status: TaskStatus.open,
       assigneeId: currentUserId,
-      dueAt: DateTime.now().toUtc().add(const Duration(days: 1)),
+      dueAt: dueAt ?? DateTime.now().toUtc().add(const Duration(days: 1)),
     );
     _tasks.putIfAbsent(householdId, () => []).add(task);
     return task;

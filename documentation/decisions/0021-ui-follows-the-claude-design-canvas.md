@@ -29,3 +29,7 @@ Restyling the existing screens onto these widgets is separate work (T-0080). Cha
 - The selected household lives in `AppSession` and is remembered per user with `shared_preferences` (already in the dependency tree through `oidc_default_store`; now a direct dependency, test doubles use its in-memory mock). A remembered household that no longer exists falls back to the first one.
 - The design canvas has no switcher board, so the sheet extends its look (rounded sheet, brand tint for the selected household). Accepting an invitation stays in the household details, as before.
 
+## Addendum: overdue label (T-0088)
+
+An open chore past its due date shows `OverdueBadge`: a soft coral tint with a coral dot and the text "Overdue · still +N" (N is the late points), in dark ink. The coral `#E07A5F` alone is about 3:1 on white, below the 4.5:1 of body text, so only the dot and the tint carry it (token `overdueTint`). The screen gets the current time from a `now` parameter (default `DateTime.now`) so tests control it.
+

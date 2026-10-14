@@ -271,7 +271,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0031 · App: navigation shell and household switcher
 
-* Status: in-review
+* Status: done
 * Issue / PR: #24 / #85
 * Depends on: T-0020, T-0024, T-0028
 * Spec: §8.2
@@ -283,11 +283,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0088 · App: overdue in soft coral with "still +N"
 
-* Status: todo
-* Issue / PR: — (suggested: "Overdue tasks shown in soft coral with still +N")
+* Status: in-review
+* Issue / PR: — / PR pending
 * Depends on: T-0031
 * Spec: §8.1, §3.3
 * Acceptance criteria: An overdue open task is shown in the soft coral token (never red) with the points that are still possible after the due date ("still +N", N = late points). FR/EN, widget and golden tests, and the overdue case in the chores e2e journey.
+* Summary: `OverdueBadge` widget ("Overdue · still +2" / "En retard · encore +2") replaces the status line of an open chore whose `dueAt` has passed (strictly after; done, dismissed and reverted chores never show it). `TasksRepository.createOpen` takes an optional `dueAt` (the API already had it), used by tests and the e2e journey to create a chore that is already late.
+* Decisions and deviations: ADR 0021 addendum: the text stays dark on a coral tint because the coral alone fails text contrast. The label says "still +N" without "pts" as the spec writes it. T-0031's status is set to done here (it merged as in-review).
+* Verification: `make test-app` (358 tests: overdue widget tests incl. the boundary, done-after-due, FR, colour; contract test that `dueAt` is sent; goldens `chores_overdue`), `make check`, cold `make e2e` with the overdue chore in the chores journey; results in the PR. Not run: Android.
+* Follow-ups: none.
 
 ### T-0089 · App: a reverted task shows its reason to the assignee
 

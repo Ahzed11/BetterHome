@@ -811,6 +811,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Household details'**
   String get householdDetails;
+
+  /// No description provided for @overdueStill.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue · still +{points}'**
+  String overdueStill(int points);
 }
 
 class _AppLocalizationsDelegate

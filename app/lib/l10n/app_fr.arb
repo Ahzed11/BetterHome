@@ -129,5 +129,7 @@
   "recapClose": "Super !",
   "switchHousehold": "Foyer {name}, changer de foyer",
   "@switchHousehold": {"placeholders": {"name": {"type": "String"}}},
-  "householdDetails": "Détails du foyer"
+  "householdDetails": "Détails du foyer",
+  "overdueStill": "En retard · encore +{points}",
+  "@overdueStill": {"placeholders": {"points": {"type": "int"}}}
 }
