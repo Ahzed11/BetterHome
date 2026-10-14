@@ -79,8 +79,11 @@ public class MembershipService {
         target.awayFrom = from;
         target.awayUntil = awayUntil;
         target.awaySetBy = actor.id;
-        if (!from.isAfter(clock.now())) {
+        target.awayTasksDismissedAt = null;
+        Instant now = clock.now();
+        if (!from.isAfter(now)) {
             awayTaskDismissal.dismissOpenTasks(householdId, targetUserId);
+            target.awayTasksDismissedAt = now;
         }
         return target;
     }
@@ -98,5 +101,6 @@ public class MembershipService {
         membership.awayFrom = null;
         membership.awayUntil = null;
         membership.awaySetBy = null;
+        membership.awayTasksDismissedAt = null;
     }
 }

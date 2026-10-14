@@ -37,6 +37,12 @@ components:
           pattern: \S
         role:
           $ref: "#/components/schemas/MembershipRole"
+    DismissedCount:
+      type: object
+      properties:
+        dismissed:
+          type: integer
+          format: int32
     ErrorResponse:
       type: object
       properties:
@@ -801,6 +807,30 @@ paths:
       security:
       - bearerAuth:
         - service
+  /v1/internal/households/{householdId}/tasks/dismiss-away/{userId}:
+    post:
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: dismissedBy
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DismissedCount"
   /v1/invitations/{token}/accept:
     post:
       summary: Accept an invitation with its token
