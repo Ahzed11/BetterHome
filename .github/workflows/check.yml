@@ -1,4 +1,5 @@
-# Runs `make check` (docs, backend, app) on every pull request and on master.
+# The gates of `make check` (docs, backend, app), run as parallel jobs so the wait is the slowest
+# one, not their sum (T-0070, ADR 0019). The `check` job at the end is the single result to require.
 # Not yet here: the e2e job (T-0021), image builds (T-0046) and the OWASP dependency audit (T-0038).
 name: check
 
@@ -14,14 +15,40 @@ concurrency:
   group: check-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  # Hosted runners have Docker, not Podman: Testcontainers / Dev Services use its socket.
+  DOCKER_HOST: unix:///var/run/docker.sock
+  TESTCONTAINERS_RYUK_DISABLED: "true"
+
 jobs:
-  check:
+  docs:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
-    env:
-      # Hosted runners have Docker, not Podman: Testcontainers / Dev Services use its socket.
-      DOCKER_HOST: unix:///var/run/docker.sock
-      TESTCONTAINERS_RYUK_DISABLED: "true"
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: make test-docs
+
+  # One backend job per directory under backend/services, so a new service is tested without editing this file.
+  services:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      list: ${{ steps.list.outputs.list }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: backend/services
+      - id: list
+        run: echo "list=$(ls backend/services | jq -R . | jq -sc .)" >> "$GITHUB_OUTPUT"
+
+  backend:
+    needs: services
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.services.outputs.list) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -30,7 +57,6 @@ jobs:
         run: |
           set -euo pipefail
           . tooling/versions.env
-          echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> "$GITHUB_ENV"
           echo "JAVA_MAJOR=$JAVA_MAJOR" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
@@ -39,6 +65,21 @@ jobs:
           java-version: ${{ env.JAVA_MAJOR }}
           cache: maven
           cache-dependency-path: backend/**/pom.xml
+
+      # Spotless, Checkstyle, tests and the coverage floor of this service and of common-domain.
+      - run: make test-backend SERVICE=${{ matrix.service }}
+
+  app:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Read pinned versions
+        run: |
+          set -euo pipefail
+          . tooling/versions.env
+          echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> "$GITHUB_ENV"
 
       # Third-party, justified in documentation/tasks.md (T-0018): installs the exact Flutter version and caches pub.
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -52,5 +93,20 @@ jobs:
         working-directory: app
         run: flutter pub get --enforce-lockfile
 
-      - name: make check
-        run: make check
+      - run: make test-app
+
+  # The one result to require on master (T-0053). It fails when any job above failed or was skipped.
+  check:
+    if: ${{ always() }}
+    needs: [docs, services, backend, app]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every job must have succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for r in $RESULTS; do
+            [ "$r" = success ] || { echo "a job did not succeed"; exit 1; }
+          done

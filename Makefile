@@ -42,8 +42,8 @@ smoke: ## Wait for all services to be ready and make one authenticated call
 openapi: ## Regenerate documentation/api/*-openapi.yaml from the annotated code
 	cd $(BACKEND) && ./mvnw -B verify -Dtest=OpenApiContractTest -Dopenapi.update=true -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true -Denforcer.skip=true
 
-test-backend: ## Spotless, Checkstyle, Quarkus tests and coverage floor (dependency audit: T-0005)
-	cd $(BACKEND) && ./mvnw -B verify
+test-backend: ## Spotless, Checkstyle, Quarkus tests and coverage floor; SERVICE=tasks-service limits it to one service (dependency audit: T-0005)
+	cd $(BACKEND) && ./mvnw -B verify $(if $(SERVICE),-pl services/$(SERVICE) -am)
 
 test-app: ## Flutter analyze and tests
 	cd $(ROOT)/app && dart format --set-exit-if-changed . && flutter analyze && flutter test
