@@ -215,7 +215,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0026 · Outbox relays into notifications-service
 
 * Status: done
-* Issue / PR: #19 / PR pending
+* Issue / PR: #19 / #73
 * Depends on: T-0025
 * Spec: §5, AGENTS §3 Push
 * Acceptance criteria: tasks-service relays its outbox to notifications-service instead of calling `PushSender` directly; households-service gets an outbox for marked-away and invitation events. Relays claim rows with SKIP LOCKED, deliver at least once, and are idempotent on the receiving side. Tests cover retries and duplicate delivery.
