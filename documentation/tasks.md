@@ -324,7 +324,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0006 · Keycloak sign-in in Flutter (Android and web) and e2e sign-in
 
 * Status: in-review
-* Issue / PR: #3 / PR pending
+* Issue / PR: #3 / #64
 * Depends on: T-0002, T-0020
 * Spec: §2, §9, AGENTS §6.2
 * Acceptance criteria: App authenticates via Keycloak (PKCE); e2e covers sign-in against the real stack. Changed by the product owner on 2026-10-14: the same sign-in must work on web and Android, so T-0069 is merged into this task and `oidc` replaces `flutter_appauth`.
