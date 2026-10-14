@@ -1,6 +1,6 @@
 # The gates of `make check` (docs, backend, app), run as parallel jobs so the wait is the slowest
 # one, not their sum (T-0070, ADR 0019). The `check` job at the end is the single result to require.
-# Not yet here: the e2e job (T-0021), image builds (T-0046) and the OWASP dependency audit (T-0038).
+# Not yet here: image builds (T-0046) and the OWASP dependency audit (T-0038).
 name: check
 
 on:
@@ -106,10 +106,61 @@ jobs:
 
       - run: make test-app test-guard
 
+  # The real app against the real stack (Podman Compose: Postgres, Keycloak, five services) in headless Chrome:
+  # browser sign-in through Keycloak, then the repository journey. `make e2e` boots the stack itself.
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      # `make up` drives Podman; compose talks to its API socket (started below), not to Docker.
+      DOCKER_HOST: unix:///tmp/podman.sock
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Read pinned versions
+        run: |
+          set -euo pipefail
+          . tooling/versions.env
+          echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> "$GITHUB_ENV"
+          echo "JAVA_MAJOR=$JAVA_MAJOR" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_MAJOR }}
+          cache: maven
+          cache-dependency-path: backend/**/pom.xml
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      - name: Start the Podman API socket
+        run: |
+          podman --version
+          podman compose version || true
+          podman system service --time=0 unix:///tmp/podman.sock &
+          for _ in $(seq 1 30); do [ -S /tmp/podman.sock ] && break; sleep 1; done
+          podman info --format '{{.Host.Security.Rootless}}'
+
+      - name: Install Chrome for Testing and chromedriver (pinned, checksummed)
+        run: bash tooling/install-chrome.sh
+
+      - name: Generate the Dart client
+        run: make client
+
+      - name: Resolve app dependencies from the lockfile
+        working-directory: app
+        run: flutter pub get --enforce-lockfile
+
+      - run: make e2e
+
   # The one result to require on master (T-0053). It fails when any job above failed or was skipped.
   check:
     if: ${{ always() }}
-    needs: [docs, services, backend, app]
+    needs: [docs, services, backend, app, e2e]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
