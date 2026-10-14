@@ -2,6 +2,7 @@ package com.betterhome.households.service;
 
 import com.betterhome.common.Clock;
 import com.betterhome.households.domain.AppUser;
+import com.betterhome.households.domain.Household;
 import com.betterhome.households.domain.HouseholdException;
 import com.betterhome.households.domain.Invitation;
 import com.betterhome.households.domain.Membership;
@@ -13,6 +14,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -23,13 +25,18 @@ public class InvitationService {
     private final CurrentUserService currentUserService;
     private final MembershipGuard membershipGuard;
     private final Clock clock;
+    private final OutboxService outboxService;
 
     @Inject
     public InvitationService(
-            CurrentUserService currentUserService, MembershipGuard membershipGuard, Clock clock) {
+            CurrentUserService currentUserService,
+            MembershipGuard membershipGuard,
+            Clock clock,
+            OutboxService outboxService) {
         this.currentUserService = currentUserService;
         this.membershipGuard = membershipGuard;
         this.clock = clock;
+        this.outboxService = outboxService;
     }
 
     @Transactional
@@ -53,7 +60,26 @@ public class InvitationService {
         invitation.createdBy = actor.id;
         invitation.createdAt = now;
         invitation.persist();
+        notifyInvitee(invitation);
         return invitation;
+    }
+
+    /**
+     * Tells the invited person when they already have an account; others have no push to receive.
+     */
+    private void notifyInvitee(Invitation invitation) {
+        AppUser.findActiveByEmail(invitation.email)
+                .ifPresent(
+                        invitee ->
+                                outboxService.enqueue(
+                                        invitation.householdId,
+                                        invitee.id,
+                                        "invitation",
+                                        Map.of(
+                                                "householdName",
+                                                Household.<Household>findById(
+                                                                invitation.householdId)
+                                                        .name)));
     }
 
     public List<Invitation> listPending(UUID householdId) {

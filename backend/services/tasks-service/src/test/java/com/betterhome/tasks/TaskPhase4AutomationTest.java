@@ -17,7 +17,8 @@ import com.betterhome.tasks.domain.TaskTemplate;
 import com.betterhome.tasks.membership.InMemoryMembershipGateway;
 import com.betterhome.tasks.membership.MembershipGateway.HouseholdSettings;
 import com.betterhome.tasks.membership.MembershipGateway.MemberView;
-import com.betterhome.tasks.service.OutboxService;
+import com.betterhome.tasks.notifications.ScriptedNotificationsGateway;
+import com.betterhome.tasks.service.OutboxRelay;
 import com.betterhome.tasks.service.RecurrenceService;
 import com.betterhome.tasks.service.RecurrenceSpawnService;
 import com.betterhome.tasks.service.ReminderService;
@@ -57,7 +58,8 @@ class TaskPhase4AutomationTest {
 
     @Inject ReminderService reminderService;
 
-    @Inject OutboxService outboxService;
+    @Inject OutboxRelay outboxRelay;
+    @Inject ScriptedNotificationsGateway notificationsGateway;
 
     @Inject InMemoryMembershipGateway membershipGateway;
 
@@ -149,7 +151,14 @@ class TaskPhase4AutomationTest {
 
         assertTrue(NotificationOutbox.count("type = ?1", "superseded") >= 1);
         assertTrue(NotificationOutbox.count("type = ?1", "task_assigned") >= 2);
-        assertTrue(outboxService.drain(100) >= 1);
+        notificationsGateway.reset();
+        assertTrue(outboxRelay.relayDue(100) >= 1);
+        assertTrue(
+                notificationsGateway.delivered().stream()
+                        .anyMatch(
+                                e ->
+                                        e.type().equals("superseded")
+                                                && e.payload().containsKey("taskTitle")));
     }
 
     @Test

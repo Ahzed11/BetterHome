@@ -214,11 +214,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0026 · Outbox relays into notifications-service
 
-* Status: todo
-* Issue / PR: #19
+* Status: done
+* Issue / PR: #19 / PR pending
 * Depends on: T-0025
 * Spec: §5, AGENTS §3 Push
 * Acceptance criteria: tasks-service relays its outbox to notifications-service instead of calling `PushSender` directly; households-service gets an outbox for marked-away and invitation events. Relays claim rows with SKIP LOCKED, deliver at least once, and are idempotent on the receiving side. Tests cover retries and duplicate delivery.
+* Summary: Both services write `notification_outbox` rows in the transaction of the change and run an `OutboxRelay` (every 15 s, one row per transaction, `FOR UPDATE SKIP LOCKED`) that sends them to `POST /v1/internal/notifications` with key `<service>:<row id>`; retries back off from 5 s to 15 min, a permanent refusal parks the row. tasks: migration V6 (attempts, available_at, failed_at; title/body nullable and no longer written; waiting rows get `taskTitle` in their payload), payload is now a JSON map of short strings (a title with quotes is escaped properly), `PushSender` is no longer called by tasks. households: migration V3 (outbox with FKs and a type CHECK), `marked_away` queued in `setAway`, `invitation` queued when the invited email has an account, new Keycloak client `betterhome-households-service` and Compose wiring (`NOTIFICATIONS_SERVICE_URL`). Shared `NotificationEvent`, `NotificationsGateway`, `NotificationDeliveryException`, `RelayBackoff` in `common-domain`.
+* Decisions and deviations: ADR 0017 addendum (relay rules, who produces what) and ADR 0014 addendum (households service account). An invitation for an email without an account queues nothing, because ingest needs a recipient user. A future-dated away period still notifies when it is set. Only the types the services already produce are relayed; the other spec §5 types have no producer (T-0081). Duplicate relay code per service (small, different entities); the shared pieces are in `common-domain`.
+* Verification: JDK 21, Podman. `make test-backend SERVICE=tasks-service` (73 tests: relay delivery, key and payload, backoff and retry with a fixed clock, parking, lost answer sent again with the same key, 4 concurrent relays send 40 rows once each, rollback leaves no event, HTTP gateway status mapping) and `SERVICE=households-service` (57 tests: both producers, rollback on a failed away change, relay suite, HTTP gateway) pass with Spotless, Checkstyle and the coverage floors. Live on `make up` + `make seed`: marking a member away, inviting an existing user and a spawned recurrence each produced the notification in the recipient's language; with notifications-service stopped an invite still answered 201, the event retried with backoff, and after the restart it was delivered once (no duplicate). `make e2e` and the full `make test-backend` are in the PR run. Not run: Android.
+* Follow-ups: T-0081 (producers for the other types), T-0082 (the away text says chores were passed on, they are dismissed), T-0083 (drop the unused title and body columns of tasks' outbox).
 
 ### T-0027 · Real push delivery: FCM and APNs
 
@@ -663,4 +667,28 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0024
 * Spec: §8, ADR 0021
 * Acceptance criteria: Households, chores, quick log, leaderboard and household screens follow their boards in the design canvas, using the widgets and tokens of ADR 0021 (add new shared widgets where several screens need them). Goldens regenerated, accessibility baseline and e2e journeys still pass.
+
+### T-0081 · Producers for the remaining notification types
+
+* Status: todo
+* Issue / PR: — (suggested: "Send reassigned, overdue, dismissed and reverted notifications")
+* Depends on: T-0026
+* Spec: §5
+* Acceptance criteria: tasks-service queues `task_reassigned` (admin reassigns), `overdue` (a task passes its due date), `dismissed` (an admin dismisses someone else's task) and `reverted` (only when the task reopens with a future date, spec §3.3) in the transaction of the change; each has a relay test and appears in the recipient's inbox. Needed by the M6 exit (every spec §5 type).
+
+### T-0082 · The away notification text promises something that no longer happens
+
+* Status: todo
+* Issue / PR: — (suggested: "Fix marked_away text: chores are dismissed, not passed on")
+* Depends on: T-0026
+* Spec: §3.3 Away, §5
+* Acceptance criteria: The `marked_away` title and body in `notifications_en/fr.properties` say what happens since T-0003 (open chores are dismissed, not passed on); the rendering test still covers both languages.
+
+### T-0083 · Drop the unused title and body columns of tasks' outbox
+
+* Status: todo
+* Issue / PR: — (suggested: "Contract step for the tasks outbox")
+* Depends on: T-0026
+* Spec: AGENTS §4 (expand then contract)
+* Acceptance criteria: A new Flyway migration drops `notification_outbox.title` and `.body` once no running replica writes them (T-0026 stopped writing them).
 

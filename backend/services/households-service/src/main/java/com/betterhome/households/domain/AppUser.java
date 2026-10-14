@@ -6,6 +6,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,6 +45,11 @@ public class AppUser extends PanacheEntityBase {
 
     public static Optional<AppUser> findByAuthSubject(UUID authSubject) {
         return find("authSubject = ?1 and deletedAt is null", authSubject).firstResultOptional();
+    }
+
+    public static Optional<AppUser> findActiveByEmail(String email) {
+        return find("lower(email) = ?1 and deletedAt is null", email.toLowerCase(Locale.ROOT))
+                .firstResultOptional();
     }
 
     public static Optional<AppUser> findActiveById(UUID id) {

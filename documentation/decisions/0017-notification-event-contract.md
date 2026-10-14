@@ -33,3 +33,14 @@ The answer is 201 `created`, or 200 `duplicate` (the key was already stored; the
 - T-0026 relays send this event instead of calling `PushSender` directly; the title and body columns of tasks' outbox become unnecessary.
 - notifications-service depends on households-service for two lookups (user by subject, user by id), added as read-only `service` endpoints there. Households being down means 503 for the inbox and for ingest.
 - Payloads must stay free of personal data beyond short task and household names.
+
+## Addendum (T-0026): the relays
+
+tasks-service and households-service each keep a `notification_outbox` table, written in the transaction of the change that causes the event (an away change that fails leaves no row), and an `OutboxRelay` that sends the rows to the ingest endpoint with the service's own client credentials (ADR 0014). The event type and a payload of short strings are stored; the title and body are no longer written (tasks keeps the old columns, nullable, until a later migration drops them).
+
+- **Claiming:** every 15 s each replica claims one due row at a time in its own transaction with `FOR UPDATE SKIP LOCKED`, so replicas never send the same row at once. The row lock is held during the HTTP call, hence the 2 s connect and 5 s read timeouts.
+- **Delivery is at least once.** `2xx` marks the row delivered. A network error, a token problem (`401`, `403`), `429` or `5xx` keeps it with `attempts + 1` and the next try after 5 s doubling to 15 min (`RelayBackoff`). A row delivered but not committed (a crash, a lost answer) is sent again with the same key, `<service>:<row id>`, which notifications-service stores once.
+- **A refusal is permanent.** Another `4xx` (the event itself is invalid) or an unreadable payload sets `failed_at`: the row is parked, logged with its id and type only, and never sent again, so one bad row cannot block the queue.
+- **Who produces what:** tasks sends `task_assigned`, `superseded` and `due_reminder`; households sends `marked_away` (to the member marked away, also for a future-dated period) and `invitation` (only when the invited email already has an account, because the event needs a recipient user). The other types of spec §5 have no producer yet (T-0081).
+- **Boundary:** the shared `NotificationEvent`, `NotificationsGateway`, `NotificationDeliveryException` and `RelayBackoff` live in `common-domain`; each service has its own REST client and `HttpNotificationsGateway`. Tests use a scripted in-memory gateway plus a fake HTTP server for the real client.
+
