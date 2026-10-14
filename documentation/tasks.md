@@ -65,22 +65,22 @@ _(none)_
 
 ## Roadmap
 
-Milestones in delivery order (vertical slice first). A milestone is reached when its exit criterion holds and its tasks are `done`. T-0003 and T-0008 are in review and close before M1.
+Milestones in delivery order (vertical slice first). A milestone is reached when its exit criterion holds and its tasks are `done`. Reached on 2026-10-14: M1, M2, M3 and M4 (see the notes on each).
 
-* **M1 · Real sign-in works** — T-0013, T-0014, T-0036. Exit: A Keycloak user can call every service, and invitations work over HTTP.
-* **M2 · Toolchain, local stack, gates, CI** — T-0015, T-0016, T-0017, T-0005, T-0018. Exit: `make up` runs all five services; `make check` enforces AGENTS §5.3 and runs in CI on every pull request.
-* **M3 · Services wired for real** — T-0010, T-0019. Exit: No in-memory gateway or ledger client left in main code; one app contract describes every endpoint.
-* **M4 · App vertical slice on the real stack** — T-0020, T-0006, T-0021, T-0022. Exit: The app signs in through Keycloak and runs households, chores and leaderboard against `make up`; `make e2e` runs in CI.
-* **M5 · Lists (spec Phase 5)** — T-0023, T-0024. Exit: The Groceries tab journey passes end to end.
-* **M6 · Notifications** — T-0025, T-0026, T-0027, T-0028, T-0012. Exit: Every notification type in spec §5 reaches a fake push gateway in the user's language, honoring preferences.
-* **M7 · Spec completeness and polish (spec Phase 6)** — T-0029, T-0030, T-0031, T-0032, T-0033. Exit: Every rule in spec §2–§9 is implemented and covered by an end-to-end journey.
+* **M1 · Real sign-in works** — T-0013, T-0014, T-0036. Exit: A Keycloak user can call every service, and invitations work over HTTP. **Reached.**
+* **M2 · Toolchain, local stack, gates, CI** — T-0015, T-0016, T-0017, T-0005, T-0018. Exit: `make up` runs all five services; `make check` enforces AGENTS §5.3 and runs in CI on every pull request. **Reached**, except what the product owner parked: the dependency audit (T-0038), and image builds in `make check` (T-0046).
+* **M3 · Services wired for real** — T-0010, T-0019. Exit: No in-memory gateway or ledger client left in main code; one app contract describes every endpoint. **Reached.**
+* **M4 · App vertical slice on the real stack** — T-0020, T-0006, T-0021, T-0022. Exit: The app signs in through Keycloak and runs households, chores and leaderboard against `make up`; `make e2e` runs in CI. **Reached** (web target; Android sign-in not run, T-0045).
+* **M5 · Lists (spec Phase 5)** — T-0023 (done), T-0024. Exit: The Groceries tab journey passes end to end.
+* **M6 · Notifications** — T-0025 (done), T-0026, T-0027, T-0028, T-0012, T-0077. Exit: Every notification type in spec §5 reaches a fake push gateway in the user's language, honoring preferences.
+* **M7 · Spec completeness and polish (spec Phase 6)** — T-0029, T-0030, T-0031, T-0032, T-0033, T-0076, T-0078. Exit: Every rule in spec §2–§9 is implemented and covered by an end-to-end journey.
 * **M8 · Deploy and launch** — T-0004, T-0034, T-0035. Exit: The stack runs on OpenShift with migrations as Jobs, and signed store builds are produced. Blocked until an OpenShift cluster is available; until then Podman Compose is the target platform.
 
 ## Todo
 
 ### T-0015 · Developer toolchain: Flutter and the Android emulator
 
-* Status: in-review
+* Status: done
 * Issue / PR: #8 / #36
 * Depends on: —
 * Spec: AGENTS §5.3, §6
@@ -92,7 +92,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0016 · `make up` and `make seed` run the full local stack
 
-* Status: in-review
+* Status: done
 * Issue / PR: #9 / #38
 * Depends on: T-0013, T-0014, T-0015
 * Spec: §7, AGENTS §6.1, ADR 0003
@@ -104,7 +104,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0017 · Backend quality gates: format, lint, coverage
 
-* Status: in-review
+* Status: done
 * Issue / PR: #10
 * Depends on: T-0015
 * Spec: AGENTS §5.3
@@ -116,7 +116,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0018 · CI: run `make check` on every pull request
 
-* Status: in-review
+* Status: done
 * Issue / PR: #11 / #43
 * Depends on: T-0016, T-0017
 * Spec: AGENTS §6.2
@@ -128,8 +128,8 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0019 · One app contract: merge the generated per-service OpenAPI documents
 
-* Status: in-review
-* Issue / PR: #12 / PR pending
+* Status: done
+* Issue / PR: #12 / #62
 * Depends on: T-0010
 * Spec: §7 API style, ADR 0006, ADR 0007
 * Acceptance criteria: `documentation/api/openapi.yaml` is produced by merging the per-service documents generated in T-0005 (app-facing operations of all services; operations tagged `internal` excluded) and is guarded the same way (a test fails when the committed aggregate differs from the merge). Operation ids and schema names must stay unique across services.
@@ -139,7 +139,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0020 · Generated Dart client replaces hand-written repositories
 
-* Status: in-review
+* Status: done
 * Issue / PR: #13 / #63
 * Depends on: T-0019, T-0005
 * Spec: ADR 0006, AGENTS §2, §5.2
@@ -151,8 +151,8 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0021 · `make e2e`: real app on an emulator against the real stack
 
-* Status: in-progress
-* Issue / PR: #14 / #57
+* Status: done
+* Issue / PR: #14 / #57, #66, #65, #68
 * Depends on: T-0006, T-0016, T-0015
 * Spec: AGENTS §6.2
 * Acceptance criteria: `make e2e` boots the stack, applies migrations, launches the app on a headless Android emulator, signs in through Keycloak and runs `integration_test` journeys. Adds a controllable clock exposed only in the test environment and a fake push gateway endpoint. CI job added to the T-0018 workflow. Each later feature task adds its journey here.
@@ -162,12 +162,10 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Summary (journeys increment, after sign-in T-0006): the web target now runs three things against the real stack: the real Keycloak browser sign-in (`app/test_driver/web_sign_in.dart`), then `integration_test` driving the UI with tokens for alice and bob: sign in/profile sync and create a household; admin creates a template and quick-logs a manual task; an open task is completed by its assignee; a second one is dismissed after confirmation; the admin reverts a completion with a reason; the leaderboard shows 10 then 5 points (tasks to scoring over HTTP, scoring to households); alice invites bob and bob joins with the token. `tooling/e2e.sh` fetches the tokens right before the journeys (they expire in about five minutes, shorter than the builds before them).
 * Product bugs found by the journeys and fixed: the Compose stack gave tasks-service no `SCORING_SERVICE_URL` and scoring-service neither the households URL nor its service client, so completing a task and reading the scoreboard answered 503 (the T-0016 scoreboard limit); fixed in `deploy/podman-compose.yml`.
 * Verification (journeys): cold `make down` then `make e2e` passed (sign-in journey and both `integration_test` journeys); `make test-app`, `make test-guard`, `make test-docs` pass. A first cold run once timed out waiting for the app to start in the sign-in journey and passed on rerun (see T-0074). NOT run: the `android` target, CI.
-* Remaining: journeys that need a scheduler or controllable clock (spawn and assignment by round robin, supersede, away reassignment, month-end recap), leaderboard period views, checklists (T-0023/T-0024), household switcher with two households, French and English journeys; the controllable clock and fake push endpoint; the CI job (T-0073); wiring `e2e` into `make check`.
-
-
+* Scope split (ledger cleanup, 2026-10-14): done for what M4 needs: `make e2e` boots the stack, applies migrations, runs the web journeys (real Keycloak sign-in, households, chores, leaderboard, invite and join) and runs in CI as the `e2e` job (T-0073). Four parts of the original criteria are not met here and moved: the headless Android target (web first by the product owner, ADR 0018; the emulator crash is T-0045), the controllable clock with the journeys that need it (T-0076), the fake push gateway endpoint (T-0077), and `e2e` inside the local `make check` (T-0078).
 ### T-0022 · Golden and accessibility baseline for existing screens
 
-* Status: in-review
+* Status: done
 * Issue / PR: #15 / 47
 * Depends on: T-0015
 * Spec: AGENTS §5.2, spec §8
@@ -179,7 +177,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0023 · lists-service: checklists, items and bulk reset
 
-* Status: in-review
+* Status: done
 * Issue / PR: #16 / #53
 * Depends on: T-0008, T-0016
 * Spec: §4, §2 permissions, §6.2 LIST/ITEM
@@ -199,7 +197,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0025 · notifications-service core: inbox, preferences, rendering
 
-* Status: in-review
+* Status: done
 * Issue / PR: #18 / #55
 * Depends on: T-0016
 * Spec: §5, §6.2 NOTIFICATION/PREFERENCE
@@ -294,7 +292,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0003 · Away members: dismiss their open tasks when marked away
 
-* Status: in-review
+* Status: done
 * Issue / PR: —
 * Depends on: T-0007, T-0008
 * Spec: §2 Away, §3.3 Dismissal and Away
@@ -314,7 +312,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0005 · Generate OpenAPI from code and guard it against drift
 
-* Status: in-review
+* Status: done
 * Issue / PR: #2
 * Depends on: T-0001
 * Spec: AGENTS §5.1 (API contract), ADR 0006 / 0007 / 0015
@@ -326,7 +324,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0006 · Keycloak sign-in in Flutter (Android and web) and e2e sign-in
 
-* Status: in-review
+* Status: done
 * Issue / PR: #3 / #64
 * Depends on: T-0002, T-0020
 * Spec: §2, §9, AGENTS §6.2
@@ -338,7 +336,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0008 · HTTP MembershipGateway from tasks-service to households-service
 
-* Status: in-review
+* Status: done
 * Issue / PR: —
 * Depends on: T-0007
 * Spec: §7 service boundaries
@@ -350,7 +348,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0010 · HTTP PointsLedgerClient and scoring MembershipGateway
 
-* Status: in-review
+* Status: done
 * Issue / PR: #4 / #34
 * Depends on: T-0009
 * Spec: §7 service boundaries, §3.4
@@ -369,7 +367,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0013 · Services reject every real Keycloak user: principal is not the `sub` UUID
 
-* Status: in-review
+* Status: done
 * Issue / PR: #6
 * Depends on: T-0001
 * Spec: §2, §9 (auth), AGENTS §3 (Auth)
@@ -381,7 +379,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0014 · Invitation endpoints return 404 on a running server
 
-* Status: in-review
+* Status: done
 * Issue / PR: #7
 * Depends on: T-0002
 * Spec: §2 (invitations)
@@ -405,7 +403,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0037 · Unit tests for common-domain seams
 
-* Status: in-review
+* Status: done
 * Issue / PR: #30 / #39
 * Depends on: T-0017
 * Spec: AGENTS §5.1, §5.3
@@ -425,7 +423,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0039 · Check real HTTP responses against the generated contract
 
-* Status: in-review
+* Status: done
 * Issue / PR: #32 / 42
 * Depends on: T-0005
 * Spec: AGENTS §5.1 (API contract)
@@ -433,7 +431,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0040 · Make ledger awards idempotent per task
 
-* Status: in-review
+* Status: done
 * Issue / PR: #33 / #58
 * Depends on: T-0010
 * Spec: AGENTS §7 (points ledger, completion)
@@ -490,7 +488,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0047 · `reminderEnqueuesWhenDue` fails before 08:00 UTC
 
-* Status: in-review
+* Status: done
 * Issue / PR: — (suggested: "Test depends on the wall clock") / #60
 * Depends on: —
 * Spec: AGENTS §5.1 (control time with the clock)
@@ -550,7 +548,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0065 · tasks-service: reminder test depends on the wall-clock time of day
 
-* Status: todo
+* Status: dismissed (duplicate of T-0047, fixed by #60: the test is driven by a fake Clock)
 * Issue / PR: #54
 * Depends on: —
 * Spec: AGENTS §5.1 (control time with the clock)
@@ -568,8 +566,8 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0070 · Faster CI: run the gates as parallel jobs
 
-* Status: in-review
-* Issue / PR: — (suggested: "CI takes too long to go green") / this PR
+* Status: done
+* Issue / PR: — (suggested: "CI takes too long to go green") / #61
 * Depends on: T-0018
 * Spec: AGENTS §6.2, ADR 0019
 * Acceptance criteria: A green `check` on a pull request arrives noticeably sooner than the 5 minutes of the single `make check` job, with the same gates, and a failing gate still fails `check`.
@@ -596,7 +594,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0074 · e2e: the sign-in journey timed out once while the app was starting
 
-* Status: todo
+* Status: dismissed (cause found in T-0073: the dev server answered `index.html` while the app compiled and the readiness check accepted it; the check now needs a JavaScript content type. Reopen if it times out again)
 * Issue / PR: — (suggested: "web sign-in e2e is flaky on a cold start")
 * Depends on: T-0021
 * Spec: AGENTS §6.2
@@ -612,13 +610,37 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0073 · CI job: make e2e on every pull request
 
-* Status: in-review
-* Issue / PR: — (suggested: "Run e2e in CI") / #65 (merged), this PR
+* Status: done
+* Issue / PR: — (suggested: "Run e2e in CI") / #65, #68
 * Depends on: T-0021, T-0018
 * Spec: AGENTS §6.2
 * Acceptance criteria: `make e2e` (web target: browser sign-in through Keycloak, then the household and chores journeys) runs in CI on every pull request and on `master`, is required by the `check` job, and is as fast as the runner allows.
 * Summary: #65 added the `e2e` job to `.github/workflows/check.yml`: it starts the Podman API socket (compose talks to it through `DOCKER_HOST=unix:///tmp/podman.sock`; the runner has rootless Podman), installs the pinned Chrome for Testing with the new `tooling/install-chrome.sh` (also called by `install-dev-tools.sh`), generates the Dart client and runs `make e2e`. The `check` job's `needs` list includes `e2e`, so a failing journey fails `check` (`[ "$r" = success ]` for every result). This PR makes it faster: the Podman socket, the image pulls and the jar build run in the background during the Flutter setup, `make up` skips its own Maven build when `SKIP_PACKAGE=1` (unset by default, local behaviour unchanged), and `e2e.sh` compiles the release app while the stack boots instead of after it.
 * Decisions and deviations: Two real defects found through CI. (1) Chrome 155 no longer falls back to software WebGL on a runner without a GPU, so Flutter web drew nothing: a wrapper script passes `--enable-unsafe-swiftshader` on every launch (the WebDriver script and `flutter drive` both use `CHROME_EXECUTABLE`), acceptable for trusted test content. (2) While `flutter run -d web-server` compiles, its server answers every path with `index.html` and HTTP 200, so `e2e.sh` started the sign-in journey against a page without the app (the browser console said `main.dart.js` had MIME type `text/html`); readiness now requires a JavaScript content type. This is the cause of T-0074. Image caching (save/load or a registry cache) was not adopted: measured pulls are small (see below) and restoring a cache of the Keycloak image costs about as much as pulling it. Sharing one Flutter build between the two web journeys is not possible: sign-in needs the release app, `flutter drive` compiles the `integration_test` entry in debug mode. Unverified: Android (no emulator in CI, T-0045).
 * Verification: Measured on `ubuntu-24.04` hosted runners (job durations from the Actions API). Job duration of `e2e` before this PR (master code, four runs: 8m56s, 8m52s, 9m17s, 7m01s; mean 8m31s) against after (two runs on this PR: 6m45s, 7m10s; mean 6m58s), about 1m30s less (noisy: shared runners vary by a minute or more). Breakdown of an optimized run: 1m55s of setup before `make e2e` (Flutter 40 s, Chrome 11 s, client 9 s, 26 s waiting for the background jars and pulls), then `make e2e` 5m23s (was 7m07s): stack up and smoke OK at 3m39s (was 4m20s), sign-in journey 26 s after that (was about 1m20s, the release app now compiles while the stack boots), `flutter drive` journeys about 1m15s. Image pulls measured at about 11 s (postgres and keycloak, in parallel) plus 9 s (flyway) plus a few seconds (ubi9 base) per run, and are now overlapped with the Flutter setup, so a cache would save little. The remaining time is the five JVMs starting on a two-core runner (about 1m45s from image build to ready) and the debug compile for `flutter drive`. Not run: Android; the `check` result when `e2e` fails (it requires every needed job to be `success`, and `e2e` is in its `needs`, as read in the workflow; the first runs of #65 showed the job red and `check` red with `results: success success success success failure`).
-* Follow-ups: T-0074 is fixed by the readiness check here (its owner closes it); T-0046 images and T-0038 audit are still to add to this workflow; T-0053 (require `check` on `master`).
+* Follow-ups: T-0074 is dismissed (the readiness check here explains it); T-0046 images and T-0038 audit are still to add to this workflow; T-0053 (require `check` on `master`).
+
+### T-0076 · Controllable test clock and the e2e journeys that need time
+
+* Status: todo
+* Issue / PR: — (suggested: "Controllable clock for e2e") 
+* Depends on: T-0021
+* Spec: AGENTS §6.2
+* Acceptance criteria: A clock that can be moved, exposed only in the test environment of the services (never in production profiles), used by `make e2e` for the journeys that depend on time: recurrence spawn and round-robin assignment, supersede, away reassignment, month-end recap. Also the journeys left from T-0021: leaderboard period views, household switcher with two households, French and English.
+
+### T-0077 · Fake push gateway endpoint for e2e
+
+* Status: todo
+* Issue / PR: — (suggested: "Fake push gateway for e2e")
+* Depends on: T-0021, T-0027
+* Spec: AGENTS §6.2, §3 Push
+* Acceptance criteria: The local and e2e stack runs a fake push gateway endpoint that records what notifications-service sends; e2e journeys assert on it (type, language, minimal payload). Needed by the M6 exit.
+
+### T-0078 · `make check` runs the e2e suite
+
+* Status: todo
+* Issue / PR: — (suggested: "Include e2e in make check")
+* Depends on: T-0073
+* Spec: AGENTS §6.1 (`make check` is everything above, as in CI)
+* Acceptance criteria: `make check` runs `make e2e` like CI does (or AGENTS §6.1 states why not), without a second stack start when one is already up.
 
