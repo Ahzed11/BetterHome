@@ -27,6 +27,21 @@ case "$E2E_STACK" in
   *) echo "e2e: unknown E2E_STACK '$E2E_STACK' (use start or running)" >&2; exit 2 ;;
 esac
 
+cd "$ROOT/app"
+flutter pub get >/dev/null
+trap 'kill "${driver_pid:-}" "${server_pid:-}" 2>/dev/null || true' EXIT
+
+# Journey 1 needs the app served as a user would get it. Compiling it needs no stack, so it starts now
+# and compiles while the stack boots.
+if [[ "$E2E_TARGET" == web ]]; then
+  flutter run -d web-server --release --no-pub --web-port="$E2E_WEB_PORT" \
+    --dart-define=API_BASE_URL=http://localhost:8081 \
+    --dart-define=TASKS_API_BASE_URL=http://localhost:8082 \
+    --dart-define=SCORING_API_BASE_URL=http://localhost:8083 \
+    --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome >"$(mktemp)" 2>&1 &
+  server_pid=$!
+fi
+
 if [[ "$E2E_STACK" == start ]]; then
   CORS_ORIGINS="http://localhost:${E2E_WEB_PORT}" make -C "$ROOT" up
 fi
@@ -48,21 +63,12 @@ set_defines() {
   )
 }
 
-cd "$ROOT/app"
-flutter pub get >/dev/null
 if [[ "$E2E_TARGET" == web ]]; then
   chromedriver --port=4444 >/dev/null 2>&1 &
   driver_pid=$!
-  trap 'kill "$driver_pid" "${server_pid:-}" 2>/dev/null || true' EXIT
 
-  # Journey 1, real sign-in: the app is served as a user would get it and a browser signs in through
-  # Keycloak's own login page (integration_test cannot reach another origin).
-  flutter run -d web-server --release --no-pub --web-port="$E2E_WEB_PORT" \
-    --dart-define=API_BASE_URL=http://localhost:8081 \
-    --dart-define=TASKS_API_BASE_URL=http://localhost:8082 \
-    --dart-define=SCORING_API_BASE_URL=http://localhost:8083 \
-    --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome >"$(mktemp)" 2>&1 &
-  server_pid=$!
+  # Journey 1, real sign-in: a browser signs in through Keycloak's own login page (integration_test
+  # cannot reach another origin) against the app served above.
   # While the app compiles, the dev server answers every path with index.html (HTTP 200), so only a
   # JavaScript answer means the app is ready.
   app_is_served() {

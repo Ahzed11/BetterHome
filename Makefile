@@ -19,8 +19,8 @@ export TESTCONTAINERS_RYUK_DISABLED ?= true
 doctor: ## Check the pinned toolchain (JDK, Podman, Flutter, Android) is installed
 	@bash $(ROOT)/tooling/doctor.sh
 
-up: ## Build the services and start Postgres, Keycloak, migrations and the five services
-	cd $(BACKEND) && ./mvnw -B -q -DskipTests package
+up: ## Build the services and start Postgres, Keycloak, migrations and the five services (SKIP_PACKAGE=1: jars already built)
+	$(if $(SKIP_PACKAGE),@echo "up: using the jars already built",cd $(BACKEND) && ./mvnw -B -q -DskipTests package)
 	$(COMPOSE) up -d postgres keycloak
 	@$(MAKE) --no-print-directory migrate
 	$(COMPOSE) up -d --build
