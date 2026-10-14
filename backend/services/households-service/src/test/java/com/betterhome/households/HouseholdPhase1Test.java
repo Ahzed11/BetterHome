@@ -97,6 +97,18 @@ class HouseholdPhase1Test {
     }
 
     @Test
+    @TestSecurity(user = "11111111-1111-1111-1111-111111111111", roles = "member")
+    void invalidHouseholdPayloadAnswersTheDocumentedErrorBody() {
+        given().contentType(ContentType.JSON)
+                .body(Map.of("name", " ", "timezone", "UTC"))
+                .when()
+                .post("/v1/households")
+                .then()
+                .statusCode(400)
+                .body("code", is("bad_request"));
+    }
+
+    @Test
     void inviteAcceptRoleAwayAndLastAdminGuard() {
         var admin =
                 security.asUser(

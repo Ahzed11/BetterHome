@@ -34,6 +34,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +61,14 @@ class TaskPhase4AutomationTest {
 
     @Inject InMemoryMembershipGateway membershipGateway;
 
+    @Inject TestClock clock;
+
     @Inject CurrentIdentityAssociation identityAssociation;
+
+    @AfterEach
+    void releaseClock() {
+        clock.useSystemTime();
+    }
 
     @BeforeEach
     @Transactional
@@ -200,6 +208,8 @@ class TaskPhase4AutomationTest {
 
     @Test
     void reminderEnqueuesWhenDue() {
+        Instant now = Instant.parse("2026-03-10T12:00:00Z");
+        clock.fixAt(now);
         TaskTemplate template =
                 asUser(
                         ADMIN_SUBJECT,
@@ -213,7 +223,7 @@ class TaskPhase4AutomationTest {
                                 "FREQ=DAILY",
                                 AssignmentMode.round_robin,
                                 null,
-                                Instant.now().minusSeconds(120),
+                                now.minusSeconds(120),
                                 null));
         assertEquals(1, spawnService.claimAndSpawnDue(1));
         List<Task> openList =
@@ -224,7 +234,7 @@ class TaskPhase4AutomationTest {
                         () ->
                                 Task.update(
                                         "dueAt = ?1, dueReminderSentAt = null where id = ?2",
-                                        Instant.now().plusSeconds(7200),
+                                        now.plusSeconds(7200),
                                         open.id));
 
         int sent = reminderService.sendDueReminders();

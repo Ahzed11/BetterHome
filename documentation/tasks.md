@@ -116,11 +116,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0018 · CI: run `make check` on every pull request
 
-* Status: todo
-* Issue / PR: #11
+* Status: in-review
+* Issue / PR: #11 / #43
 * Depends on: T-0016, T-0017
 * Spec: AGENTS §6.2
 * Acceptance criteria: GitHub Actions workflow with pinned tool versions runs `make check` (docs, backend, app, policy, guard) on pull requests and on `master`. Podman or Docker available for Testcontainers. The e2e job is added by T-0021.
+* Summary: `.github/workflows/check.yml` runs `make check` (docs, backend with Spotless/Checkstyle/JaCoCo/OpenAPI contract tests, app with dart format/analyze/test) on every pull request and on pushes to `master`, on `ubuntu-24.04`, with `contents: read`, a 45 min timeout and `concurrency` cancelling superseded runs. JDK 21 Temurin and the Flutter version are read from `tooling/versions.env` (single source). Maven (setup-java cache) and pub (flutter-action cache) are cached. Testcontainers / Dev Services use the runner's Docker via `DOCKER_HOST=unix:///var/run/docker.sock` (overrides the Makefile's `?=` Podman default); nothing else in `check` needs Podman.
+* Decisions and deviations: Actions pinned to commit SHAs with the tag in a comment: `actions/checkout` v7.0.1, `actions/setup-java` v6.0.1 (first-party), `subosito/flutter-action` v2.23.0 (third-party, the de facto Flutter setup action; chosen over a manual SDK download to get version pinning plus caching; revisit if it becomes unmaintained). A `flutter pub get --enforce-lockfile` step precedes `make check` because a fresh checkout has no package config (without it `flutter_lints` did not resolve and `dart format` produced a false diff); the Makefile is untouched. `make check` does not include `test-policy`/`test-guard` (stubs, not part of `check`), e2e (T-0021), image builds (T-0046) or the OWASP audit (T-0038, needs an NVD key). The Flutter golden tests ran in `flutter test` on Linux per ADR 0012. No README badge added. Branch protection requiring the `check` job is a repository setting, not done here.
+* Verification: green run on PR #43: https://github.com/Ahzed11/BetterHome/actions/runs/38448075987 (all of `make check`, 5m29s). First run https://github.com/Ahzed11/BetterHome/actions/runs/38447223563 failed at `dart format` before the pub get step existed. Deliberately red run (throwaway PR #48, a badly formatted Java line, closed and branch deleted): https://github.com/Ahzed11/BetterHome/actions/runs/38448888249 failed in Spotless. Not run: e2e.
+* Follow-ups: T-0021 adds the e2e job here; T-0046 images; T-0038 audit. T-0053 (#49): require the `check` job on `master` (branch protection).
 
 ### T-0019 · One app contract: merge the generated per-service OpenAPI documents
 
@@ -393,8 +397,8 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0039 · Check real HTTP responses against the generated contract
 
-* Status: todo
-* Issue / PR: #32
+* Status: in-review
+* Issue / PR: #32 / 42
 * Depends on: T-0005
 * Spec: AGENTS §5.1 (API contract)
 * Acceptance criteria: Quarkus tests validate every real response (status, headers, body) against `documentation/api/<service>-openapi.yaml` with a request/response validator and fail when an answer has a field or status the document does not declare; additional properties are forbidden in schemas. T-0005 keeps the document equal to the code; this keeps the answers equal to the document.
@@ -422,6 +426,47 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0015
 * Spec: AGENTS §6.2
 * Acceptance criteria: `tooling/start-emulator.sh` boots the AVD to `sys.boot_completed=1` on the dev VM, or the e2e job is moved to CI with a documented reason, and `make doctor` gains a boot check. Observed: SIGSEGV in `qemu-system-x86_64-headless` about 25-30 s after start, when the guest `media` service starts (guest kernel boots fine); emulator 37.2.12, Android 35 google_apis x86_64, AMD Ryzen 7 5800X VM on Fedora 44. Same result with `-gpu swiftshader_indirect`, `-gpu guest`, `-feature -Vulkan`, `-accel off`, cameras off and `-feature -HardwareDecoder`. Not yet tried: another emulator build, another system image (API 34, non-google_apis), a gdb backtrace, an AVD without audio hardware.
+
+* Summary: `ContractValidation` (common-domain test-jar) validates each REST-assured answer with the Atlassian `openapi-request-validator` against the committed contract. Every service installs it for all its tests through a `QuarkusTestBeforeEachCallback` (`ContractValidationCallback`), so existing and future HTTP tests are checked without per-test code (Quarkus `/q/` endpoints excluded). Negative tests (`lists-service` `ContractValidationTest`) show an undocumented field, a wrong type and an undocumented status each fail against tampered copies of the contract. New HTTP tests: `ScoringHttpTest`, `TasksHttpTest` (success and 400/401/403/404/409 answers), plus a households 400 case.
+* Decisions and deviations: new test dependency `com.atlassian.oai:openapi-request-validator-restassured` 3.0.0 (Apache-2.0, maintained by Atlassian, builds on swagger-parser; it reads the OpenAPI 3.1 documents SmallRye generates, verified by the green run), see ADR 0016. Only answers are judged, not requests, because tests send invalid requests on purpose and the validator cannot tell request schema errors from response ones by level (follow-up T-0041). Unknown fields are rejected by closing every object schema in memory (`additionalProperties: false`) instead of changing the committed documents, so generated clients stay tolerant. Real mismatches found and fixed: (1) `reminderTime` was `format: time` (RFC 3339 full-time with offset) but the API returns a local `08:00:00`; now `format: partial-time` plus a pattern, documents regenerated; (2) nullable fields were serialized as `null` while documented as plain types; services now omit nulls (`quarkus.jackson.serialization-inclusion=non-null`); (3) bean validation failures answered the framework violation report, not the documented `ErrorResponse`; each service with `@Valid` now has a `ConstraintViolationMapper`.
+* Verification: `make test-backend` (Spotless, Checkstyle, all unit and integration tests on real PostgreSQL, JaCoCo floors, OpenAPI contract tests) passed. Not run: Flutter, e2e, `make check`. No live stack run: the behavior changes are covered by `@QuarkusTest` HTTP calls.
+* Follow-ups: T-0041 (validate requests), T-0042 (HTTP tests for remaining endpoints).
+
+### T-0041 · Validate test requests against the contract
+
+* Status: todo
+* Issue / PR: #40
+* Depends on: T-0039
+* Spec: AGENTS §5.1 (API contract)
+* Acceptance criteria: Requests that tests send as valid are validated against the request schemas of the contract, while tests that send invalid requests on purpose are not rejected by the filter.
+
+### T-0042 · HTTP tests for endpoints without one
+
+* Status: todo
+* Issue / PR: #41
+* Depends on: T-0039
+* Spec: AGENTS §5.1 (API contract)
+* Acceptance criteria: Every endpoint of every service has at least one REST-assured call (success and error) so its answers are checked against the contract.
+
+### T-0053 · Require the CI `check` job on master
+
+* Status: todo
+* Issue / PR: #49
+* Depends on: T-0018
+* Spec: AGENTS §6.2
+* Acceptance criteria: Branch protection on `master` requires the `check` job from `.github/workflows/check.yml` to pass before merge. Repository setting (admin), no code change.
+
+### T-0047 · `reminderEnqueuesWhenDue` fails before 08:00 UTC
+
+* Status: in-review
+* Issue / PR: — (suggested: "Test depends on the wall clock") / #60
+* Depends on: —
+* Spec: AGENTS §5.1 (control time with the clock)
+* Acceptance criteria: `TaskPhase4AutomationTest.reminderEnqueuesWhenDue` passes at any time of day by using a fake `Clock`. Observed at 06:09 UTC: the test set `dueAt` to `Instant.now()+2h` and the household reminder time is 08:00 UTC, so no reminder was due yet.
+* Summary: tasks-service tests get a `TestClock` (`@Alternative`, follows system time until a test fixes it). The test fixes it at 2026-03-10T12:00Z and derives the recurrence start and due date from it.
+* Decisions and deviations: Only this test fixes the clock, so other tests keep system time and are unchanged.
+* Verification: JDK 21, `./mvnw verify -pl services/tasks-service -am` (42 tests pass, coverage floor met) at 06:44 UTC, a time at which the test failed before. Not run: `make check`, app, e2e.
+* Follow-ups: none.
 
 ### T-0057 · Render readable text and icons in app golden images
 
