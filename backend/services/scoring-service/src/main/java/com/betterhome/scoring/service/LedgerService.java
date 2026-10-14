@@ -30,11 +30,18 @@ public class LedgerService {
 
     /**
      * Append a positive award for a completed task. Only tasks-service calls this, with its service
-     * token (checked at the REST boundary); it has already authorized the acting user.
+     * token (checked at the REST boundary); it has already authorized the acting user. Idempotent
+     * per ({@code taskId}, {@code completionNo}): repeating an identical call returns the existing
+     * row, and a call that differs from the stored award conflicts.
      */
     @Transactional
     public PointTransaction award(
-            UUID householdId, UUID userId, UUID taskId, int points, PointReason reason) {
+            UUID householdId,
+            UUID userId,
+            UUID taskId,
+            int completionNo,
+            int points,
+            PointReason reason) {
         if (points <= 0) {
             throw new ScoringException.BadRequest("Awarded points must be positive");
         }
@@ -44,17 +51,36 @@ public class LedgerService {
         if (taskId == null) {
             throw new ScoringException.BadRequest("taskId is required for awards");
         }
+        if (completionNo <= 0) {
+            throw new ScoringException.BadRequest("completionNo must be positive");
+        }
         Instant now = clock.now();
         PointTransaction row = new PointTransaction();
         row.id = UUID.randomUUID();
         row.householdId = householdId;
         row.userId = userId;
         row.taskId = taskId;
+        row.completionNo = completionNo;
         row.points = points;
         row.reason = reason;
         row.createdAt = now;
-        row.persist();
-        return row;
+        if (PointTransaction.insertAwardIfAbsent(row)) {
+            return row;
+        }
+        PointTransaction existing =
+                PointTransaction.findAward(taskId, completionNo)
+                        .orElseThrow(
+                                () -> new ScoringException.Conflict("Award could not be stored"));
+        boolean sameAward =
+                existing.householdId.equals(householdId)
+                        && existing.userId.equals(userId)
+                        && existing.points == points
+                        && existing.reason == reason;
+        if (!sameAward) {
+            throw new ScoringException.Conflict(
+                    "A different award already exists for this task completion");
+        }
+        return existing;
     }
 
     /**

@@ -53,7 +53,7 @@ public class LedgerResource {
 
     @Operation(
             operationId = "awardPoints",
-            summary = "Append an award to the ledger (service role)")
+            summary = "Append an award to the ledger, once per task completion (service role)")
     @RolesAllowed("service")
     @APIResponse(
             responseCode = "201",
@@ -62,6 +62,10 @@ public class LedgerResource {
     @APIResponse(
             responseCode = "400",
             description = "Invalid input",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(
+            responseCode = "409",
+            description = "A different award already exists for this task completion",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
     @Path("/award")
@@ -72,6 +76,7 @@ public class LedgerResource {
                                 householdId,
                                 request.userId(),
                                 request.taskId(),
+                                request.completionNo(),
                                 request.points(),
                                 request.reason()));
         return Response.status(Response.Status.CREATED).entity(body).build();

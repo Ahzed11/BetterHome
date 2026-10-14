@@ -33,20 +33,21 @@ class HttpPointsLedgerClientTest {
 
     @Test
     void awardPostsTheOnTimeReasonWithTheServiceToken() {
-        client.award(HOUSEHOLD, ASSIGNEE, TASK, 4, false);
+        client.award(HOUSEHOLD, ASSIGNEE, TASK, 1, 4, false);
 
         FakeScoringServer.Call call = FakeScoringServer.CALLS.get(0);
         assertEquals("/v1/households/" + HOUSEHOLD + "/points/award", call.path());
         assertEquals("Bearer " + FakeScoringServer.TOKEN, call.authorization());
         assertTrue(call.body().contains("\"userId\":\"" + ASSIGNEE + "\""));
         assertTrue(call.body().contains("\"taskId\":\"" + TASK + "\""));
+        assertTrue(call.body().contains("\"completionNo\":1"));
         assertTrue(call.body().contains("\"points\":4"));
         assertTrue(call.body().contains("\"reason\":\"task_completed\""));
     }
 
     @Test
     void lateAwardUsesTheLateReason() {
-        client.award(HOUSEHOLD, ASSIGNEE, TASK, 2, true);
+        client.award(HOUSEHOLD, ASSIGNEE, TASK, 1, 2, true);
 
         assertTrue(
                 FakeScoringServer.CALLS
@@ -74,7 +75,7 @@ class HttpPointsLedgerClientTest {
 
         assertThrows(
                 TaskException.ServiceUnavailable.class,
-                () -> client.award(HOUSEHOLD, ASSIGNEE, TASK, 4, false));
+                () -> client.award(HOUSEHOLD, ASSIGNEE, TASK, 1, 4, false));
         assertThrows(
                 TaskException.ServiceUnavailable.class,
                 () -> client.reverse(HOUSEHOLD, TASK, ASSIGNEE, 4, ADMIN, "Oops", "reverted"));
@@ -86,7 +87,7 @@ class HttpPointsLedgerClientTest {
 
         assertThrows(
                 TaskException.ServiceUnavailable.class,
-                () -> client.award(HOUSEHOLD, ASSIGNEE, TASK, 4, false));
+                () -> client.award(HOUSEHOLD, ASSIGNEE, TASK, 1, 4, false));
     }
 
     @Test
@@ -95,7 +96,7 @@ class HttpPointsLedgerClientTest {
 
         assertThrows(
                 TaskException.ServiceUnavailable.class,
-                () -> client.award(HOUSEHOLD, ASSIGNEE, TASK, 4, false));
+                () -> client.award(HOUSEHOLD, ASSIGNEE, TASK, 1, 4, false));
     }
 
     @Test

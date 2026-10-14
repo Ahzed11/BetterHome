@@ -15,7 +15,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 @Consumes(MediaType.APPLICATION_JSON)
 public interface ScoringClient {
 
-    record AwardRequest(UUID userId, UUID taskId, int points, String reason) {}
+    record AwardRequest(UUID userId, UUID taskId, int completionNo, int points, String reason) {}
 
     record ReverseRequest(
             UUID taskId,

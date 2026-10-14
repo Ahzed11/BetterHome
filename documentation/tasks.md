@@ -419,11 +419,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0040 · Make ledger awards idempotent per task
 
-* Status: todo
-* Issue / PR: #33
+* Status: in-review
+* Issue / PR: #33 / #58
 * Depends on: T-0010
 * Spec: AGENTS §7 (points ledger, completion)
 * Acceptance criteria: Awarding the same task and reason twice appends one row (unique constraint plus idempotent endpoint), or tasks writes awards through an outbox in the same transaction. A commit failure in tasks after scoring committed can no longer leave points for an open task or double-award on retry. Tests cover the retry.
+* Summary: tasks-service numbers each completion of a task (`task.completion_no`, tasks V5, incremented in the completing transaction) and sends it as `completionNo` on `POST .../points/award`. scoring-service V3 adds `point_transaction.completion_no` with a partial unique index on `(task_id, completion_no)`; the insert is `ON CONFLICT DO NOTHING`, an identical repeat returns the stored row, a differing one answers 409. `documentation/api/scoring-openapi.yaml` regenerated.
+* Decisions and deviations: The ticket's unique `(task, reason)` would block a legitimate second award when a reverted recurrence task reopens and is completed again, so the key is the completion number (chosen by the product owner on 2026-10-14). Not done: the outbox option. Residual: if scoring commits and tasks then fails and nobody retries, the award stays for a task that is still open until the retry; a retry never double-awards. After T-0039 the award endpoint also documents its 409, and `ScoringHttpTest` sends `completionNo`.
+* Verification: JDK 21, Podman, `./mvnw verify -pl services/scoring-service,services/tasks-service -am` after merging master (scoring 32 tests, tasks 49 tests incl. the now clock-controlled reminder test; coverage floors met). The `check` CI job is the evidence for `make check`. NOT verified: app, e2e, the running stack (not rebuilt).
+* Follow-ups: none.
 
 ### T-0046 · Build the five container images in make check and CI
 

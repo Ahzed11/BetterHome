@@ -132,6 +132,66 @@ class TaskPhase3ScoringWireTest {
     }
 
     @Test
+    void retryingACompletionWhoseAnswerWasLostAwardsOnce() {
+        TaskTemplate template =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () -> templateService.create(HOUSEHOLD, "Wipe", null, "", 3, 1, 60));
+        Task open =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () ->
+                                taskService.createOpen(
+                                        HOUSEHOLD,
+                                        template.id,
+                                        MEMBER_USER,
+                                        Instant.now().plusSeconds(3600)));
+        pointsLedgerClient.failAfterRecordingNextAward();
+
+        asUser(
+                MEMBER_SUBJECT,
+                () ->
+                        assertThrows(
+                                TaskException.ServiceUnavailable.class,
+                                () -> taskService.complete(HOUSEHOLD, open.id)));
+        assertEquals(TaskStatus.open, reload(open.id).status);
+        assertEquals(0, reload(open.id).completionNo);
+
+        Task done = asUser(MEMBER_SUBJECT, () -> taskService.complete(HOUSEHOLD, open.id));
+
+        assertEquals(TaskStatus.done, done.status);
+        assertEquals(1, pointsLedgerClient.awards().size());
+        assertEquals(3, pointsLedgerClient.balance(MEMBER_USER));
+    }
+
+    @Test
+    void aTaskReopenedByAReversionIsAwardedAgainWhenCompletedAgain() {
+        TaskTemplate template =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () -> templateService.create(HOUSEHOLD, "Sweep", null, "", 3, 1, 60));
+        Task open =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () ->
+                                taskService.createOpen(
+                                        HOUSEHOLD,
+                                        template.id,
+                                        MEMBER_USER,
+                                        Instant.now().plusSeconds(3600)));
+
+        asUser(MEMBER_SUBJECT, () -> taskService.complete(HOUSEHOLD, open.id));
+        Task reopened = asUser(ADMIN_SUBJECT, () -> taskService.revert(HOUSEHOLD, open.id, "Oops"));
+        assertEquals(TaskStatus.open, reopened.status);
+        asUser(MEMBER_SUBJECT, () -> taskService.complete(HOUSEHOLD, open.id));
+
+        assertEquals(
+                List.of(1, 2),
+                pointsLedgerClient.awards().stream().map(a -> a.completionNo()).toList());
+        assertEquals(3, pointsLedgerClient.balance(MEMBER_USER));
+    }
+
+    @Test
     void aLedgerOutageLeavesNoDoneTaskWithoutPoints() {
         TaskTemplate template =
                 asUser(

@@ -27,6 +27,10 @@ components:
           $ref: "#/components/schemas/UUID"
         taskId:
           $ref: "#/components/schemas/UUID"
+        completionNo:
+          type: integer
+          format: int32
+          exclusiveMinimum: 0
         points:
           type: integer
           format: int32
@@ -272,7 +276,7 @@ paths:
       - bearerAuth: []
   /v1/households/{householdId}/points/award:
     post:
-      summary: Append an award to the ledger (service role)
+      summary: "Append an award to the ledger, once per task completion (service role)"
       operationId: awardPoints
       tags:
       - points
@@ -317,6 +321,12 @@ paths:
                 $ref: "#/components/schemas/TransactionResponse"
         "400":
           description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: A different award already exists for this task completion
           content:
             application/json:
               schema:
