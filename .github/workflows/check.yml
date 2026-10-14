@@ -160,6 +160,16 @@ jobs:
         working-directory: app
         run: flutter pub get --enforce-lockfile
 
+      - name: TEMP diagnose blank page
+        run: |
+          set -x
+          . tooling/dev-env.sh
+          (cd app && flutter build web --release --no-pub --dart-define=API_BASE_URL=http://localhost:8081 --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome >/dev/null 2>&1)
+          (cd app/build/web && python3 -m http.server 8099 >/dev/null 2>&1 &)
+          sleep 3
+          timeout 90 "$CHROME_EXECUTABLE" --headless=new --no-sandbox --disable-gpu-sandbox --enable-logging=stderr --v=0 --virtual-time-budget=30000 --dump-dom http://localhost:8099/ 2>&1 | cut -c1-300 | tail -60 || true
+          timeout 90 "$CHROME_EXECUTABLE" --headless=new --no-sandbox --enable-unsafe-swiftshader --enable-logging=stderr --v=0 --virtual-time-budget=30000 --dump-dom http://localhost:8099/ 2>&1 | cut -c1-300 | tail -30 || true
+
       - run: make e2e
 
   # The one result to require on master (T-0053). It fails when any job above failed or was skipped.
