@@ -16,6 +16,8 @@
     <name>BetterHome Scoring Service</name>
 
     <properties>
+        <targetClasses>com.betterhome.scoring.domain.LedgerRules,com.betterhome.scoring.domain.PeriodWindows</targetClasses>
+        <targetTests>com.betterhome.scoring.domain.*Test</targetTests>
         <jacoco.line.minimum>0.75</jacoco.line.minimum>
     </properties>
 
@@ -85,6 +87,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jacoco</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.jqwik</groupId>
+            <artifactId>jqwik</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

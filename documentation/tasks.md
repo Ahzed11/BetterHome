@@ -259,11 +259,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0030 · Scheduler concurrency and invariant tests
 
-* Status: todo
-* Issue / PR: #23
+* Status: done
+* Issue / PR: #23 / PR pending
 * Depends on: T-0017
 * Spec: AGENTS §5.1
 * Acceptance criteria: Concurrency tests with several scheduler instances prove no double spawn or double close. jqwik property tests: round robin never picks an ineligible member, ledger sum equals awarded minus reversed points, scores never go negative. Pitest run on tasks and scoring documented.
+* Summary: jqwik 1.10.2 added as a test dependency (approved by the product owner on 2026-10-14; ADR 0023). Properties: `RoundRobinPropertiesTest` (never an ineligible member, also when the eligible set changes every round; everyone before anyone twice; no repeat in a row), `RruleEnginePropertiesTest` (occurrences in order, within start and end, on named days, no day skipped, no month clamped, and an exact brute-force oracle in any zone across DST), `PeriodWindowsPropertiesTest` (every zone and instant between 2000 and 2100), `LedgerRulesPropertiesTest` (the rules for every int, and a state machine over random awards, reversals and adjustments: books add up, a task never goes below zero, no score shown below zero). The two ledger rules and the score clamp were extracted into a pure `LedgerRules` that the services call (same behavior). `LedgerSequenceTest` runs seeded random sequences through the real service and PostgreSQL against an independent model. Concurrency: new `SpawnConcurrencyTest` (four schedulers, 20 due recurrences, each spawned once); month close, outbox relays and the reminder and overdue jobs already had such tests (T-0026, T-0081, T-0085, T-0029). Pitest: `make mutation` (profile `pitest`, domain classes only); last run tasks `RoundRobin` + `RruleEngine` 95% (42 of 44), scoring `LedgerRules` + `PeriodWindows` 100% (17 of 17); the first run was 66% for tasks, which led to the exact oracle property.
+* Decisions and deviations: Properties run on pure code because jqwik cannot start Quarkus; the database wiring is covered by seeded random sequences and the concurrency tests instead. The two surviving mutants (`nextOccurrence`, lines 41 and 45) are guards made unreachable by the earlier day logic. Pitest is opt-in (not in `make check`), as AGENTS §5.3 says "periodically". `.jqwik-database` ignored by git.
+* Verification: JDK 21, Podman, GitHub Actions unavailable so the local gate (AGENTS.md): `make check` (docs, all six backend modules incl. the new tests, app 321 tests, guard) and a cold `make e2e` are recorded in the PR; `make mutation` as above. Not run: Android.
+* Follow-ups: T-0087 (the ledger can go below zero), T-0058 etc. unchanged.
 
 ### T-0031 · App UX per spec §8: switcher, quick-log undo, overdue tone
 
@@ -740,4 +744,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0027, T-0028
 * Spec: §5
 * Acceptance criteria: Split from T-0028 on 2026-10-14. The app asks for push permission at a sensible moment (not at first launch), obtains the FCM or APNs token and registers it through the device-token API of T-0027, and removes it on sign-out. FR/EN, widget tests with a fake of the vendor boundary, e2e against the fake push endpoint (T-0077). Android only until iOS signing exists.
+
+### T-0087 · The ledger sum can go below zero after an adjustment followed by a reversal
+
+* Status: todo
+* Issue / PR: — (suggested: "Reverse can push a member's ledger below zero") — needs a product decision first
+* Depends on: T-0030
+* Spec: §3.4 ("scores never go negative: reversals equal what was awarded, and manual adjustments are guarded"), AGENTS §7
+* Acceptance criteria: Found by the T-0030 ledger tests, documented in `LedgerSequenceTest`. `reverse` checks that the task has enough points left, not the member's total, so a manual adjustment of -5 followed by reversing a 5-point task leaves the member's ledger sum at -5 while the score shown stays at 0; later awards then show as 0 until the sum is back above zero, hiding points the member earned. Decide: refuse the reversal, clamp it, or keep the behavior and say so in the spec; then change the code, the spec and the test together.
 

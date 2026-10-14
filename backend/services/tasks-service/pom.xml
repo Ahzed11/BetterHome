@@ -16,6 +16,8 @@
     <name>BetterHome Tasks Service</name>
 
     <properties>
+        <targetClasses>com.betterhome.tasks.domain.RoundRobin,com.betterhome.tasks.domain.RruleEngine</targetClasses>
+        <targetTests>com.betterhome.tasks.domain.*Test</targetTests>
         <jacoco.line.minimum>0.70</jacoco.line.minimum>
     </properties>
 
@@ -85,6 +87,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jacoco</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.jqwik</groupId>
+            <artifactId>jqwik</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
