@@ -11,3 +11,5 @@ One job ran `make check`: docs, then the five services one after another in a si
 ## Consequences
 
 The wait is the slowest job instead of the sum (about 1.7 minutes expected, from about 5). More runner minutes are used in total, and common-domain is built once per service job. A gate added to `make check` must also be added as a job; the header comment of the workflow says so. The full-reactor `make test-backend` (no `SERVICE`) remains what `make check` runs.
+
+Update (T-0073): an `e2e` job runs `make e2e` (web target) beside these jobs, and the `check` job requires it too.
