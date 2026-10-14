@@ -65,12 +65,17 @@ class ScoringPhase3Test {
                 MEMBER_SUBJECT,
                 () ->
                         ledgerService.award(
-                                HOUSEHOLD, MEMBER_USER, task1, 5, PointReason.task_completed));
+                                HOUSEHOLD, MEMBER_USER, task1, 1, 5, PointReason.task_completed));
         asUser(
                 MEMBER_SUBJECT,
                 () ->
                         ledgerService.award(
-                                HOUSEHOLD, MEMBER_USER, task2, 2, PointReason.task_completed_late));
+                                HOUSEHOLD,
+                                MEMBER_USER,
+                                task2,
+                                1,
+                                2,
+                                PointReason.task_completed_late));
         asUser(
                 ADMIN_SUBJECT,
                 () ->
@@ -78,6 +83,7 @@ class ScoringPhase3Test {
                                 HOUSEHOLD,
                                 ADMIN_USER,
                                 UUID.randomUUID(),
+                                1,
                                 3,
                                 PointReason.task_completed));
 
@@ -138,6 +144,7 @@ class ScoringPhase3Test {
                                 HOUSEHOLD,
                                 MEMBER_USER,
                                 UUID.randomUUID(),
+                                1,
                                 10,
                                 PointReason.task_completed));
         asUser(

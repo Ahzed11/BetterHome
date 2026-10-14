@@ -21,7 +21,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class InMemoryPointsLedgerClient implements PointsLedgerClient {
 
     public record AwardRecord(
-            UUID householdId, UUID userId, UUID taskId, int points, boolean late) {}
+            UUID householdId,
+            UUID userId,
+            UUID taskId,
+            int completionNo,
+            int points,
+            boolean late) {}
 
     public record ReverseRecord(
             UUID householdId,
@@ -37,10 +42,19 @@ public class InMemoryPointsLedgerClient implements PointsLedgerClient {
     private final Map<UUID, Integer> balances = new ConcurrentHashMap<>();
 
     private volatile boolean unavailable;
+    private volatile boolean failAfterRecordingAward;
 
     /** Makes every following call fail as an unreachable scoring-service would. */
     public void setUnavailable(boolean unavailable) {
         this.unavailable = unavailable;
+    }
+
+    /**
+     * Makes the next award land in the ledger and then fail, as when scoring commits and the answer
+     * is lost, so the caller's own transaction rolls back.
+     */
+    public void failAfterRecordingNextAward() {
+        failAfterRecordingAward = true;
     }
 
     private void requireAvailable() {
@@ -51,6 +65,7 @@ public class InMemoryPointsLedgerClient implements PointsLedgerClient {
 
     public void clear() {
         unavailable = false;
+        failAfterRecordingAward = false;
         awards.clear();
         reversals.clear();
         balances.clear();
@@ -69,10 +84,27 @@ public class InMemoryPointsLedgerClient implements PointsLedgerClient {
     }
 
     @Override
-    public void award(UUID householdId, UUID userId, UUID taskId, int points, boolean late) {
+    public void award(
+            UUID householdId,
+            UUID userId,
+            UUID taskId,
+            int completionNo,
+            int points,
+            boolean late) {
         requireAvailable();
-        awards.add(new AwardRecord(householdId, userId, taskId, points, late));
+        boolean repeated =
+                awards.stream()
+                        .anyMatch(
+                                a -> a.taskId().equals(taskId) && a.completionNo() == completionNo);
+        if (repeated) {
+            return;
+        }
+        awards.add(new AwardRecord(householdId, userId, taskId, completionNo, points, late));
         balances.merge(userId, points, Integer::sum);
+        if (failAfterRecordingAward) {
+            failAfterRecordingAward = false;
+            throw new TaskException.ServiceUnavailable("scoring-service answer was lost");
+        }
     }
 
     @Override

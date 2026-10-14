@@ -53,7 +53,7 @@ public class LedgerResource {
 
     @Operation(
             operationId = "awardPoints",
-            summary = "Append an award to the ledger (service role)")
+            summary = "Append an award to the ledger, once per task completion (service role)")
     @RolesAllowed("service")
     @APIResponse(
             responseCode = "201",
@@ -72,6 +72,7 @@ public class LedgerResource {
                                 householdId,
                                 request.userId(),
                                 request.taskId(),
+                                request.completionNo(),
                                 request.points(),
                                 request.reason()));
         return Response.status(Response.Status.CREATED).entity(body).build();

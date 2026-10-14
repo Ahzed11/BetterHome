@@ -68,6 +68,9 @@ public class Task extends PanacheEntityBase {
     @Column(name = "completed_at")
     public Instant completedAt;
 
+    @Column(name = "completion_no", nullable = false)
+    public int completionNo;
+
     @Column(name = "points_awarded")
     public Integer pointsAwarded;
 

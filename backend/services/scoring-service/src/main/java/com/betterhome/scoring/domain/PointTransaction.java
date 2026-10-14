@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Entity
@@ -25,6 +26,9 @@ public class PointTransaction extends PanacheEntityBase {
 
     @Column(name = "task_id")
     public UUID taskId;
+
+    @Column(name = "completion_no")
+    public Integer completionNo;
 
     @Column(name = "reversion_id")
     public UUID reversionId;
@@ -61,6 +65,36 @@ public class PointTransaction extends PanacheEntityBase {
                 householdId,
                 fromInclusive,
                 toExclusive);
+    }
+
+    public static Optional<PointTransaction> findAward(UUID taskId, int completionNo) {
+        return find("taskId = ?1 and completionNo = ?2", taskId, completionNo)
+                .firstResultOptional();
+    }
+
+    /**
+     * Inserts an award unless one already exists for the same task completion. Atomic in the
+     * database, so concurrent retries cannot both insert.
+     */
+    public static boolean insertAwardIfAbsent(PointTransaction row) {
+        int inserted =
+                getEntityManager()
+                        .createNativeQuery(
+                                "insert into point_transaction (id, household_id, user_id,"
+                                        + " task_id, completion_no, points, reason, created_at)"
+                                        + " values (:id, :h, :u, :t, :c, :p, :r, :at)"
+                                        + " on conflict (task_id, completion_no)"
+                                        + " where completion_no is not null do nothing")
+                        .setParameter("id", row.id)
+                        .setParameter("h", row.householdId)
+                        .setParameter("u", row.userId)
+                        .setParameter("t", row.taskId)
+                        .setParameter("c", row.completionNo)
+                        .setParameter("p", row.points)
+                        .setParameter("r", row.reason.name())
+                        .setParameter("at", row.createdAt)
+                        .executeUpdate();
+        return inserted == 1;
     }
 
     public static int sumForUser(UUID householdId, UUID userId) {

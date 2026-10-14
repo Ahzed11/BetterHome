@@ -9,7 +9,12 @@ import java.util.UUID;
  */
 public interface PointsLedgerClient {
 
-    void award(UUID householdId, UUID userId, UUID taskId, int points, boolean late);
+    /**
+     * Appends the award for one completion of a task. {@code completionNo} is the idempotency key:
+     * repeating a call with the same task and number never awards twice.
+     */
+    void award(
+            UUID householdId, UUID userId, UUID taskId, int completionNo, int points, boolean late);
 
     void reverse(
             UUID householdId,

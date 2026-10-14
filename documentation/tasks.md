@@ -397,11 +397,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0040 · Make ledger awards idempotent per task
 
-* Status: todo
+* Status: in-review
 * Issue / PR: #33
 * Depends on: T-0010
 * Spec: AGENTS §7 (points ledger, completion)
 * Acceptance criteria: Awarding the same task and reason twice appends one row (unique constraint plus idempotent endpoint), or tasks writes awards through an outbox in the same transaction. A commit failure in tasks after scoring committed can no longer leave points for an open task or double-award on retry. Tests cover the retry.
+* Summary: tasks-service numbers each completion of a task (`task.completion_no`, tasks V5, incremented in the completing transaction) and sends it as `completionNo` on `POST .../points/award`. scoring-service V3 adds `point_transaction.completion_no` with a partial unique index on `(task_id, completion_no)`; the insert is `ON CONFLICT DO NOTHING`, an identical repeat returns the stored row, a differing one answers 409. `documentation/api/scoring-openapi.yaml` regenerated.
+* Decisions and deviations: The ticket's unique `(task, reason)` would block a legitimate second award when a reverted recurrence task reopens and is completed again, so the key is the completion number (chosen by the product owner on 2026-10-14). Not done: the outbox option. Residual: if scoring commits and tasks then fails and nobody retries, the award stays for a task that is still open until the retry; a retry never double-awards.
+* Verification: JDK 21, Podman socket, `./mvnw verify`: scoring 27 tests pass with coverage floor met, including repeat award, re-completion, conflicting repeat and bad number. tasks: new tests for lost-answer retry and re-completion pass (43 pass). NOT verified: tasks coverage floor (0.67 measured with `reminderEnqueuesWhenDue` excluded, see T-0047), `make check`, app, e2e, the running stack (ports 8081-8085 were held by a local `make up` stack, so tests ran with `-Dquarkus.http.test-port=0`; stack not rebuilt or restarted).
+* Follow-ups: T-0047.
 
 ### T-0046 · Build the five container images in make check and CI
 
@@ -418,3 +422,11 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0015
 * Spec: AGENTS §6.2
 * Acceptance criteria: `tooling/start-emulator.sh` boots the AVD to `sys.boot_completed=1` on the dev VM, or the e2e job is moved to CI with a documented reason, and `make doctor` gains a boot check. Observed: SIGSEGV in `qemu-system-x86_64-headless` about 25-30 s after start, when the guest `media` service starts (guest kernel boots fine); emulator 37.2.12, Android 35 google_apis x86_64, AMD Ryzen 7 5800X VM on Fedora 44. Same result with `-gpu swiftshader_indirect`, `-gpu guest`, `-feature -Vulkan`, `-accel off`, cameras off and `-feature -HardwareDecoder`. Not yet tried: another emulator build, another system image (API 34, non-google_apis), a gdb backtrace, an AVD without audio hardware.
+
+### T-0047 · `reminderEnqueuesWhenDue` fails before 08:00 UTC
+
+* Status: todo
+* Issue / PR: — (suggested: "Test depends on the wall clock")
+* Depends on: —
+* Spec: AGENTS §5.1 (control time with the clock)
+* Acceptance criteria: `TaskPhase4AutomationTest.reminderEnqueuesWhenDue` passes at any time of day by using the fake `Clock`. Observed at 06:09 UTC: the test sets `dueAt` to `Instant.now()+2h` and the household reminder time is 08:00 UTC, so no reminder is due yet.

@@ -76,8 +76,10 @@ public class TaskService {
         task.completerId = caller.userId();
         task.completedAt = now;
         task.pointsAwarded = template.points;
+        task.completionNo = 1;
         task.persist();
-        pointsLedgerClient.award(householdId, caller.userId(), task.id, template.points, false);
+        pointsLedgerClient.award(
+                householdId, caller.userId(), task.id, task.completionNo, template.points, false);
         return task;
     }
 
@@ -97,8 +99,10 @@ public class TaskService {
         task.completerId = caller.userId();
         task.completedAt = now;
         task.pointsAwarded = late ? task.latePoints : task.points;
+        task.completionNo++;
         task.updatedAt = now;
-        pointsLedgerClient.award(householdId, task.assigneeId, task.id, task.pointsAwarded, late);
+        pointsLedgerClient.award(
+                householdId, task.assigneeId, task.id, task.completionNo, task.pointsAwarded, late);
         return task;
     }
 

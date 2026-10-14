@@ -2,6 +2,7 @@ package com.betterhome.scoring;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.betterhome.scoring.domain.PointTransaction;
 import com.betterhome.scoring.membership.InMemoryMembershipGateway;
@@ -43,9 +44,18 @@ class LedgerResourceAuthTest {
         PointTransaction.delete("householdId = ?1", HOUSEHOLD);
     }
 
-    private Map<String, Object> awardBody(UUID taskId) {
+    private Map<String, Object> awardBody(UUID taskId, int completionNo) {
         return Map.of(
-                "userId", MEMBER_USER, "taskId", taskId, "points", 4, "reason", "task_completed");
+                "userId",
+                MEMBER_USER,
+                "taskId",
+                taskId,
+                "completionNo",
+                completionNo,
+                "points",
+                4,
+                "reason",
+                "task_completed");
     }
 
     private Map<String, Object> reverseBody(UUID taskId, UUID adminUserId) {
@@ -65,8 +75,12 @@ class LedgerResourceAuthTest {
     }
 
     private io.restassured.response.ValidatableResponse postAward(UUID taskId) {
+        return postAward(taskId, 1);
+    }
+
+    private io.restassured.response.ValidatableResponse postAward(UUID taskId, int completionNo) {
         return given().contentType("application/json")
-                .body(awardBody(taskId))
+                .body(awardBody(taskId, completionNo))
                 .when()
                 .post("/v1/households/" + HOUSEHOLD + "/points/award")
                 .then();
@@ -94,6 +108,62 @@ class LedgerResourceAuthTest {
                 .statusCode(201)
                 .body("adminUserId", is(ADMIN_USER.toString()))
                 .body("pointsReversed", is(4));
+    }
+
+    @Test
+    @TestSecurity(user = "tasks-service", roles = "service")
+    void repeatingAnAwardForTheSameCompletionAppendsOneRow() {
+        UUID taskId = UUID.randomUUID();
+
+        String first = postAward(taskId, 1).statusCode(201).extract().path("id");
+        postAward(taskId, 1).statusCode(201).body("id", is(first));
+
+        assertEquals(4, PointTransaction.sumForUser(HOUSEHOLD, MEMBER_USER));
+    }
+
+    @Test
+    @TestSecurity(user = "tasks-service", roles = "service")
+    void aReopenedTaskCompletedAgainIsAwardedAgain() {
+        UUID taskId = UUID.randomUUID();
+
+        postAward(taskId, 1).statusCode(201);
+        postReverse(taskId, ADMIN_USER).statusCode(201);
+        postAward(taskId, 2).statusCode(201);
+
+        assertEquals(4, PointTransaction.sumForUser(HOUSEHOLD, MEMBER_USER));
+    }
+
+    @Test
+    @TestSecurity(user = "tasks-service", roles = "service")
+    void aDifferentAwardForTheSameCompletionConflicts() {
+        UUID taskId = UUID.randomUUID();
+        postAward(taskId, 1).statusCode(201);
+
+        given().contentType("application/json")
+                .body(
+                        Map.of(
+                                "userId",
+                                MEMBER_USER,
+                                "taskId",
+                                taskId,
+                                "completionNo",
+                                1,
+                                "points",
+                                9,
+                                "reason",
+                                "task_completed"))
+                .when()
+                .post("/v1/households/" + HOUSEHOLD + "/points/award")
+                .then()
+                .statusCode(409);
+
+        assertEquals(4, PointTransaction.sumForUser(HOUSEHOLD, MEMBER_USER));
+    }
+
+    @Test
+    @TestSecurity(user = "tasks-service", roles = "service")
+    void aMissingOrNonPositiveCompletionNumberIsRejected() {
+        postAward(UUID.randomUUID(), 0).statusCode(400);
     }
 
     @Test

@@ -29,14 +29,21 @@ public class HttpPointsLedgerClient implements PointsLedgerClient {
     }
 
     @Override
-    public void award(UUID householdId, UUID userId, UUID taskId, int points, boolean late) {
+    public void award(
+            UUID householdId,
+            UUID userId,
+            UUID taskId,
+            int completionNo,
+            int points,
+            boolean late) {
         String reason = late ? "task_completed_late" : "task_completed";
         call(
                 bearer ->
                         scoring.award(
                                 bearer,
                                 householdId,
-                                new ScoringClient.AwardRequest(userId, taskId, points, reason)));
+                                new ScoringClient.AwardRequest(
+                                        userId, taskId, completionNo, points, reason)));
     }
 
     @Override

@@ -20,6 +20,7 @@ public final class ScoringDtos {
     public record AwardRequest(
             @NotNull UUID userId,
             @NotNull UUID taskId,
+            @Positive int completionNo,
             @Positive int points,
             @NotNull PointReason reason) {}
 
