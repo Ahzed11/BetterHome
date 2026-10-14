@@ -71,6 +71,18 @@
       "secret": "local-dev-only-change-me"
     },
     {
+      "clientId": "betterhome-households-service",
+      "name": "BetterHome households service",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "secret": "local-dev-only-change-me"
+    },
+    {
       "clientId": "betterhome-scoring-service",
       "name": "BetterHome scoring service",
       "enabled": true,
@@ -118,6 +130,12 @@
       "username": "service-account-betterhome-tasks-service",
       "enabled": true,
       "serviceAccountClientId": "betterhome-tasks-service",
+      "realmRoles": ["service"]
+    },
+    {
+      "username": "service-account-betterhome-households-service",
+      "enabled": true,
+      "serviceAccountClientId": "betterhome-households-service",
       "realmRoles": ["service"]
     },
     {
