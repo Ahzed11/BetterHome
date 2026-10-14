@@ -63,6 +63,10 @@ public class LedgerResource {
             responseCode = "400",
             description = "Invalid input",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    @APIResponse(
+            responseCode = "409",
+            description = "A different award already exists for this task completion",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
     @Path("/award")
     public Response award(@PathParam("householdId") UUID householdId, @Valid AwardRequest request) {

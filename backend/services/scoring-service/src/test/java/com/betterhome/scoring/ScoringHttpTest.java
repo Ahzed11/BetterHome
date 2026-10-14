@@ -139,6 +139,7 @@ class ScoringHttpTest {
         return Map.of(
                 "userId", MEMBER_USER,
                 "taskId", taskId,
+                "completionNo", 1,
                 "points", points,
                 "reason", "task_completed");
     }
