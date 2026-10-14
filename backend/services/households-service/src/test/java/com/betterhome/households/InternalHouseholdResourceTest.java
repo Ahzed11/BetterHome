@@ -146,6 +146,55 @@ class InternalHouseholdResourceTest {
     }
 
     @Test
+    @TestSecurity(user = "tasks-service", roles = "service")
+    void serviceAccountLooksUpAUserByIdAndBySubject() {
+        given().when()
+                .get("/v1/internal/users/" + memberUserId)
+                .then()
+                .statusCode(200)
+                .body("userId", is(memberUserId.toString()))
+                .body("authSubject", is(MEMBER_SUBJECT.toString()))
+                .body("language", is("en"));
+        given().when()
+                .get("/v1/internal/users/by-subject/" + MEMBER_SUBJECT)
+                .then()
+                .statusCode(200)
+                .body("userId", is(memberUserId.toString()))
+                .body("language", is("en"));
+    }
+
+    @Test
+    @TestSecurity(user = "tasks-service", roles = "service")
+    void unknownUsersAreNotFound() {
+        given().when().get("/v1/internal/users/" + UUID.randomUUID()).then().statusCode(404);
+        given().when()
+                .get("/v1/internal/users/by-subject/" + UUID.randomUUID())
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    @TestSecurity(
+            user = "66666666-6666-6666-6666-666666666666",
+            roles = {"member", "admin"})
+    void householdMembersAndAdminsCannotLookUpUsers() {
+        given().when().get("/v1/internal/users/" + memberUserId).then().statusCode(403);
+        given().when()
+                .get("/v1/internal/users/by-subject/" + MEMBER_SUBJECT)
+                .then()
+                .statusCode(403);
+    }
+
+    @Test
+    void anonymousCannotLookUpUsers() {
+        given().when().get("/v1/internal/users/" + memberUserId).then().statusCode(401);
+        given().when()
+                .get("/v1/internal/users/by-subject/" + MEMBER_SUBJECT)
+                .then()
+                .statusCode(401);
+    }
+
+    @Test
     void anonymousIsRejected() {
         given().when()
                 .get("/v1/internal/households/" + householdId + "/members")

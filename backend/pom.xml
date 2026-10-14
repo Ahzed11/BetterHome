@@ -28,6 +28,7 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.version>3.40.1</quarkus.platform.version>
+        <openapi-validator.version>3.0.0</openapi-validator.version>
         <jandex.version>3.5.3</jandex.version>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
@@ -57,6 +58,12 @@
                 <groupId>com.betterhome</groupId>
                 <artifactId>common-domain</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.atlassian.oai</groupId>
+                <artifactId>openapi-request-validator-restassured</artifactId>
+                <version>${openapi-validator.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>com.betterhome</groupId>

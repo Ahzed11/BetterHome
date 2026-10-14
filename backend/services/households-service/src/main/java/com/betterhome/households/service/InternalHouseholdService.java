@@ -3,6 +3,7 @@ package com.betterhome.households.service;
 import com.betterhome.common.Clock;
 import com.betterhome.households.api.InternalDtos.InternalMemberResponse;
 import com.betterhome.households.api.InternalDtos.InternalSettingsResponse;
+import com.betterhome.households.api.InternalDtos.InternalUserResponse;
 import com.betterhome.households.domain.AppUser;
 import com.betterhome.households.domain.HouseholdException;
 import com.betterhome.households.domain.Membership;
@@ -46,6 +47,20 @@ public class InternalHouseholdService {
 
     public InternalSettingsResponse settings(UUID householdId) {
         return InternalSettingsResponse.from(membershipGuard.requireActiveHousehold(householdId));
+    }
+
+    /** The active user with this id (used to learn the recipient's language). */
+    public InternalUserResponse userById(UUID userId) {
+        return AppUser.findActiveById(userId)
+                .map(InternalUserResponse::from)
+                .orElseThrow(() -> new HouseholdException.NotFound("User not found"));
+    }
+
+    /** The active user behind a verified token subject (used to map a caller to our user id). */
+    public InternalUserResponse userByAuthSubject(UUID authSubject) {
+        return AppUser.findByAuthSubject(authSubject)
+                .map(InternalUserResponse::from)
+                .orElseThrow(() -> new HouseholdException.NotFound("User not found"));
     }
 
     private static UUID authSubjectOf(Membership membership) {

@@ -600,6 +600,10 @@ paths:
           description: Not authenticated
         "403":
           description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "200":
           description: OK
           content:
