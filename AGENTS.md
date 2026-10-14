@@ -267,7 +267,7 @@ A task is done only when all of these are true:
 
 Since 2026-10-14 the product owner lets agents merge the pull requests they opened, so merging no longer waits for a human. An agent merges only when all of these hold:
 
-- the `check` job is green on the pull request's latest commit (never merge pending or red, never bypass a failing job);
+- the `check` job is green on the pull request's latest commit (never merge pending or red, never bypass a failing job). **Exception:** when the diff touches only Markdown files (`*.md`), CI checks nothing about it, so the agent merges without waiting for it; a diff with any other file waits for CI as above;
 - the pull request is mergeable without conflicts, and the ledger entry matches the code (section 12);
 - the definition of done above is met, and what could not be verified (for example the Android target) is written in the ledger and the pull request;
 - it is a merge commit (`gh pr merge --merge`), the history on `master` keeps one merge per pull request;
@@ -276,6 +276,17 @@ Since 2026-10-14 the product owner lets agents merge the pull requests they open
 After merging, the agent checks that the run on `master` is green, deletes nothing it did not create, and tells the product owner what was merged. If `master` turns red, fixing or reverting it comes before any new work. Branch protection (T-0053) stays a repository setting for the product owner; this rule does not replace it.
 
 Some agent environments block `gh pr merge` unless a permission rule allows it; the product owner adds that rule in the agent's settings.
+
+
+### Choosing the next task
+
+When an agent finishes a task (merged, ledger updated, `master` checked), it does not wait to be told what comes next. It reads the open GitHub issues and the ledger (section 12) and picks the next task itself:
+
+1. Take the lowest-numbered milestone that still has open work, and inside it the task whose `Depends on` entries are all `done`. Prefer one that unblocks others.
+2. Skip `blocked` and `dismissed` entries, entries that say a product decision is needed first, and tasks another agent has `in-progress`.
+3. Mark it `in-progress` in the ledger, state the plan (section 4) and proceed with the same rules as any task.
+
+It stops and asks only when the next step needs a product decision, the spec is ambiguous or wrong (section 11), something needs a permission or a secret it does not have, or nothing eligible is left. Parallel agents each pick different tasks and respect the single local stack (only one agent runs `make up` or `make e2e` at a time).
 
 
 ## 11. When unsure
