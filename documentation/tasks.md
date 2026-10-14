@@ -140,7 +140,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0020 · Generated Dart client replaces hand-written repositories
 
 * Status: in-review
-* Issue / PR: #13 / PR pending
+* Issue / PR: #13 / #63
 * Depends on: T-0019, T-0005
 * Spec: ADR 0006, AGENTS §2, §5.2
 * Acceptance criteria: Generate the Dart client from `openapi.yaml` into the gitignored `generated/` folder; app repositories use it with bearer headers. Remove hand-written JSON parsing and `dynamic`. Repository tests run against a fake server built from the contract, not hand-built JSON. `make test-guard` proves generation fails when the document or client is broken.
