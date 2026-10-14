@@ -823,6 +823,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reverted: {reason}'**
   String revertedBecause(String reason);
+
+  /// No description provided for @undo.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo'**
+  String get undo;
+
+  /// No description provided for @quickLogPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Logging {title}…'**
+  String quickLogPending(String title);
 }
 
 class _AppLocalizationsDelegate

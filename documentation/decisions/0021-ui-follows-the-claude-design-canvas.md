@@ -33,3 +33,7 @@ Restyling the existing screens onto these widgets is separate work (T-0080). Cha
 
 An open chore past its due date shows `OverdueBadge`: a soft coral tint with a coral dot and the text "Overdue · still +N" (N is the late points), in dark ink. The coral `#E07A5F` alone is about 3:1 on white, below the 4.5:1 of body text, so only the dot and the tint carry it (token `overdueTint`). The screen gets the current time from a `now` parameter (default `DateTime.now`) so tests control it.
 
+## Addendum: cancelling a quick-log (T-0090)
+
+`runUnlessUndone` shows a snackbar with Undo for five seconds and runs the action only if the person did not undo, so a cancelled log leaves nothing behind (no task, no points, no reversion; the ledger stays append-only). It does not persist for screen readers (`persist: false`), otherwise the log would wait forever. The template picker keeps its dialog; restyling it after the design's Quick log board is T-0091.
+

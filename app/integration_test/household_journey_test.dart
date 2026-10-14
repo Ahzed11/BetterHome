@@ -200,6 +200,18 @@ void main() {
       await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Dishes');
       await _tap(tester, find.widgetWithText(FilledButton, 'Save'));
       await _tap(tester, find.widgetWithText(SimpleDialogOption, 'Dishes'));
+
+      // The log can be cancelled for five seconds: nothing reaches the server.
+      await _see(tester, find.text('Logging Dishes…'));
+      await _tap(tester, find.text('Undo'));
+      await tester.pump(const Duration(seconds: 6));
+      await Future<void>.delayed(const Duration(seconds: 6));
+      await tester.pump();
+      expect(await session.tasksRepository.listTasks(householdId), isEmpty);
+
+      // Left alone, the log is sent when the five seconds pass.
+      await _tap(tester, find.text('I just did…'));
+      await _tap(tester, find.widgetWithText(SimpleDialogOption, 'Dishes'));
       await _see(tester, find.text('done · 5 pts'));
 
       // The assignee completes an open task.
