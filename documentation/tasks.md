@@ -73,7 +73,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * **M4 · App vertical slice on the real stack** — T-0020, T-0006, T-0021, T-0022. Exit: The app signs in through Keycloak and runs households, chores and leaderboard against `make up`; `make e2e` runs in CI. **Reached** (web target; Android sign-in not run, T-0045).
 * **M5 · Lists (spec Phase 5)** — T-0023 (done), T-0024 (done). Exit: The Groceries tab journey passes end to end. **Reached** (the tab is named "Lists" in the design; reached from the household screen until the bottom bar, T-0031).
 * **M6 · Notifications** — T-0025 (done), T-0026 (done), T-0027, T-0028, T-0086, T-0012, T-0077. Exit: Every notification type in spec §5 reaches a fake push gateway in the user's language, honoring preferences.
-* **M7 · Spec completeness and polish (spec Phase 6)** — T-0029, T-0030, T-0031, T-0032, T-0033, T-0076, T-0078. Exit: Every rule in spec §2–§9 is implemented and covered by an end-to-end journey.
+* **M7 · Spec completeness and polish (spec Phase 6)** — T-0029, T-0030, T-0031, T-0088, T-0089, T-0090, T-0032, T-0033, T-0076, T-0078. Exit: Every rule in spec §2–§9 is implemented and covered by an end-to-end journey.
 * **M8 · Deploy and launch** — T-0004, T-0034, T-0035. Exit: The stack runs on OpenShift with migrations as Jobs, and signed store builds are produced. Blocked until an OpenShift cluster is available; until then Podman Compose is the target platform.
 
 ## Todo
@@ -269,13 +269,37 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Verification: JDK 21, Podman, GitHub Actions unavailable so the local gate (AGENTS.md): `make check` (docs, all six backend modules incl. the new tests, app 321 tests, guard) and a cold `make e2e` are recorded in the PR; `make mutation` as above. Not run: Android.
 * Follow-ups: T-0087 (the ledger can go below zero), T-0058 etc. unchanged.
 
-### T-0031 · App UX per spec §8: switcher, quick-log undo, overdue tone
+### T-0031 · App: navigation shell and household switcher
 
 * Status: todo
 * Issue / PR: #24
-* Depends on: T-0020
-* Spec: §8.1, §8.2, §3.3
-* Acceptance criteria: Household switcher at the top; "+ I just did…" quick-log with single-tap logging and 5-second undo; overdue shown in soft coral with "still +N"; reverted tasks show their reason to the assignee. Widget, golden and e2e coverage (quick-log and undo, revert seen by assignee, household switcher with two households).
+* Depends on: T-0020, T-0024, T-0028
+* Spec: §8.2
+* Acceptance criteria: Split by the product owner on 2026-10-14 (the overdue tone, the reverted reason and the quick-log undo moved to T-0088, T-0089 and T-0090). The four bottom tabs (All Chores, My Chores, Leaderboard, Lists) and a household switcher at the top, with the notifications bell and the preferences reachable from the shell. Built from the shared widgets and tokens (ADR 0021) following the design canvas. The switcher lists the user's households, the choice survives a restart, and every screen reads the selected household. FR/EN, widget and golden tests, e2e journey "household switcher with two households".
+
+### T-0088 · App: overdue in soft coral with "still +N"
+
+* Status: todo
+* Issue / PR: — (suggested: "Overdue tasks shown in soft coral with still +N")
+* Depends on: T-0031
+* Spec: §8.1, §3.3
+* Acceptance criteria: An overdue open task is shown in the soft coral token (never red) with the points that are still possible after the due date ("still +N", N = late points). FR/EN, widget and golden tests, and the overdue case in the chores e2e journey.
+
+### T-0089 · App: a reverted task shows its reason to the assignee
+
+* Status: todo
+* Issue / PR: — (suggested: "Assignee sees the reason a task was reverted")
+* Depends on: T-0031
+* Spec: §3.3 (reversion), §8
+* Acceptance criteria: When an admin reverts a task, the assignee sees the reason on the task in the app. The task API has to expose the latest reversion reason (check first what the tasks API already returns; document any change in the OpenAPI files, the spec and the contract tests). FR/EN, widget and golden tests, and an e2e journey "admin reverts with a reason and the assignee sees it".
+
+### T-0090 · Quick-log "+ I just did…" with single tap and 5-second undo
+
+* Status: blocked
+* Issue / PR: — (suggested: "Quick-log with single-tap logging and 5-second undo")
+* Depends on: T-0031
+* Spec: §8.2, §3.3 (reversion is admin-only, with a reason)
+* Blocked by: a product decision. Today the app has a quick-log dialog, and the only way to take a manual task back is the admin reversion, which needs a reason. The spec asks for a 5-second undo for whoever logged, who may be a plain member. Question for the product owner: is the undo (a) a real undo of the creator within 5 seconds that removes the task and its points without a reversion record, (b) an automatic admin-style reversion allowed for the creator during the 5 seconds, or (c) delayed logging (the task is only sent after the 5 seconds unless undone). Then restyle the button and flow after the design (single tap on a template, snackbar with Undo), with FR/EN, widget, golden and e2e coverage ("quick-log a manual task and undo").
 
 ### T-0032 · Account deletion and anonymization
 
