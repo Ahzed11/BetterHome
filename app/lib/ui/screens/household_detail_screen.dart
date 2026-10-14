@@ -206,35 +206,62 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 final roleLabel = member.role == MembershipRole.admin
                     ? l10n.roleAdmin
                     : l10n.roleMember;
-                return ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(member.userId),
-                  subtitle: Text(
-                    member.isAway ? '$roleLabel · ${l10n.away}' : roleLabel,
+                final action = isAdmin
+                    ? TextButton(
+                        onPressed: () async {
+                          if (member.isAway) {
+                            await widget.session.repository.clearAway(
+                              widget.householdId,
+                              member.userId,
+                            );
+                          } else {
+                            await widget.session.repository.setAway(
+                              widget.householdId,
+                              member.userId,
+                            );
+                          }
+                          if (mounted) {
+                            setState(_reload);
+                          }
+                        },
+                        child: Text(
+                          member.isAway ? l10n.clearAway : l10n.setAway,
+                          textAlign: TextAlign.center,
+                        ),
+                      )
+                    : null;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppTokens.spaceSm,
                   ),
-                  trailing: isAdmin
-                      ? TextButton(
-                          onPressed: () async {
-                            if (member.isAway) {
-                              await widget.session.repository.clearAway(
-                                widget.householdId,
-                                member.userId,
-                              );
-                            } else {
-                              await widget.session.repository.setAway(
-                                widget.householdId,
-                                member.userId,
-                              );
-                            }
-                            if (mounted) {
-                              setState(_reload);
-                            }
-                          },
-                          child: Text(
-                            member.isAway ? l10n.clearAway : l10n.setAway,
-                          ),
-                        )
-                      : null,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              member.userId,
+                              style: Theme.of(context).textTheme.bodyLarge,
+                            ),
+                            Text(
+                              member.isAway
+                                  ? '$roleLabel · ${l10n.away}'
+                                  : roleLabel,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (action != null) Flexible(child: action),
+                    ],
+                  ),
                 );
               }),
               const SizedBox(height: AppTokens.spaceLg),
