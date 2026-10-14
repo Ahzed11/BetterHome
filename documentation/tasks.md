@@ -139,11 +139,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0020 · Generated Dart client replaces hand-written repositories
 
-* Status: todo
-* Issue / PR: #13
+* Status: in-review
+* Issue / PR: #13 / PR pending
 * Depends on: T-0019, T-0005
 * Spec: ADR 0006, AGENTS §2, §5.2
 * Acceptance criteria: Generate the Dart client from `openapi.yaml` into the gitignored `generated/` folder; app repositories use it with bearer headers. Remove hand-written JSON parsing and `dynamic`. Repository tests run against a fake server built from the contract, not hand-built JSON. `make test-guard` proves generation fails when the document or client is broken.
+* Summary: `make client` (`tooling/generate-client.sh`) generates `generated/betterhome_api` with OpenAPI Generator 7.26.0's `dart` generator (jar pinned by version and SHA-256 in `tooling/versions.env`, SHA-1 cross-checked against Maven Central). The app depends on it as a path package. `Http{Households,Tasks,Scoring}Repository` call the generated API classes (bearer header from `HttpBearerAuth`) and map answers in `lib/data/api_mappers.dart`; every `fromJson` is gone. `test/support/contract_server.dart` is a fake server built from `openapi.yaml` (rejects undeclared method/path/query, checks request bodies against the schemas, builds answers from the response schemas); `test/http_repositories_test.dart` runs all three repositories against it, plus error, 401, missing-field and every-enum-value cases. `make test-guard` (`tooling/test-guard.sh`, part of `make check`) shows generation fails on a dangling reference and on an unparseable document, and that the app stops compiling when `HouseholdResponse.createdBy` is renamed in the contract (with a control run on the real contract). CI generates the client before `pub get`; `make test-app` and `make e2e` depend on `make client`.
+* Decisions and deviations: Domain models and the repository interfaces stay (screens, fakes and goldens unchanged); only the HTTP implementations changed. `dart` generator (plain `http`, no build_runner) chosen over `dart-dio`. New dev dependency `yaml` (test server). Real defect fixed on the way: `award` and `reverse` in scoring-service need the `service` role since T-0010, and tasks-service already writes the ledger, yet the app called them with the user's token (403 on the real stack). They are now tagged `internal` (so out of the app contract, `scoring-openapi.yaml` and `openapi.yaml` regenerated), removed from `ScoringRepository` and from `chores_screen.dart`; `FakeTasksRepository` takes the `FakeScoringRepository` as `ledger` so the demo scoreboard still moves. The contract marks no response field as required, so generated models are all nullable and each mapper checks the fields it needs through `need` (no `!`), see T-0071. The generator writes unset optional request fields as `null`; services accept it (as the old code sent it) and the test server treats it as "not sent". The access token is still a fixed string; T-0006 replaces it with a supplier.
+* Verification: JDK 21, Podman, Flutter 3.47.7. `make test-docs`, `make test-backend`, `make test-app` (format, analyze, 138 tests incl. 13 new, goldens unchanged), `make test-guard`, and `make e2e` (web, from the running stack: profile sync and create household through the generated client) pass. Not run: Android target, CI (this PR's run is the evidence), manual UI run of chores/leaderboard against the stack (e2e covers only the first journey).
+* Follow-ups: T-0071 (required response fields), T-0006/T-0069 (sign-in, token supplier), more e2e journeys.
 
 ### T-0021 · `make e2e`: real app on an emulator against the real stack
 
@@ -554,3 +558,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0006
 * Spec: §2, §9, AGENTS §6.2
 * Acceptance criteria: decide and implement how the web build signs in to Keycloak (`flutter_appauth` has no web support), or record that web e2e stays token-injected. Needs a product decision first.
+
+### T-0071 · Contract: mark response fields as required
+
+* Status: todo
+* Issue / PR: — (suggested: "OpenAPI response fields are all optional")
+* Depends on: T-0019
+* Spec: AGENTS §5.1 (API contract), ADR 0006
+* Acceptance criteria: Response records of every service declare their always-present fields as required in the generated OpenAPI (for example `@Schema(required = true)` or `@NotNull`), so the generated Dart models are non-nullable and `need` in `app/lib/data/api_mappers.dart` can go. Contract and committed documents regenerated; the response validation (T-0039) keeps passing.
+

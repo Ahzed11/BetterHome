@@ -14,7 +14,7 @@ export PATH := $(JAVA_HOME)/bin:$(PATH)
 export DOCKER_HOST ?= unix://$(XDG_RUNTIME_DIR)/podman/podman.sock
 export TESTCONTAINERS_RYUK_DISABLED ?= true
 
-.PHONY: doctor up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-guard e2e check update-goldens
+.PHONY: client doctor up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-guard e2e check update-goldens
 
 doctor: ## Check the pinned toolchain (JDK, Podman, Flutter, Android) is installed
 	@bash $(ROOT)/tooling/doctor.sh
@@ -46,8 +46,11 @@ openapi: ## Regenerate documentation/api/*-openapi.yaml from the annotated code,
 test-backend: ## Spotless, Checkstyle, Quarkus tests and coverage floor (dependency audit: T-0005)
 	cd $(BACKEND) && ./mvnw -B verify
 
-test-app: ## Flutter analyze and tests
-	cd $(ROOT)/app && dart format --set-exit-if-changed . && flutter analyze && flutter test
+client: ## Generate the Dart client from documentation/api/openapi.yaml into generated/ (gitignored)
+	@bash $(ROOT)/tooling/generate-client.sh
+
+test-app: client ## Flutter analyze and tests
+	cd $(ROOT)/app && flutter pub get && dart format --set-exit-if-changed . && flutter analyze && flutter test
 
 update-goldens: ## Regenerate Flutter golden images (Linux)
 	cd $(ROOT)/app && flutter test --update-goldens
@@ -58,12 +61,12 @@ test-docs: ## Resolve documentation relative links
 test-policy: ## Dependency policy checks (Phase 0 stub)
 	@echo "test-policy: OWASP dependency-check wiring deferred; backend tests still run"
 
-test-guard: ## Generated-client drift guard (Phase 0 stub)
-	@echo "test-guard: OpenAPI client guard deferred until client generation is wired"
+test-guard: ## Prove the generated client breaks on a broken document or a drifted contract
+	@bash $(ROOT)/tooling/test-guard.sh
 
-e2e: ## Journeys against the real stack; E2E_TARGET=web (default) or android, E2E_STACK=running to reuse `make up`
+e2e: client ## Journeys against the real stack; E2E_TARGET=web (default) or android, E2E_STACK=running to reuse `make up`
 	@bash $(ROOT)/tooling/e2e.sh
 
 check: test-docs test-backend ## CI entrypoint (app/e2e when present)
-	@if [[ -d $(ROOT)/app ]]; then $(MAKE) test-app; fi
+	@if [[ -d $(ROOT)/app ]]; then $(MAKE) test-app test-guard; fi
 	@echo "check: backend + docs OK (e2e not yet required for Phase 0)"

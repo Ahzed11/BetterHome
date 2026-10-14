@@ -1,5 +1,6 @@
-import 'dart:convert';
-
+import 'package:betterhome/data/api_mappers.dart';
+import 'package:betterhome/data/api_support.dart';
+import 'package:betterhome_api/api.dart' as api;
 import 'package:http/http.dart' as http;
 
 enum ScorePeriod { week, month, year, all }
@@ -16,15 +17,6 @@ class ScoreEntry {
   final int points;
   final double effortShare;
   final int rank;
-
-  factory ScoreEntry.fromJson(Map<String, dynamic> json) {
-    return ScoreEntry(
-      userId: json['userId'] as String,
-      points: json['points'] as int,
-      effortShare: (json['effortShare'] as num).toDouble(),
-      rank: json['rank'] as int,
-    );
-  }
 }
 
 class Scoreboard {
@@ -41,22 +33,6 @@ class Scoreboard {
   final int totalPoints;
   final List<ScoreEntry> entries;
   final List<ScoreEntry> podium;
-
-  factory Scoreboard.fromJson(Map<String, dynamic> json) {
-    final entries = (json['entries'] as List<dynamic>)
-        .map((e) => ScoreEntry.fromJson(e as Map<String, dynamic>))
-        .toList();
-    final podium = (json['podium'] as List<dynamic>)
-        .map((e) => ScoreEntry.fromJson(e as Map<String, dynamic>))
-        .toList();
-    return Scoreboard(
-      period: ScorePeriod.values.byName(json['period'] as String),
-      yearMonth: json['yearMonth'] as String?,
-      totalPoints: json['totalPoints'] as int,
-      entries: entries,
-      podium: podium,
-    );
-  }
 }
 
 class MonthlyWinner {
@@ -71,15 +47,6 @@ class MonthlyWinner {
   final String? winnerUserId;
   final int winnerPoints;
   final int totalPoints;
-
-  factory MonthlyWinner.fromJson(Map<String, dynamic> json) {
-    return MonthlyWinner(
-      yearMonth: json['yearMonth'] as String,
-      winnerUserId: json['winnerUserId'] as String?,
-      winnerPoints: json['winnerPoints'] as int,
-      totalPoints: json['totalPoints'] as int,
-    );
-  }
 }
 
 abstract class ScoringRepository {
@@ -90,57 +57,22 @@ abstract class ScoringRepository {
   });
 
   Future<List<MonthlyWinner>> listWinners(String householdId);
-
-  Future<void> award({
-    required String householdId,
-    required String userId,
-    required String taskId,
-    required int points,
-    required bool late,
-  });
-
-  Future<void> reverse({
-    required String householdId,
-    required String taskId,
-    required String assigneeUserId,
-    required int points,
-    required String reason,
-    required String resultingStatus,
-  });
 }
 
 class HttpScoringRepository implements ScoringRepository {
   HttpScoringRepository({
-    required this.baseUrl,
-    required this.accessToken,
+    required String baseUrl,
+    required String accessToken,
     http.Client? client,
-  }) : _client = client ?? http.Client();
+  }) : _scoreboard = api.ScoreboardApi(
+         buildApiClient(
+           baseUrl: baseUrl,
+           accessToken: accessToken,
+           client: client,
+         ),
+       );
 
-  final String baseUrl;
-  final String accessToken;
-  final http.Client _client;
-
-  Uri _uri(String path, [Map<String, String>? query]) {
-    final base = baseUrl.endsWith('/')
-        ? baseUrl.substring(0, baseUrl.length - 1)
-        : baseUrl;
-    return Uri.parse('$base$path').replace(queryParameters: query);
-  }
-
-  Map<String, String> get _headers => {
-    'Authorization': 'Bearer $accessToken',
-    'Content-Type': 'application/json',
-  };
-
-  Future<Map<String, dynamic>> _json(http.Response response) async {
-    if (response.statusCode >= 400) {
-      throw Exception('HTTP ${response.statusCode}: ${response.body}');
-    }
-    if (response.body.isEmpty) {
-      return {};
-    }
-    return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+  final api.ScoreboardApi _scoreboard;
 
   @override
   Future<Scoreboard> getScoreboard(
@@ -148,74 +80,21 @@ class HttpScoringRepository implements ScoringRepository {
     ScorePeriod period = ScorePeriod.month,
     String? yearMonth,
   }) async {
-    final query = <String, String>{'period': period.name};
-    if (yearMonth != null) {
-      query['yearMonth'] = yearMonth;
-    }
-    final response = await _client.get(
-      _uri('/v1/households/$householdId/scoreboard', query),
-      headers: _headers,
+    return scoreboardFromApi(
+      await call(
+        () => _scoreboard.getScoreboard(
+          householdId,
+          period: api.ScorePeriod.values.byName(period.name),
+          yearMonth: yearMonth,
+        ),
+      ),
     );
-    return Scoreboard.fromJson(await _json(response));
   }
 
   @override
   Future<List<MonthlyWinner>> listWinners(String householdId) async {
-    final response = await _client.get(
-      _uri('/v1/households/$householdId/scoreboard/winners'),
-      headers: _headers,
-    );
-    if (response.statusCode >= 400) {
-      throw Exception('HTTP ${response.statusCode}: ${response.body}');
-    }
-    final list = jsonDecode(response.body) as List<dynamic>;
-    return list
-        .map((e) => MonthlyWinner.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
-
-  @override
-  Future<void> award({
-    required String householdId,
-    required String userId,
-    required String taskId,
-    required int points,
-    required bool late,
-  }) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/points/award'),
-      headers: _headers,
-      body: jsonEncode({
-        'userId': userId,
-        'taskId': taskId,
-        'points': points,
-        'reason': late ? 'task_completed_late' : 'task_completed',
-      }),
-    );
-    await _json(response);
-  }
-
-  @override
-  Future<void> reverse({
-    required String householdId,
-    required String taskId,
-    required String assigneeUserId,
-    required int points,
-    required String reason,
-    required String resultingStatus,
-  }) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/points/reverse'),
-      headers: _headers,
-      body: jsonEncode({
-        'taskId': taskId,
-        'assigneeUserId': assigneeUserId,
-        'points': points,
-        'reason': reason,
-        'resultingStatus': resultingStatus,
-      }),
-    );
-    await _json(response);
+    final list = await call(() => _scoreboard.listWinners(householdId));
+    return list.map(monthlyWinnerFromApi).toList();
   }
 }
 
@@ -255,7 +134,6 @@ class FakeScoringRepository implements ScoringRepository {
     ];
   }
 
-  @override
   Future<void> award({
     required String householdId,
     required String userId,
@@ -274,7 +152,6 @@ class FakeScoringRepository implements ScoringRepository {
         );
   }
 
-  @override
   Future<void> reverse({
     required String householdId,
     required String taskId,

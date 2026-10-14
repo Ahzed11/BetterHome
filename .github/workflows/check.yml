@@ -47,6 +47,10 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
+      # The app depends on the generated client (gitignored, ADR 0006): generate it before resolving.
+      - name: Generate the Dart client
+        run: make client
+
       # The Makefile assumes a prepared checkout; a fresh runner has no .dart_tool package config yet.
       - name: Resolve app dependencies from the lockfile
         working-directory: app

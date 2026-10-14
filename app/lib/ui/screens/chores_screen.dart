@@ -62,24 +62,6 @@ class _ChoresScreenState extends State<ChoresScreen>
     );
   }
 
-  Future<void> _awardFor(ChoreTask task) async {
-    final points = task.pointsAwarded ?? task.points;
-    if (points <= 0) {
-      return;
-    }
-    final late =
-        task.dueAt != null &&
-        task.completedAt != null &&
-        task.completedAt!.isAfter(task.dueAt!);
-    await widget.session.scoringRepository.award(
-      householdId: widget.householdId,
-      userId: task.assigneeId,
-      taskId: task.id,
-      points: points,
-      late: late,
-    );
-  }
-
   Future<void> _quickLog() async {
     final l10n = AppLocalizations.of(context);
     final templates = await widget.session.tasksRepository.listTemplates(
@@ -143,11 +125,10 @@ class _ChoresScreenState extends State<ChoresScreen>
     if (templateId == null || !mounted) {
       return;
     }
-    final task = await widget.session.tasksRepository.quickLog(
+    await widget.session.tasksRepository.quickLog(
       householdId: widget.householdId,
       templateId: templateId,
     );
-    await _awardFor(task);
     setState(_reload);
   }
 
@@ -263,19 +244,10 @@ class _ChoresScreenState extends State<ChoresScreen>
     if (reason == null || reason.isEmpty || !mounted) {
       return;
     }
-    final points = task.pointsAwarded ?? task.points;
-    final updated = await widget.session.tasksRepository.revert(
+    await widget.session.tasksRepository.revert(
       widget.householdId,
       task.id,
       reason: reason,
-    );
-    await widget.session.scoringRepository.reverse(
-      householdId: widget.householdId,
-      taskId: task.id,
-      assigneeUserId: task.assigneeId,
-      points: points,
-      reason: reason,
-      resultingStatus: updated.status.name,
     );
     setState(_reload);
   }
@@ -364,9 +336,10 @@ class _ChoresScreenState extends State<ChoresScreen>
                           IconButton(
                             tooltip: l10n.completeTask,
                             onPressed: () async {
-                              final done = await widget.session.tasksRepository
-                                  .complete(widget.householdId, task.id);
-                              await _awardFor(done);
+                              await widget.session.tasksRepository.complete(
+                                widget.householdId,
+                                task.id,
+                              );
                               setState(_reload);
                             },
                             icon: const Icon(Icons.check_circle_outline),

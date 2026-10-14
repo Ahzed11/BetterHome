@@ -1,6 +1,7 @@
 ---
 openapi: 3.1.0
 tags:
+- name: internal
 - name: meta
 - name: points
 - name: scoreboard
@@ -279,7 +280,7 @@ paths:
       summary: "Append an award to the ledger, once per task completion (service role)"
       operationId: awardPoints
       tags:
-      - points
+      - internal
       parameters:
       - name: householdId
         in: path
@@ -339,7 +340,7 @@ paths:
       summary: Append a reversal linked to its reversion record (service role)
       operationId: reversePoints
       tags:
-      - points
+      - internal
       parameters:
       - name: householdId
         in: path

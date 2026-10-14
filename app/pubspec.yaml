@@ -12,6 +12,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  betterhome_api:
+    path: ../generated/betterhome_api
   http: ^1.5.0
   intl: any
 
@@ -21,6 +23,7 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  yaml: ^3.1.4
 
 flutter:
   generate: true

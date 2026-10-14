@@ -40,10 +40,10 @@ CI: [.github/workflows/check.yml](.github/workflows/check.yml) runs `make check`
 
 Service HTTP ports: households `8081`, tasks `8082`, scoring `8083`, lists `8084`, notifications `8085`.
 
-Real API from the app:
+Real API from the app (the app uses a Dart client generated from `documentation/api/openapi.yaml`: run `make client` once, and again after the API changes):
 
 ```bash
-cd app && flutter run \
+make client && cd app && flutter pub get && flutter run \
   --dart-define=API_BASE_URL=http://10.0.2.2:8081 \
   --dart-define=ACCESS_TOKEN=<keycloak-access-token>
 ```

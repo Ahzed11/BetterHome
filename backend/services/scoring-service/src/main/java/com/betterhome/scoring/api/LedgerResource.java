@@ -51,6 +51,7 @@ public class LedgerResource {
         this.ledgerService = ledgerService;
     }
 
+    @Tag(name = "internal")
     @Operation(
             operationId = "awardPoints",
             summary = "Append an award to the ledger, once per task completion (service role)")
@@ -82,6 +83,7 @@ public class LedgerResource {
         return Response.status(Response.Status.CREATED).entity(body).build();
     }
 
+    @Tag(name = "internal")
     @Operation(
             operationId = "reversePoints",
             summary = "Append a reversal linked to its reversion record (service role)")

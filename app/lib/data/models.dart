@@ -18,18 +18,6 @@ class UserProfile {
   final String familyName;
   final String language;
   final String timezone;
-
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
-    return UserProfile(
-      id: json['id'] as String,
-      authSubject: json['authSubject'] as String,
-      email: json['email'] as String,
-      givenName: json['givenName'] as String? ?? '',
-      familyName: json['familyName'] as String? ?? '',
-      language: json['language'] as String? ?? 'en',
-      timezone: json['timezone'] as String? ?? 'UTC',
-    );
-  }
 }
 
 class Household {
@@ -48,17 +36,6 @@ class Household {
   final int reminderDaysBefore;
   final String reminderTime;
   final String createdBy;
-
-  factory Household.fromJson(Map<String, dynamic> json) {
-    return Household(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      timezone: json['timezone'] as String,
-      reminderDaysBefore: json['reminderDaysBefore'] as int? ?? 0,
-      reminderTime: json['reminderTime'] as String? ?? '08:00:00',
-      createdBy: json['createdBy'] as String,
-    );
-  }
 }
 
 class Membership {
@@ -83,23 +60,6 @@ class Membership {
   final String? awaySetBy;
 
   bool get isAway => awayFrom != null;
-
-  factory Membership.fromJson(Map<String, dynamic> json) {
-    return Membership(
-      id: json['id'] as String,
-      userId: json['userId'] as String,
-      householdId: json['householdId'] as String,
-      role: MembershipRole.values.byName(json['role'] as String),
-      joinedAt: DateTime.parse(json['joinedAt'] as String),
-      awayFrom: json['awayFrom'] == null
-          ? null
-          : DateTime.parse(json['awayFrom'] as String),
-      awayUntil: json['awayUntil'] == null
-          ? null
-          : DateTime.parse(json['awayUntil'] as String),
-      awaySetBy: json['awaySetBy'] as String?,
-    );
-  }
 }
 
 class Invitation {
@@ -120,20 +80,6 @@ class Invitation {
   final String token;
   final DateTime expiresAt;
   final DateTime? acceptedAt;
-
-  factory Invitation.fromJson(Map<String, dynamic> json) {
-    return Invitation(
-      id: json['id'] as String,
-      householdId: json['householdId'] as String,
-      email: json['email'] as String,
-      role: MembershipRole.values.byName(json['role'] as String),
-      token: json['token'] as String,
-      expiresAt: DateTime.parse(json['expiresAt'] as String),
-      acceptedAt: json['acceptedAt'] == null
-          ? null
-          : DateTime.parse(json['acceptedAt'] as String),
-    );
-  }
 }
 
 class ApiException implements Exception {
