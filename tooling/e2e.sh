@@ -32,6 +32,9 @@ if [[ "$E2E_STACK" == start ]]; then
 fi
 ensure_user "$E2E_USER" "$E2E_PASSWORD" "${E2E_USER}@betterhome.local" "$E2E_USER"
 token="$(get_token "$E2E_USER" "$E2E_PASSWORD")"
+# The second member of the invite-and-join journey.
+ensure_user bob "$E2E_PASSWORD" "bob@betterhome.local" bob
+bob_token="$(get_token bob "$E2E_PASSWORD")"
 
 # On the Android emulator the host is 10.0.2.2; Chrome reaches it as localhost.
 host=localhost
@@ -41,6 +44,7 @@ defines=(
   "--dart-define=E2E_TASKS_URL=http://${host}:8082"
   "--dart-define=E2E_SCORING_URL=http://${host}:8083"
   "--dart-define=E2E_ACCESS_TOKEN=${token}"
+  "--dart-define=E2E_ACCESS_TOKEN_BOB=${bob_token}"
 )
 
 cd "$ROOT/app"
