@@ -141,7 +141,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0021 · `make e2e`: real app on an emulator against the real stack
 
 * Status: in-progress
-* Issue / PR: #14 / PR_TBD
+* Issue / PR: #14 / #57
 * Depends on: T-0006, T-0016, T-0015
 * Spec: AGENTS §6.2
 * Acceptance criteria: `make e2e` boots the stack, applies migrations, launches the app on a headless Android emulator, signs in through Keycloak and runs `integration_test` journeys. Adds a controllable clock exposed only in the test environment and a fake push gateway endpoint. CI job added to the T-0018 workflow. Each later feature task adds its journey here.

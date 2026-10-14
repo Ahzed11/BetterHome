@@ -32,7 +32,7 @@ echo "App"
 check "Flutter ${FLUTTER_VERSION}" is_pinned_flutter
 check "dart" dart --version
 echo "Web end-to-end (E2E_TARGET=web)"
-check "Chrome for Testing ${CHROME_VERSION}" test "$("$CHROME_EXECUTABLE" --version 2>/dev/null | awk '{print $3}')" = "$CHROME_VERSION"
+check "Chrome for Testing ${CHROME_VERSION}" test "$("$CHROME_EXECUTABLE" --version 2>/dev/null | awk '{print $NF}')" = "$CHROME_VERSION"
 check "chromedriver ${CHROME_VERSION}" test "$(chromedriver --version 2>/dev/null | awk '{print $2}')" = "$CHROME_VERSION"
 echo "Android (E2E_TARGET=android)"
 check "adb (platform-tools)" adb --version
