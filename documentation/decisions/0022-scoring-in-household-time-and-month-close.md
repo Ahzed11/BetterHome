@@ -18,3 +18,8 @@ Spec §3.4 cuts the scoreboard into week, month and year views and closes each m
 - If households-service is down the household is tried again a minute later; nothing is half done, since each household is one transaction.
 - The job scans the ledger for households without a cursor on every run; fine at this size, an index or a registration event can replace it.
 - Notifying the winner of a closed month is not part of this change (spec §5 has no such type).
+
+## Addendum: the recap in the app
+
+On the leaderboard the app shows the recap of the newest month the user has not seen, with confetti, once per user: it asks the server to record it as seen first and shows it only if that worked, so it cannot come back. Product decision (2026-10-14): every member sees it, not only the winner; the winner is named ("You won ..."), a month nobody scored in says so. Months missed are shown one per visit, newest first. Confetti (`ConfettiBurst`) is decoration: ignored by touch and screen readers, and not played when the user asked for reduced motion. The dialog's text scrolls so large text sizes keep the button on screen.
+

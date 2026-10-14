@@ -113,6 +113,7 @@ MonthlyWinner monthlyWinnerFromApi(api.WinnerResponse r) => MonthlyWinner(
   winnerUserId: r.winnerUserId,
   winnerPoints: need(r.winnerPoints, 'winnerPoints'),
   totalPoints: need(r.totalPoints, 'totalPoints'),
+  celebrated: need(r.celebrated, 'celebrated'),
 );
 
 Checklist checklistFromApi(api.ListResponse r) => Checklist(

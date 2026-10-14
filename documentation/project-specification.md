@@ -76,7 +76,7 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 - Points live in an append-only ledger (`POINT_TRANSACTION`). Reasons: `task_completed`, `task_completed_late`, `reversal`, `manual_adjust`.
 - Scores never go negative: reversals equal what was awarded, and manual adjustments are guarded.
 - Scoreboard is all-time, with week, month, and year views and browsing of past months, computed from the ledger and scoped per household. Weeks (Monday to Sunday), months and years are cut at the household's local midnight, so daylight saving changes make a period an hour longer or shorter. It also shows a shared effort bar (each member's share of the period's points) and a hall of past winners.
-- Podium for the top three, friendly in tone. At the end of each month (at the household's local month boundary), the month is closed automatically and its winner gets a confetti celebration, shown once per member. The winner is the member with the most points in the month (a tie goes to the lowest user id); a month in which nobody scored has no winner and no recap.
+- Podium for the top three, friendly in tone. At the end of each month (at the household's local month boundary), the month is closed automatically and every member sees its recap with a confetti celebration, once (the winner is named, and told so if it is them). The winner is the member with the most points in the month (a tie goes to the lowest user id); a month in which nobody scored has no winner and no recap.
 
 ---
 

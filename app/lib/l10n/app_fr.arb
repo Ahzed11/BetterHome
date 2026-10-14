@@ -124,5 +124,11 @@
   "typeSuperseded": "Tâche remplacée",
   "typeReverted": "Tâche rouverte",
   "typeMarkedAway": "Absence enregistrée",
-  "typeInvitation": "Invitations"
+  "typeInvitation": "Invitations",
+  "recapTitle": "Bilan du mois · {month}",
+  "recapWinnerYou": "Vous avez remporté {month} avec {points} points !",
+  "recapWinnerOther": "{name} a remporté {month} avec {points} points.",
+  "recapTotal": "À vous tous, vous avez gagné {total} points.",
+  "recapNobody": "Personne n’a marqué de points en {month}.",
+  "recapClose": "Super !"
 }

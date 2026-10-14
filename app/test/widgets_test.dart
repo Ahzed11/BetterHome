@@ -3,6 +3,8 @@ import 'package:betterhome/ui/widgets/add_field.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
+import 'package:betterhome/ui/widgets/confetti_burst.dart';
+import 'package:betterhome/ui/widgets/month_recap_dialog.dart';
 import 'package:betterhome/ui/widgets/notification_row.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
@@ -406,6 +408,94 @@ void main() {
 
       expect(opened, 0);
       handle.dispose();
+    });
+  });
+
+  group('ConfettiBurst', () {
+    testWidgets('falls once and ends, ignoring touches and screen readers', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpScreen(
+        tester,
+        home: const Scaffold(body: ConfettiBurst()),
+        locale: const Locale('en'),
+      );
+      expect(find.byType(ConfettiBurst), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 900));
+
+      expect(
+        tester.getSemantics(find.byType(ConfettiBurst)).label,
+        isEmpty,
+        reason: 'decoration only',
+      );
+      expect(
+        find.descendant(
+          of: find.byType(ConfettiBurst),
+          matching: find.byType(IgnorePointer),
+        ),
+        findsWidgets,
+      );
+      await tester.pump(const Duration(seconds: 4));
+      expect(tester.takeException(), isNull);
+      handle.dispose();
+    });
+
+    testWidgets('draws nothing when the user asked for reduced motion', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: ConfettiBurst(),
+          ),
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byType(ConfettiBurst),
+          matching: find.byType(CustomPaint),
+        ),
+        findsNothing,
+      );
+    });
+  });
+
+  group('MonthRecapDialog', () {
+    testWidgets('shows its text and closes with its button', (tester) async {
+      await pumpScreen(
+        tester,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => const MonthRecapDialog(
+                  title: 'Month recap',
+                  message: 'You won!',
+                  detail: 'Together: 35',
+                  closeLabel: 'Nice!',
+                ),
+              ),
+              child: const Text('open'),
+            ),
+          ),
+        ),
+        locale: const Locale('en'),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('Month recap'), findsOneWidget);
+      expect(find.text('You won!'), findsOneWidget);
+      expect(find.text('Together: 35'), findsOneWidget);
+
+      await tester.tap(find.text('Nice!'));
+      await tester.pumpAndSettle();
+      expect(find.text('Month recap'), findsNothing);
     });
   });
 }

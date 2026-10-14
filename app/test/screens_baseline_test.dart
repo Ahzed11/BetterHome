@@ -231,8 +231,17 @@ final List<_Scenario> _scenarios = [
       householdId: _household,
     ),
   ),
+  _Scenario('leaderboard_populated', () async {
+    // The September recap was seen already, so the board itself is what the golden shows.
+    final scoring = FakeScoringRepository();
+    await scoring.markRecapCelebrated(_household, '2026-09');
+    return LeaderboardScreen(
+      session: await _sessionWith(scoring: scoring),
+      householdId: _household,
+    );
+  }),
   _Scenario(
-    'leaderboard_populated',
+    'leaderboard_recap',
     () async => LeaderboardScreen(
       session: await _sessionWith(),
       householdId: _household,

@@ -787,6 +787,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invitations'**
   String get typeInvitation;
+
+  /// No description provided for @recapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Month recap · {month}'**
+  String recapTitle(String month);
+
+  /// No description provided for @recapWinnerYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You won {month} with {points} points!'**
+  String recapWinnerYou(String month, int points);
+
+  /// No description provided for @recapWinnerOther.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} won {month} with {points} points.'**
+  String recapWinnerOther(String name, String month, int points);
+
+  /// No description provided for @recapTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Together you earned {total} points.'**
+  String recapTotal(int total);
+
+  /// No description provided for @recapNobody.
+  ///
+  /// In en, this message translates to:
+  /// **'Nobody scored in {month}.'**
+  String recapNobody(String month);
+
+  /// No description provided for @recapClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Nice!'**
+  String get recapClose;
 }
 
 class _AppLocalizationsDelegate
