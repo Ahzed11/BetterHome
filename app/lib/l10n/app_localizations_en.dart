@@ -368,4 +368,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get typeInvitation => 'Invitations';
+
+  @override
+  String recapTitle(String month) {
+    return 'Month recap · $month';
+  }
+
+  @override
+  String recapWinnerYou(String month, int points) {
+    return 'You won $month with $points points!';
+  }
+
+  @override
+  String recapWinnerOther(String name, String month, int points) {
+    return '$name won $month with $points points.';
+  }
+
+  @override
+  String recapTotal(int total) {
+    return 'Together you earned $total points.';
+  }
+
+  @override
+  String recapNobody(String month) {
+    return 'Nobody scored in $month.';
+  }
+
+  @override
+  String get recapClose => 'Nice!';
 }

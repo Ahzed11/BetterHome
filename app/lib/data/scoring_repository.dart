@@ -41,12 +41,16 @@ class MonthlyWinner {
     this.winnerUserId,
     required this.winnerPoints,
     required this.totalPoints,
+    this.celebrated = false,
   });
 
   final String yearMonth;
   final String? winnerUserId;
   final int winnerPoints;
   final int totalPoints;
+
+  /// Whether the signed-in user has already seen the confetti of this month.
+  final bool celebrated;
 }
 
 abstract class ScoringRepository {
@@ -57,6 +61,9 @@ abstract class ScoringRepository {
   });
 
   Future<List<MonthlyWinner>> listWinners(String householdId);
+
+  /// Records that the signed-in user has seen the recap of [yearMonth] (`YYYY-MM`).
+  Future<void> markRecapCelebrated(String householdId, String yearMonth);
 }
 
 class HttpScoringRepository implements ScoringRepository {
@@ -96,6 +103,11 @@ class HttpScoringRepository implements ScoringRepository {
     final list = await call(() => _scoreboard.listWinners(householdId));
     return list.map(monthlyWinnerFromApi).toList();
   }
+
+  @override
+  Future<void> markRecapCelebrated(String householdId, String yearMonth) async {
+    await call(() => _scoreboard.markRecapCelebrated(householdId, yearMonth));
+  }
 }
 
 class FakeScoringRepository implements ScoringRepository {
@@ -105,6 +117,7 @@ class FakeScoringRepository implements ScoringRepository {
   final List<String> _memberIds;
   final Map<String, List<_LedgerRow>> _ledger = {};
   final Map<String, List<MonthlyWinner>> _winners = {};
+  final Set<String> _seenRecaps = {};
 
   void setMembers(List<String> memberIds) {
     _memberIds
@@ -219,8 +232,21 @@ class FakeScoringRepository implements ScoringRepository {
   }
 
   @override
-  Future<List<MonthlyWinner>> listWinners(String householdId) async =>
-      List.unmodifiable(_winners[householdId] ?? const []);
+  Future<List<MonthlyWinner>> listWinners(String householdId) async => [
+    for (final winner in _winners[householdId] ?? const <MonthlyWinner>[])
+      MonthlyWinner(
+        yearMonth: winner.yearMonth,
+        winnerUserId: winner.winnerUserId,
+        winnerPoints: winner.winnerPoints,
+        totalPoints: winner.totalPoints,
+        celebrated: _seenRecaps.contains('$householdId|${winner.yearMonth}'),
+      ),
+  ];
+
+  @override
+  Future<void> markRecapCelebrated(String householdId, String yearMonth) async {
+    _seenRecaps.add('$householdId|$yearMonth');
+  }
 }
 
 class _LedgerRow {

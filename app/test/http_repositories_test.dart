@@ -371,10 +371,37 @@ void main() {
       expect(board.entries.single.rank, 1);
       expect(board.podium, hasLength(1));
       expect(winners.single.yearMonth, 'text');
+      expect(
+        winners.single.celebrated,
+        isTrue,
+        reason: 'the sample answer has every field',
+      );
       expect(server.requests, [
         'GET /v1/households/$_household/scoreboard',
         'GET /v1/households/$_household/scoreboard/winners',
       ]);
+    });
+  });
+
+  group('month recap', () {
+    test('tells the server the recap was seen', () async {
+      await scoring().markRecapCelebrated(_household, '2026-09');
+
+      expect(server.requests, [
+        'POST /v1/households/$_household/scoreboard/recaps/2026-09/celebrate',
+      ]);
+    });
+
+    test('an error answer becomes an ApiException', () async {
+      server.respondWith('markRecapCelebrated', 404, {
+        'code': 'not_found',
+        'message': 'none',
+      });
+
+      await expectLater(
+        scoring().markRecapCelebrated(_household, '2026-09'),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 404)),
+      );
     });
   });
 

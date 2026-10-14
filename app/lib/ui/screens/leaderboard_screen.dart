@@ -3,7 +3,10 @@ import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/widgets/guarded.dart';
+import 'package:betterhome/ui/widgets/month_recap_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({
@@ -27,6 +30,67 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   void initState() {
     super.initState();
     _reload();
+    _showUnseenRecap();
+  }
+
+  /// Shows the recap of the newest month the user has not seen yet, once: it is recorded as seen
+  /// before it is shown, so it never comes back.
+  Future<void> _showUnseenRecap() async {
+    final _BoardData data;
+    try {
+      data = await _future;
+    } on Exception catch (_) {
+      return; // The screen already shows the error.
+    }
+    final unseen = data.winners.where((w) => !w.celebrated).firstOrNull;
+    if (unseen == null || !mounted) {
+      return;
+    }
+    final recorded = await runGuarded(
+      context,
+      () => widget.session.scoringRepository.markRecapCelebrated(
+        widget.householdId,
+        unseen.yearMonth,
+      ),
+    );
+    if (!recorded || !mounted) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final month = _monthName(context, unseen.yearMonth);
+    final winner = unseen.winnerUserId;
+    final String message;
+    if (winner == null || unseen.winnerPoints <= 0) {
+      message = l10n.recapNobody(month);
+    } else if (winner == widget.session.profile?.id) {
+      message = l10n.recapWinnerYou(month, unseen.winnerPoints);
+    } else {
+      message = l10n.recapWinnerOther(
+        _labelFor(l10n, winner, data.members),
+        month,
+        unseen.winnerPoints,
+      );
+    }
+    await showDialog<void>(
+      context: context,
+      builder: (_) => MonthRecapDialog(
+        title: l10n.recapTitle(month),
+        message: message,
+        detail: unseen.totalPoints > 0
+            ? l10n.recapTotal(unseen.totalPoints)
+            : null,
+        closeLabel: l10n.recapClose,
+      ),
+    );
+  }
+
+  /// "September 2026" in the user's language, from `YYYY-MM`.
+  String _monthName(BuildContext context, String yearMonth) {
+    final parts = yearMonth.split('-');
+    final date = DateTime.utc(int.parse(parts[0]), int.parse(parts[1]));
+    return DateFormat.yMMMM(
+      Localizations.localeOf(context).toString(),
+    ).format(date);
   }
 
   void _reload() {

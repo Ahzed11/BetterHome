@@ -139,5 +139,39 @@
   "typeSuperseded": "Chore replaced",
   "typeReverted": "Chore reopened",
   "typeMarkedAway": "Marked away",
-  "typeInvitation": "Invitations"
+  "typeInvitation": "Invitations",
+  "recapTitle": "Month recap · {month}",
+  "@recapTitle": {
+    "placeholders": {
+      "month": {"type": "String"}
+    }
+  },
+  "recapWinnerYou": "You won {month} with {points} points!",
+  "@recapWinnerYou": {
+    "placeholders": {
+      "month": {"type": "String"},
+      "points": {"type": "int"}
+    }
+  },
+  "recapWinnerOther": "{name} won {month} with {points} points.",
+  "@recapWinnerOther": {
+    "placeholders": {
+      "name": {"type": "String"},
+      "month": {"type": "String"},
+      "points": {"type": "int"}
+    }
+  },
+  "recapTotal": "Together you earned {total} points.",
+  "@recapTotal": {
+    "placeholders": {
+      "total": {"type": "int"}
+    }
+  },
+  "recapNobody": "Nobody scored in {month}.",
+  "@recapNobody": {
+    "placeholders": {
+      "month": {"type": "String"}
+    }
+  },
+  "recapClose": "Nice!"
 }

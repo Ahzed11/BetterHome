@@ -46,4 +46,17 @@ void main() {
     final board = await repo.getScoreboard('hh');
     expect(board.entries.single.points, 0);
   });
+
+  test('a recap is unseen until the user has seen it, per household', () async {
+    final repo = FakeScoringRepository(memberIds: ['a'])
+      ..seedDemoIfEmpty('hh')
+      ..seedDemoIfEmpty('other');
+
+    expect((await repo.listWinners('hh')).single.celebrated, isFalse);
+
+    await repo.markRecapCelebrated('hh', '2026-09');
+
+    expect((await repo.listWinners('hh')).single.celebrated, isTrue);
+    expect((await repo.listWinners('other')).single.celebrated, isFalse);
+  });
 }
