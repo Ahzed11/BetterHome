@@ -711,7 +711,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0085 · Due reminders can be queued twice when several replicas run
 
 * Status: done
-* Issue / PR: — (suggested: "Reminder job has no row claim") / PR pending
+* Issue / PR: — (suggested: "Reminder job has no row claim") / #77
 * Depends on: T-0081
 * Spec: §5, AGENTS §3 Scheduling
 * Acceptance criteria: `ReminderService.sendDueReminders` claims its candidate tasks with `FOR UPDATE SKIP LOCKED` (as `sendOverdueNotices` does), so two replicas never queue the same reminder under different outbox ids; a test runs several concurrent calls and finds one reminder per task.
