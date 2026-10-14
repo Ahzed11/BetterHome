@@ -326,7 +326,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0012 · Dismiss open tasks when a future-dated away period starts
 
 * Status: in-review
-* Issue / PR: #5 / PR_PLACEHOLDER
+* Issue / PR: #5 / #59
 * Depends on: T-0003
 * Spec: §2 Away, §3.3 Away
 * Acceptance criteria: A member marked away with a future `away_from` has their open tasks dismissed (`assignee_away`) when that instant arrives. Needs a households scheduler (claims due rows with `FOR UPDATE SKIP LOCKED`, one transaction per job) and a way to call tasks-service without a user token, which means a write-capable service role that ADR 0014 does not grant yet; decide that first. The job must also mark what it has handled so a restart does not repeat it.
