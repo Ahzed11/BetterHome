@@ -167,7 +167,17 @@ jobs:
         working-directory: app
         run: flutter pub get --enforce-lockfile
 
-      - run: make e2e
+      - name: TEMP browser-only diagnosis
+        run: |
+          . tooling/dev-env.sh
+          (cd app && flutter build web --release --no-pub --dart-define=API_BASE_URL=http://localhost:8081 --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome >/dev/null 2>&1)
+          (cd app/build/web && python3 -m http.server 8090 >/dev/null 2>&1 &)
+          chromedriver --port=4444 --verbose --log-path=/tmp/chromedriver.log >/dev/null 2>&1 &
+          sleep 3
+          cd app && dart run test_driver/web_sign_in.dart http://localhost:8090 alice demo 2>&1 | tail -15 || true
+          grep -iE "chrome.*args|--[a-z-]+" /tmp/chromedriver.log | grep -i "launch\|command line\|swiftshader" | cut -c1-400 | head -5
+          grep -ciE "enable-unsafe-swiftshader" /tmp/chromedriver.log || true
+          timeout 60 "$CHROME_EXECUTABLE" --headless=new --no-sandbox --enable-logging=stderr --v=0 --virtual-time-budget=20000 --dump-dom http://localhost:8090/ 2>&1 | grep -E "CONSOLE|flt-glass|flt-semantics-placeholder|canvas" | cut -c1-260 | head -12
 
   # The one result to require on master (T-0053). It fails when any job above failed or was skipped.
   check:
