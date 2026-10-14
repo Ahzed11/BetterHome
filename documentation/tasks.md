@@ -72,7 +72,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * **M3 · Services wired for real** — T-0010, T-0019. Exit: No in-memory gateway or ledger client left in main code; one app contract describes every endpoint. **Reached.**
 * **M4 · App vertical slice on the real stack** — T-0020, T-0006, T-0021, T-0022. Exit: The app signs in through Keycloak and runs households, chores and leaderboard against `make up`; `make e2e` runs in CI. **Reached** (web target; Android sign-in not run, T-0045).
 * **M5 · Lists (spec Phase 5)** — T-0023 (done), T-0024 (done). Exit: The Groceries tab journey passes end to end. **Reached** (the tab is named "Lists" in the design; reached from the household screen until the bottom bar, T-0031).
-* **M6 · Notifications** — T-0025 (done), T-0026, T-0027, T-0028, T-0012, T-0077. Exit: Every notification type in spec §5 reaches a fake push gateway in the user's language, honoring preferences.
+* **M6 · Notifications** — T-0025 (done), T-0026 (done), T-0027, T-0028, T-0086, T-0012, T-0077. Exit: Every notification type in spec §5 reaches a fake push gateway in the user's language, honoring preferences.
 * **M7 · Spec completeness and polish (spec Phase 6)** — T-0029, T-0030, T-0031, T-0032, T-0033, T-0076, T-0078. Exit: Every rule in spec §2–§9 is implemented and covered by an end-to-end journey.
 * **M8 · Deploy and launch** — T-0004, T-0034, T-0035. Exit: The stack runs on OpenShift with migrations as Jobs, and signed store builds are produced. Blocked until an OpenShift cluster is available; until then Podman Compose is the target platform.
 
@@ -232,13 +232,13 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Spec: §5, AGENTS §8
 * Acceptance criteria: Device-token registration API, FCM/APNs implementation of `PushSender` in notifications-service, minimal payloads (IDs and short text), invalid-token cleanup. Tests use an in-memory fake of the vendor boundary; e2e uses the fake push endpoint from T-0021.
 
-### T-0028 · App: notification inbox, preferences and push registration
+### T-0028 · App: notification inbox and preferences
 
 * Status: todo
 * Issue / PR: #21
-* Depends on: T-0025, T-0027, T-0020
+* Depends on: T-0025, T-0020, T-0024
 * Spec: §5
-* Acceptance criteria: Inbox screen with read state, per-type preference toggles, push permission prompt and token registration. FR/EN, widget and golden tests, e2e journey.
+* Acceptance criteria: Split by the product owner on 2026-10-14: this task is the inbox and the preferences, which need only the notifications API that exists (T-0025); the push permission prompt and token registration moved to T-0086. Inbox screen reachable from the home screen with an unread count, read state (open one to mark it read, mark all read) and paging; a preferences screen with a toggle per notification type and channel. Built from the shared widgets and tokens (ADR 0021); the design canvas has only a bell icon on the Chores board, no inbox board, so the screens extend its look. FR/EN, widget and golden tests, e2e journey (a member invited by an admin finds the invitation in the inbox).
 
 ### T-0029 · Scoring in household time and automated month end
 
@@ -723,3 +723,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: No row limit, as before: whether a reminder is due depends on household settings computed in code, so a SQL limit could starve rows. The locks are held during the per-household settings lookups, as the transaction already did.
 * Verification: the new test failed before (80 instead of 20, three runs) and passes after; `make test-backend SERVICE=tasks-service` and CI. Not run: e2e outside CI.
 * Follow-ups: none.
+
+### T-0086 · App: push permission prompt and device token registration
+
+* Status: todo
+* Issue / PR: — (suggested: "Register the device for push")
+* Depends on: T-0027, T-0028
+* Spec: §5
+* Acceptance criteria: Split from T-0028 on 2026-10-14. The app asks for push permission at a sensible moment (not at first launch), obtains the FCM or APNs token and registers it through the device-token API of T-0027, and removes it on sign-out. FR/EN, widget tests with a fake of the vendor boundary, e2e against the fake push endpoint (T-0077). Android only until iOS signing exists.
+
