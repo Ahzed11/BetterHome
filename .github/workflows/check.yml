@@ -1,4 +1,4 @@
-# The gates of `make check` (docs, backend, app), run as parallel jobs so the wait is the slowest
+# The gates of `make check` (docs, backend, app) and the web end-to-end journeys (e2e), run as parallel jobs so the wait is the slowest
 # one, not their sum (T-0070, ADR 0019). The `check` job at the end is the single result to require.
 # Not yet here: image builds (T-0046) and the OWASP dependency audit (T-0038).
 name: check

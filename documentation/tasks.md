@@ -610,3 +610,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Spec: §3.1, §8.2
 * Acceptance criteria: The e2e creates open tasks through the repository because the UI has no such action, and templates exist only through the quick-log dialog when a household has none. Accepting an invitation is an action inside an existing household's screen, so a new user must create a household first. Needs a product decision on the intended screens (spec §8.2) before any UI change.
 
+### T-0073 · CI job: make e2e on every pull request
+
+* Status: in-review
+* Issue / PR: — (suggested: "Run e2e in CI") / #65 (merged), this PR
+* Depends on: T-0021, T-0018
+* Spec: AGENTS §6.2
+* Acceptance criteria: `make e2e` (web target: browser sign-in through Keycloak, then the household and chores journeys) runs in CI on every pull request and on `master`, is required by the `check` job, and is as fast as the runner allows.
+* Summary: #65 added the `e2e` job to `.github/workflows/check.yml`: it starts the Podman API socket (compose talks to it through `DOCKER_HOST=unix:///tmp/podman.sock`; the runner has rootless Podman), installs the pinned Chrome for Testing with the new `tooling/install-chrome.sh` (also called by `install-dev-tools.sh`), generates the Dart client and runs `make e2e`. The `check` job's `needs` list includes `e2e`, so a failing journey fails `check` (`[ "$r" = success ]` for every result). This PR makes it faster: the Podman socket, the image pulls and the jar build run in the background during the Flutter setup, `make up` skips its own Maven build when `SKIP_PACKAGE=1` (unset by default, local behaviour unchanged), and `e2e.sh` compiles the release app while the stack boots instead of after it.
+* Decisions and deviations: Two real defects found through CI. (1) Chrome 155 no longer falls back to software WebGL on a runner without a GPU, so Flutter web drew nothing: a wrapper script passes `--enable-unsafe-swiftshader` on every launch (the WebDriver script and `flutter drive` both use `CHROME_EXECUTABLE`), acceptable for trusted test content. (2) While `flutter run -d web-server` compiles, its server answers every path with `index.html` and HTTP 200, so `e2e.sh` started the sign-in journey against a page without the app (the browser console said `main.dart.js` had MIME type `text/html`); readiness now requires a JavaScript content type. This is the cause of T-0074. Image caching (save/load or a registry cache) was not adopted: measured pulls are small (see below) and restoring a cache of the Keycloak image costs about as much as pulling it. Sharing one Flutter build between the two web journeys is not possible: sign-in needs the release app, `flutter drive` compiles the `integration_test` entry in debug mode. Unverified: Android (no emulator in CI, T-0045).
+* Verification: Measured on `ubuntu-24.04` hosted runners (job durations from the Actions API). TIMINGS
+* Follow-ups: T-0074 is fixed by the readiness check here (its owner closes it); T-0046 images and T-0038 audit are still to add to this workflow; T-0053 (require `check` on `master`).
+
