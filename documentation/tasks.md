@@ -247,7 +247,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0029 · Scoring in household time and automated month end
 
 * Status: in-progress
-* Issue / PR: #22 / PR pending (backend); the app part follows in a second PR
+* Issue / PR: #22 / #81 (backend); the app part follows in a second PR
 * Depends on: T-0010
 * Spec: §3.4, §5
 * Acceptance criteria: Week/month/year windows computed in the household timezone; a scheduled job closes each month at the household's local boundary (SKIP LOCKED, one transaction per household) and records the winner. App shows the recap and confetti once per user. Clock-controlled tests across timezones and DST.
