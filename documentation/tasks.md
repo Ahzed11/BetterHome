@@ -116,11 +116,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0018 · CI: run `make check` on every pull request
 
-* Status: todo
-* Issue / PR: #11
+* Status: in-review
+* Issue / PR: #11 / #43
 * Depends on: T-0016, T-0017
 * Spec: AGENTS §6.2
 * Acceptance criteria: GitHub Actions workflow with pinned tool versions runs `make check` (docs, backend, app, policy, guard) on pull requests and on `master`. Podman or Docker available for Testcontainers. The e2e job is added by T-0021.
+* Summary: `.github/workflows/check.yml` runs `make check` (docs, backend with Spotless/Checkstyle/JaCoCo/OpenAPI contract tests, app with dart format/analyze/test) on every pull request and on pushes to `master`, on `ubuntu-24.04`, with `contents: read`, a 45 min timeout and `concurrency` cancelling superseded runs. JDK 21 Temurin and the Flutter version are read from `tooling/versions.env` (single source). Maven (setup-java cache) and pub (flutter-action cache) are cached. Testcontainers / Dev Services use the runner's Docker via `DOCKER_HOST=unix:///var/run/docker.sock` (overrides the Makefile's `?=` Podman default); nothing else in `check` needs Podman.
+* Decisions and deviations: Actions pinned to commit SHAs with the tag in a comment: `actions/checkout` v7.0.1, `actions/setup-java` v6.0.1 (first-party), `subosito/flutter-action` v2.23.0 (third-party, the de facto Flutter setup action; chosen over a manual SDK download to get version pinning plus caching; revisit if it becomes unmaintained). A `flutter pub get --enforce-lockfile` step precedes `make check` because a fresh checkout has no package config (without it `flutter_lints` did not resolve and `dart format` produced a false diff); the Makefile is untouched. `make check` does not include `test-policy`/`test-guard` (stubs, not part of `check`), e2e (T-0021), image builds (T-0046) or the OWASP audit (T-0038, needs an NVD key). The Flutter golden tests ran in `flutter test` on Linux per ADR 0012. No README badge added. Branch protection requiring the `check` job is a repository setting, not done here.
+* Verification: green run on PR #43: https://github.com/Ahzed11/BetterHome/actions/runs/38448075987 (all of `make check`, 5m29s). First run https://github.com/Ahzed11/BetterHome/actions/runs/38447223563 failed at `dart format` before the pub get step existed. Deliberately red run (throwaway PR #48, a badly formatted Java line, closed and branch deleted): https://github.com/Ahzed11/BetterHome/actions/runs/38448888249 failed in Spotless. Not run: e2e.
+* Follow-ups: T-0021 adds the e2e job here; T-0046 images; T-0038 audit. T-0053 (#49): require the `check` job on `master` (branch protection).
 
 ### T-0019 · One app contract: merge the generated per-service OpenAPI documents
 
@@ -418,3 +422,11 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0015
 * Spec: AGENTS §6.2
 * Acceptance criteria: `tooling/start-emulator.sh` boots the AVD to `sys.boot_completed=1` on the dev VM, or the e2e job is moved to CI with a documented reason, and `make doctor` gains a boot check. Observed: SIGSEGV in `qemu-system-x86_64-headless` about 25-30 s after start, when the guest `media` service starts (guest kernel boots fine); emulator 37.2.12, Android 35 google_apis x86_64, AMD Ryzen 7 5800X VM on Fedora 44. Same result with `-gpu swiftshader_indirect`, `-gpu guest`, `-feature -Vulkan`, `-accel off`, cameras off and `-feature -HardwareDecoder`. Not yet tried: another emulator build, another system image (API 34, non-google_apis), a gdb backtrace, an AVD without audio hardware.
+
+### T-0053 · Require the CI `check` job on master
+
+* Status: todo
+* Issue / PR: #49
+* Depends on: T-0018
+* Spec: AGENTS §6.2
+* Acceptance criteria: Branch protection on `master` requires the `check` job from `.github/workflows/check.yml` to pass before merge. Repository setting (admin), no code change.

@@ -36,6 +36,8 @@ cd app && flutter run   # demo data unless dart-defines set
 
 Tokens from the host (`localhost:8180`) and services inside Compose (`keycloak:8180`) share one issuer: Keycloak runs with `KC_HOSTNAME=http://localhost:8180` and `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true` (see `deploy/podman-compose.yml`); issuer validation stays on. `make smoke` re-runs the readiness and authenticated-call check.
 
+CI: [.github/workflows/check.yml](.github/workflows/check.yml) runs `make check` (docs, backend, app) on every pull request and on `master`, with the toolchain versions from `tooling/versions.env` and Docker for Testcontainers. E2E, image builds and the dependency audit are not part of it yet (T-0021, T-0046, T-0038).
+
 Service HTTP ports: households `8081`, tasks `8082`, scoring `8083`, lists `8084`, notifications `8085`.
 
 Real API from the app:
