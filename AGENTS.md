@@ -263,6 +263,21 @@ A task is done only when all of these are true:
 - [ ] The summary lists what changed, what was tested, and anything noticed but intentionally left alone.
 
 
+### Merging
+
+Since 2026-10-14 the product owner lets agents merge the pull requests they opened, so merging no longer waits for a human. An agent merges only when all of these hold:
+
+- the `check` job is green on the pull request's latest commit (never merge pending or red, never bypass a failing job);
+- the pull request is mergeable without conflicts, and the ledger entry matches the code (section 12);
+- the definition of done above is met, and what could not be verified (for example the Android target) is written in the ledger and the pull request;
+- it is a merge commit (`gh pr merge --merge`), the history on `master` keeps one merge per pull request;
+- it is the agent's own pull request, or one the product owner asked it to merge. An agent does not merge someone else's pull request on its own initiative.
+
+After merging, the agent checks that the run on `master` is green, deletes nothing it did not create, and tells the product owner what was merged. If `master` turns red, fixing or reverting it comes before any new work. Branch protection (T-0053) stays a repository setting for the product owner; this rule does not replace it.
+
+Some agent environments block `gh pr merge` unless a permission rule allows it; the product owner adds that rule in the agent's settings.
+
+
 ## 11. When unsure
 
 Ask. Prefer a short question over a wrong assumption. Never invent a business rule, and never choose a shortcut because the proper path is slower.
