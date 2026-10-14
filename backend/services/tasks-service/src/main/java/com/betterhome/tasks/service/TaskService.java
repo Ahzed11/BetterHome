@@ -202,6 +202,7 @@ public class TaskService {
                 resultingStatus.name());
 
         task.status = resultingStatus;
+        task.reversionReason = reason.trim();
         task.completerId = null;
         task.completedAt = null;
         task.pointsAwarded = null;

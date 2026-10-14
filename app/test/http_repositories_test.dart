@@ -174,6 +174,7 @@ void main() {
       );
 
       expect(list.single.status, TaskStatus.open);
+      expect(list.single.reversionReason, 'text');
       expect(server.lastQuery['listTasks'], 'mine=true&status=done');
       expect(server.requests, ['GET /v1/households/$_household/tasks']);
     });

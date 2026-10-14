@@ -74,6 +74,7 @@ ChoreTask choreTaskFromApi(api.TaskResponse r) => ChoreTask(
   dueAt: r.dueAt,
   completedAt: r.completedAt,
   pointsAwarded: r.pointsAwarded,
+  reversionReason: r.reversionReason,
 );
 
 TaskRecurrence taskRecurrenceFromApi(api.RecurrenceResponse r) =>

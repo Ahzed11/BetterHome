@@ -2831,6 +2831,8 @@ components:
         pointsAwarded:
           type: "integer"
           format: "int32"
+        reversionReason:
+          type: "string"
     TaskStatus:
       type: "string"
       enum:

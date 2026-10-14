@@ -1,6 +1,7 @@
 import 'package:betterhome/app.dart';
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/lists_repository.dart';
+import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
@@ -243,6 +244,8 @@ void main() {
       );
       await _tap(tester, find.widgetWithText(FilledButton, 'Revert'));
       await _seeCount(tester, find.byTooltip('Revert'), 1);
+      // The assignee reads the admin's reason on the task.
+      await _see(tester, find.text('Reverted: Not clean'));
       await _tap(tester, find.text('Leaderboard'));
       await _see(tester, find.text('5 pts'));
       expect(find.text('10 pts'), findsNothing);
@@ -371,8 +374,15 @@ void main() {
     );
     await _tap(tester, find.widgetWithText(FilledButton, 'Accept invitation'));
 
-    final joined = await bob.repository.listMembers(householdId);
-    expect(joined.map((m) => m.userId), contains(bob.profile?.id));
+    // The request is still on its way when the tap returns: wait until bob is a member.
+    await _waitFor(() async {
+      try {
+        final members = await bob.repository.listMembers(householdId);
+        return members.any((m) => m.userId == bob.profile?.id);
+      } on ApiException {
+        return false;
+      }
+    }, 'bob to be a member of the household');
   });
 
   testWidgets(

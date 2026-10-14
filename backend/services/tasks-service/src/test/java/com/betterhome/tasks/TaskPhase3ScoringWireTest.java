@@ -21,6 +21,8 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.List;
@@ -43,6 +45,8 @@ class TaskPhase3ScoringWireTest {
     @Inject TemplateService templateService;
 
     @Inject TaskService taskService;
+
+    @Inject EntityManager entityManager;
 
     @Inject InMemoryMembershipGateway membershipGateway;
 
@@ -101,6 +105,7 @@ class TaskPhase3ScoringWireTest {
                         ADMIN_SUBJECT,
                         () -> taskService.revert(HOUSEHOLD, manual.id, "Logged by mistake"));
         assertEquals(TaskStatus.reverted, reverted.status);
+        assertEquals("Logged by mistake", reverted.reversionReason);
         assertEquals(TaskOrigin.manual, reverted.origin);
         assertNull(reverted.pointsAwarded);
         assertEquals(1, pointsLedgerClient.reversals().size());
@@ -122,6 +127,7 @@ class TaskPhase3ScoringWireTest {
                         () -> taskService.revert(HOUSEHOLD, overdue.id, "Too late to reopen"));
         assertEquals(TaskStatus.dismissed, dismissed.status);
         assertEquals(DismissalReason.reverted_overdue, dismissed.dismissalReason);
+        assertEquals("Too late to reopen", dismissed.reversionReason);
 
         asUser(
                 MEMBER_SUBJECT,
@@ -129,6 +135,63 @@ class TaskPhase3ScoringWireTest {
                         assertThrows(
                                 TaskException.Forbidden.class,
                                 () -> taskService.revert(HOUSEHOLD, manual.id, "member cannot")));
+    }
+
+    @Test
+    void theAssigneeReadsTheReasonOfTheReversionOnTheTask() {
+        TaskTemplate template =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () -> templateService.create(HOUSEHOLD, "Mop", null, "", 5, 2, 30));
+        Task manual = asUser(MEMBER_SUBJECT, () -> taskService.quickLog(HOUSEHOLD, template.id));
+        assertNull(manual.reversionReason);
+
+        asUser(ADMIN_SUBJECT, () -> taskService.revert(HOUSEHOLD, manual.id, "  Not mine  "));
+
+        Task seen =
+                asUser(MEMBER_SUBJECT, () -> taskService.list(HOUSEHOLD, null, true)).stream()
+                        .filter(t -> t.id.equals(manual.id))
+                        .findFirst()
+                        .orElseThrow();
+        assertEquals("Not mine", seen.reversionReason);
+    }
+
+    @Test
+    void theDatabaseRefusesABlankReversionReason() {
+        TaskTemplate template =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () -> templateService.create(HOUSEHOLD, "Sweep", null, "", 3, 1, 60));
+        Task manual = asUser(MEMBER_SUBJECT, () -> taskService.quickLog(HOUSEHOLD, template.id));
+
+        assertThrows(PersistenceException.class, () -> setReversionReason(manual.id, "   "));
+    }
+
+    @Test
+    void aLaterReversionReplacesTheReason() {
+        TaskTemplate template =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () -> templateService.create(HOUSEHOLD, "Dust", null, "", 3, 1, 60));
+        Task open =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () ->
+                                taskService.createOpen(
+                                        HOUSEHOLD,
+                                        template.id,
+                                        MEMBER_USER,
+                                        Instant.now().plusSeconds(3600)));
+        asUser(MEMBER_SUBJECT, () -> taskService.complete(HOUSEHOLD, open.id));
+        asUser(ADMIN_SUBJECT, () -> taskService.revert(HOUSEHOLD, open.id, "First reason"));
+        asUser(MEMBER_SUBJECT, () -> taskService.complete(HOUSEHOLD, open.id));
+
+        Task again =
+                asUser(
+                        ADMIN_SUBJECT,
+                        () -> taskService.revert(HOUSEHOLD, open.id, "Second reason"));
+
+        assertEquals("Second reason", again.reversionReason);
     }
 
     @Test
@@ -183,6 +246,7 @@ class TaskPhase3ScoringWireTest {
         asUser(MEMBER_SUBJECT, () -> taskService.complete(HOUSEHOLD, open.id));
         Task reopened = asUser(ADMIN_SUBJECT, () -> taskService.revert(HOUSEHOLD, open.id, "Oops"));
         assertEquals(TaskStatus.open, reopened.status);
+        assertEquals("Oops", reopened.reversionReason);
         asUser(MEMBER_SUBJECT, () -> taskService.complete(HOUSEHOLD, open.id));
 
         assertEquals(
@@ -256,6 +320,15 @@ class TaskPhase3ScoringWireTest {
     @Transactional
     Task reload(UUID taskId) {
         return Task.findById(taskId);
+    }
+
+    @Transactional
+    void setReversionReason(UUID taskId, String reason) {
+        entityManager
+                .createNativeQuery("update task set reversion_reason = ?1 where id = ?2")
+                .setParameter(1, reason)
+                .setParameter(2, taskId)
+                .executeUpdate();
     }
 
     @Transactional

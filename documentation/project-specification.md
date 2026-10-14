@@ -69,7 +69,7 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
   - The completion's points are reversed with a negative ledger entry.
   - Manual task: becomes `reverted`.
   - Recurrence task: reopened to `open` with its original `due_at`. If that date has passed, it is dismissed (`reverted_overdue`) instead.
-  - The assignee sees the reason in the UI and gets a push only if the task was reopened with a future deadline.
+  - The assignee sees the reason in the UI, on the task, for as long as the task is not done again (the task carries the reason of its latest reversion), and gets a push only if the task was reopened with a future deadline.
   - Only `done` tasks can be reverted. A task can be completed and reverted several times, each reversion kept as a record.
 
 ### 3.4 Points and scoreboard
