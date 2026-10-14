@@ -1,9 +1,118 @@
 ---
 openapi: 3.1.0
 tags:
+- name: internal
 - name: meta
+- name: notifications
+- name: preferences
 components:
   schemas:
+    Channel:
+      type: string
+      enum:
+      - push
+      - in_app
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+    IngestRequest:
+      type: object
+      required:
+      - idempotencyKey
+      - householdId
+      - userId
+      - type
+      properties:
+        idempotencyKey:
+          type: string
+          pattern: \S
+          maxLength: 200
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        userId:
+          $ref: "#/components/schemas/UUID"
+        type:
+          type: string
+          pattern: \S
+        payload:
+          type: object
+          additionalProperties:
+            type: string
+        localeHint:
+          type: string
+          maxLength: 8
+    IngestResponse:
+      type: object
+      properties:
+        outcome:
+          $ref: "#/components/schemas/Outcome"
+        notification:
+          $ref: "#/components/schemas/NotificationResponse"
+    Instant:
+      type: string
+      format: date-time
+      examples:
+      - 2022-03-10T16:15:50Z
+    NotificationResponse:
+      type: object
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        type:
+          $ref: "#/components/schemas/NotificationType"
+        channel:
+          $ref: "#/components/schemas/Channel"
+        title:
+          type: string
+        body:
+          type: string
+        payload:
+          type: object
+          additionalProperties:
+            type: string
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        readAt:
+          $ref: "#/components/schemas/Instant"
+    NotificationType:
+      type: string
+      enum:
+      - task_assigned
+      - task_reassigned
+      - due_reminder
+      - overdue
+      - dismissed
+      - superseded
+      - reverted
+      - marked_away
+      - invitation
+    Outcome:
+      type: string
+      enum:
+      - created
+      - duplicate
+      - suppressed
+    PreferenceResponse:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/NotificationType"
+        channel:
+          $ref: "#/components/schemas/Channel"
+        enabled:
+          type: boolean
+    ReadAllResponse:
+      type: object
+      properties:
+        updated:
+          type: integer
+          format: int32
     ServiceInfo:
       type: object
       properties:
@@ -13,6 +122,17 @@ components:
           type: string
         authSubject:
           type: string
+    UUID:
+      type: string
+      format: uuid
+      pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+    UpdatePreferenceRequest:
+      type: object
+      required:
+      - enabled
+      properties:
+        enabled:
+          type: boolean
   securitySchemes:
     bearerAuth:
       description: Authentication
@@ -20,6 +140,51 @@ components:
       scheme: bearer
       bearerFormat: JWT
 paths:
+  /v1/internal/notifications:
+    post:
+      summary: Turn an event into notifications for its recipient; repeating an idempotency
+        key changes nothing (service role)
+      operationId: ingestNotificationEvent
+      tags:
+      - internal
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestRequest"
+        required: true
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+        "503":
+          description: A service this one depends on is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestResponse"
+        "200":
+          description: Already stored or switched off by the recipient
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth:
+        - service
   /v1/meta:
     get:
       summary: "Service name, server time and caller subject"
@@ -41,6 +206,221 @@ paths:
       - bearerAuth:
         - member
         - admin
+  /v1/notification-preferences:
+    get:
+      summary: Every type and channel with my choice
+      operationId: listMyNotificationPreferences
+      tags:
+      - preferences
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PreferenceResponse"
+      security:
+      - bearerAuth: []
+  /v1/notification-preferences/{type}/{channel}:
+    put:
+      summary: Turn one type on or off for one channel
+      operationId: updateMyNotificationPreference
+      tags:
+      - preferences
+      parameters:
+      - name: channel
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: type
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePreferenceRequest"
+        required: true
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreferenceResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/notifications:
+    get:
+      summary: "My inbox, newest first; page with before=<id of the last item>"
+      operationId: listMyNotifications
+      tags:
+      - notifications
+      parameters:
+      - name: before
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: householdId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          format: int32
+          default: 50
+      - name: unreadOnly
+        in: query
+        schema:
+          type: boolean
+          default: false
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/notifications/read-all:
+    post:
+      summary: "Mark all my unread notifications read, optionally for one household"
+      operationId: markAllMyNotificationsRead
+      tags:
+      - notifications
+      parameters:
+      - name: householdId
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadAllResponse"
+      security:
+      - bearerAuth: []
+  /v1/notifications/{notificationId}/read:
+    post:
+      summary: Mark one of my notifications read
+      operationId: markMyNotificationRead
+      tags:
+      - notifications
+      parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: A service this one depends on is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
 info:
   title: BetterHome notifications API
   version: 1.0.0-SNAPSHOT

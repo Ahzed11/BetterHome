@@ -184,11 +184,16 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0025 · notifications-service core: inbox, preferences, rendering
 
-* Status: todo
-* Issue / PR: #18
+* Status: in-review
+* Issue / PR: #18 / #55
 * Depends on: T-0016
 * Spec: §5, §6.2 NOTIFICATION/PREFERENCE
 * Acceptance criteria: notifications-service owns NOTIFICATION and PREFERENCE. Internal ingest endpoint (service role) accepts typed events with an idempotency key; it renders FR/EN text server-side in the recipient's language, applies per-type preferences, stores the notification and hands it to `PushSender`. App-facing API: list notifications, mark read, read/update preferences. ADR records the event contract and ownership.
+* Summary: notifications-service owns NOTIFICATION and PREFERENCE (Flyway, CHECK/unique constraints). `POST /v1/internal/notifications` (role `service`) is idempotent on `idempotencyKey`, renders FR/EN in the recipient's language (read from households through a new internal user lookup by id and token subject), applies per-type preferences and stores the in-app notification. App API: list own notifications, mark read, list and update preferences. Local Compose wiring and the Keycloak `betterhome-notifications-service` client are included.
+* Decisions and deviations: event contract and ownership in ADR 0017. Handing notifications to `PushSender` is not part of this change: device tokens and the FCM/APNs sender are T-0027, relays are T-0026. Only the `in_app` channel is stored here. After merging T-0039 (answer validation against the contract), notifications-service also omits null fields (`quarkus.jackson.serialization-inclusion=non-null`) and answers bean validation failures with `ErrorResponse` through a `ConstraintViolationMapper`, like the other services. The Keycloak realm file now holds the lists and notifications service clients side by side.
+* Verification: notifications tests (52 across the module, incl. authorization matrix, schema constraints, rendering, real-token auth, OpenAPI contract) and scoring and lists modules pass under `./mvnw verify` with Spotless, Checkstyle and the JaCoCo floor (notifications line coverage 98.3%, floor 0.97). Live: `make up`, `make seed`, `make smoke` OK with all five services; with a service token an event created a notification for the recipient, a repeat of the same key answered `duplicate`, a user token got 403, and each member read only their own notification. NOT run: the tasks-service tests fail in this run (T-0065, a wall-clock dependent test unrelated to this change), so the single full `make test-backend` was not green and was completed per module; e2e (T-0021, blocked by T-0045) and the Flutter gates were not run.
+* Follow-ups: T-0065 (flaky tasks reminder test, #54). T-0026 relays, T-0027 push, T-0028 app inbox.
+
 
 ### T-0026 · Outbox relays into notifications-service
 
@@ -519,3 +524,11 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0023
 * Spec: AGENTS §8
 * Acceptance criteria: Internal service-role endpoint anonymizes `list.created_by` and `item.creator/completer/deleted_by` for a user; covered once the account-deletion flow exists.
+
+### T-0065 · tasks-service: reminder test depends on the wall-clock time of day
+
+* Status: todo
+* Issue / PR: #54
+* Depends on: —
+* Spec: AGENTS §5.1 (control time with the clock)
+* Acceptance criteria: `TaskPhase4AutomationTest.reminderEnqueuesWhenDue` sets `dueAt` from `Instant.now()` and fails when run before the household reminder time of day. Drive it with the fake Clock so it passes at any hour.

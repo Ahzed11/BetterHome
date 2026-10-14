@@ -102,6 +102,15 @@ components:
           pattern: "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$"
           examples:
           - 08:00:00
+    InternalUserResponse:
+      type: object
+      properties:
+        userId:
+          $ref: "#/components/schemas/UUID"
+        authSubject:
+          $ref: "#/components/schemas/UUID"
+        language:
+          type: string
     InvitationResponse:
       type: object
       properties:
@@ -801,6 +810,70 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InternalSettingsResponse"
+      security:
+      - bearerAuth:
+        - service
+  /v1/internal/users/by-subject/{authSubject}:
+    get:
+      summary: Our user id and language for a verified token subject (service role)
+      operationId: getUserBySubjectInternal
+      tags:
+      - internal
+      parameters:
+      - name: authSubject
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalUserResponse"
+      security:
+      - bearerAuth:
+        - service
+  /v1/internal/users/{userId}:
+    get:
+      summary: Language and token subject of a user by our user id (service role)
+      operationId: getUserInternal
+      tags:
+      - internal
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalUserResponse"
       security:
       - bearerAuth:
         - service

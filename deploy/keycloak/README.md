@@ -1,6 +1,6 @@
 # Keycloak local realm
 
-`realm-betterhome.json` is imported on first `make up`. It defines the `betterhome` realm, `admin` / `member` / `service` roles, and the `betterhome-api` / `betterhome-app` / `betterhome-tasks-service` / `betterhome-scoring-service` / `betterhome-lists-service` clients. The three service clients use client credentials; their service accounts hold the `service` role that unlocks households-service's internal endpoints (tasks, scoring, lists) and scoring-service's award and reverse endpoints (tasks). It does **not** contain user passwords.
+`realm-betterhome.json` is imported on first `make up`. It defines the `betterhome` realm, `admin` / `member` / `service` roles, and the `betterhome-api` / `betterhome-app` / `betterhome-tasks-service` / `betterhome-scoring-service` / `betterhome-lists-service` / `betterhome-notifications-service` clients. The four service clients use client credentials; their service accounts hold the `service` role that unlocks households-service's internal endpoints (tasks, scoring, lists, notifications), scoring-service's award and reverse endpoints (tasks) and notifications-service's event ingest. It does **not** contain user passwords.
 
 ## Create a local demo user
 

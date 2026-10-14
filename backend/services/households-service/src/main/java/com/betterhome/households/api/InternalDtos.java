@@ -1,5 +1,6 @@
 package com.betterhome.households.api;
 
+import com.betterhome.households.domain.AppUser;
 import com.betterhome.households.domain.Household;
 import com.betterhome.households.domain.MembershipRole;
 import java.time.Instant;
@@ -15,6 +16,14 @@ public final class InternalDtos {
 
     public record InternalMemberResponse(
             UUID userId, UUID authSubject, MembershipRole role, boolean away, Instant joinedAt) {}
+
+    /** Who a user is for other services: our id, the token subject and the display language. */
+    public record InternalUserResponse(UUID userId, UUID authSubject, String language) {
+
+        public static InternalUserResponse from(AppUser user) {
+            return new InternalUserResponse(user.id, user.authSubject, user.language);
+        }
+    }
 
     public record InternalSettingsResponse(
             String timezone,
