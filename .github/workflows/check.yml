@@ -180,7 +180,10 @@ jobs:
           cat /tmp/pull.log
           [ -S /tmp/podman.sock ]
 
+      # The jars were built in the background above, so `make up` does not build them again.
       - run: make e2e
+        env:
+          SKIP_PACKAGE: "1"
 
   # The one result to require on master (T-0053). It fails when any job above failed or was skipped.
   check:
