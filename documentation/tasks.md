@@ -307,11 +307,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0090 · Quick-log "+ I just did…" with single tap and 5-second cancel
 
-* Status: todo
-* Issue / PR: — (suggested: "Quick-log with single-tap logging and 5-second cancel")
+* Status: in-review
+* Issue / PR: #24 / PR pending
 * Depends on: T-0031
 * Spec: §8.2
-* Acceptance criteria: Decided by the product owner on 2026-10-14: whoever quick-logs a task has 5 seconds to cancel their log. Built as delayed logging: a single tap on a template shows a snackbar with Undo for 5 seconds and the task is only sent to the server when they pass without a cancel (nothing is created or reverted if cancelled; the ledger stays append-only). Leaving the screen or the app within the 5 seconds sends the log. Restyle the button and flow after the design. The spec text "5-second undo" is changed to say this. FR/EN, widget, golden and e2e coverage ("quick-log a manual task and cancel it", "quick-log and keep it").
+* Acceptance criteria: Decided by the product owner on 2026-10-14: whoever quick-logs a task has 5 seconds to cancel their log. Built as delayed logging: picking a template shows a snackbar with Undo for 5 seconds and the task is only sent to the server when they pass without a cancel (nothing is created or reverted if cancelled; the ledger stays append-only). Leaving the screen within the 5 seconds sends the log. The spec text "5-second undo" says this. FR/EN, widget and e2e coverage ("quick-log a manual task and cancel it", "quick-log and keep it").
+* Summary: reusable `runUnlessUndone` (snackbar with Undo, 5 s window, action run afterwards, failure shown as a snackbar) used by the chores screen's quick-log; new strings `undo` and `quickLogPending`; spec §8.2 updated. Widget tests: waits the full window (not logged at 4 s), Undo logs nothing even after 10 s, switching tab inside the window still logs, a refused log is reported, FR.
+* Decisions and deviations: the owner's wording "cancel their log" was read as option (c), delayed logging (the one recommended in the split), so no backend change. The "restyle the picker after the design" part of the earlier text is not done: the picker keeps its dialog (the e2e journeys and tests rely on it) and the restyle is T-0091. Leaving the app (closing it) inside the window loses the log, as nothing was sent.
+* Verification: `make test-app` (374 tests), `make check`, cold `make e2e` with the cancel journey (Undo, then nothing on the server, then a real quick-log); results in the PR. Not run: Android.
+* Follow-ups: T-0091.
 
 ### T-0032 · Account deletion and anonymization
 
@@ -788,4 +792,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0030
 * Spec: §3.4 ("scores never go negative: reversals equal what was awarded, and manual adjustments are guarded"), AGENTS §7
 * Acceptance criteria: Found by the T-0030 ledger tests, documented in `LedgerSequenceTest`. `reverse` checks that the task has enough points left, not the member's total, so a manual adjustment of -5 followed by reversing a 5-point task leaves the member's ledger sum at -5 while the score shown stays at 0; later awards then show as 0 until the sum is back above zero, hiding points the member earned. Decide: refuse the reversal, clamp it, or keep the behavior and say so in the spec; then change the code, the spec and the test together.
+
+### T-0091 · App: restyle the quick-log picker after the design
+
+* Status: todo
+* Issue / PR: — (suggested: "Quick-log picker after the design's Quick log board")
+* Depends on: T-0090
+* Spec: §8.2
+* Acceptance criteria: The template picker opened by "+ I just did…" follows the design canvas' Quick log board (shared widgets and tokens, ADR 0021) instead of a stock `SimpleDialog`, with the same behavior (one tap on a template starts the 5-second cancel window). Update the widget tests, goldens and the e2e journeys that tap the dialog options.
 

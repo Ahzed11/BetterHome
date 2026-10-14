@@ -204,7 +204,7 @@ AGENTS.md
 
 ### 8.2 Navigation & Screens
 - **Navigation:** Four bottom tabs (All Chores, My Chores, Leaderboard, Lists; the design names the fourth "Lists") and a Household Switcher at the top.
-- **Quick-log flow:** "+ I just did…" floating button with instant single-tap logging and 5-second undo.
+- **Quick-log flow:** "+ I just did…" floating button; picking a template logs it after 5 seconds unless the person taps Undo in that time (nothing is created, so there is nothing to revert). Leaving the screen within the 5 seconds sends the log.
 
 ---
 

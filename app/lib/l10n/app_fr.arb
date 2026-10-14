@@ -133,5 +133,8 @@
   "overdueStill": "En retard · encore +{points}",
   "@overdueStill": {"placeholders": {"points": {"type": "int"}}},
   "revertedBecause": "Annulée : {reason}",
-  "@revertedBecause": {"placeholders": {"reason": {"type": "String"}}}
+  "@revertedBecause": {"placeholders": {"reason": {"type": "String"}}},
+  "undo": "Annuler",
+  "quickLogPending": "Enregistrement de {title}…",
+  "@quickLogPending": {"placeholders": {"title": {"type": "String"}}}
 }

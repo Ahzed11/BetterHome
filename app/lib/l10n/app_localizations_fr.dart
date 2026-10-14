@@ -406,4 +406,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String revertedBecause(String reason) {
     return 'Annulée : $reason';
   }
+
+  @override
+  String get undo => 'Annuler';
+
+  @override
+  String quickLogPending(String title) {
+    return 'Enregistrement de $title…';
+  }
 }

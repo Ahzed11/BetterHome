@@ -5,6 +5,7 @@ import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/overdue_badge.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
+import 'package:betterhome/ui/widgets/undoable_action.dart';
 import 'package:flutter/material.dart';
 
 class ChoresScreen extends StatefulWidget {
@@ -148,11 +149,19 @@ class _ChoresScreenState extends State<ChoresScreen> {
     if (templateId == null || !mounted) {
       return;
     }
-    await widget.session.tasksRepository.quickLog(
-      householdId: widget.householdId,
-      templateId: templateId,
+    final template = latest.firstWhere((t) => t.id == templateId);
+    final tasks = widget.session.tasksRepository;
+    final logged = await runUnlessUndone(
+      context,
+      message: l10n.quickLogPending(template.title),
+      action: () => tasks.quickLog(
+        householdId: widget.householdId,
+        templateId: templateId,
+      ),
     );
-    setState(_reload);
+    if (logged && mounted) {
+      setState(_reload);
+    }
   }
 
   Future<void> _makeRecurring() async {

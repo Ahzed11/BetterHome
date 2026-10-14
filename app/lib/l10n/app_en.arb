@@ -176,5 +176,8 @@
   "overdueStill": "Overdue · still +{points}",
   "@overdueStill": {"placeholders": {"points": {"type": "int"}}},
   "revertedBecause": "Reverted: {reason}",
-  "@revertedBecause": {"placeholders": {"reason": {"type": "String"}}}
+  "@revertedBecause": {"placeholders": {"reason": {"type": "String"}}},
+  "undo": "Undo",
+  "quickLogPending": "Logging {title}…",
+  "@quickLogPending": {"placeholders": {"title": {"type": "String"}}}
 }

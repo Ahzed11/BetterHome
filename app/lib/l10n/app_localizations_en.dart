@@ -402,4 +402,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String revertedBecause(String reason) {
     return 'Reverted: $reason';
   }
+
+  @override
+  String get undo => 'Undo';
+
+  @override
+  String quickLogPending(String title) {
+    return 'Logging $title…';
+  }
 }
