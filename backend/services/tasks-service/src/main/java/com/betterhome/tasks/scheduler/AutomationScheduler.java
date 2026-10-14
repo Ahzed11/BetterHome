@@ -32,6 +32,7 @@ public class AutomationScheduler {
     @Scheduled(every = "60s", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
     void sendReminders() {
         reminderService.sendDueReminders();
+        reminderService.sendOverdueNotices(100);
     }
 
     @Scheduled(every = "15s", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)

@@ -26,6 +26,7 @@ public class TaskService {
     private final CallerService callerService;
     private final MembershipGateway membershipGateway;
     private final PointsLedgerClient pointsLedgerClient;
+    private final OutboxService outboxService;
     private final Clock clock;
 
     @Inject
@@ -33,10 +34,12 @@ public class TaskService {
             CallerService callerService,
             MembershipGateway membershipGateway,
             PointsLedgerClient pointsLedgerClient,
+            OutboxService outboxService,
             Clock clock) {
         this.callerService = callerService;
         this.membershipGateway = membershipGateway;
         this.pointsLedgerClient = pointsLedgerClient;
+        this.outboxService = outboxService;
         this.clock = clock;
     }
 
@@ -48,7 +51,7 @@ public class TaskService {
 
     @Transactional
     public Task createOpen(UUID householdId, UUID templateId, UUID assigneeId, Instant dueAt) {
-        callerService.requireAdmin(householdId);
+        MemberView admin = callerService.requireAdmin(householdId);
         TaskTemplate template = requireActiveTemplate(householdId, templateId);
         UUID assignee = resolveAssignee(householdId, template, assigneeId);
         Instant now = clock.now();
@@ -61,6 +64,9 @@ public class TaskService {
         task.status = TaskStatus.open;
         task.persist();
         advanceRotation(template.rotationId, assignee);
+        if (!assignee.equals(admin.userId())) {
+            outboxService.enqueueForTask(task, assignee, "task_assigned");
+        }
         return task;
     }
 
@@ -121,12 +127,15 @@ public class TaskService {
         task.dismissedBy = caller.userId();
         task.dismissalReason = DismissalReason.manual;
         task.updatedAt = now;
+        if (!task.assigneeId.equals(caller.userId())) {
+            outboxService.enqueueForTask(task, task.assigneeId, "dismissed");
+        }
         return task;
     }
 
     @Transactional
     public Task reassign(UUID householdId, UUID taskId) {
-        callerService.requireAdmin(householdId);
+        MemberView admin = callerService.requireAdmin(householdId);
         Task task = requireTask(householdId, taskId);
         if (task.status != TaskStatus.open) {
             throw new TaskException.Conflict("Only open tasks can be reassigned");
@@ -152,6 +161,9 @@ public class TaskService {
         task.assigneeId = next;
         task.updatedAt = clock.now();
         advanceRotation(template.rotationId, next);
+        if (!next.equals(admin.userId())) {
+            outboxService.enqueueForTask(task, next, "task_reassigned");
+        }
         return task;
     }
 
@@ -198,6 +210,9 @@ public class TaskService {
             task.dismissalReason = dismissalReason;
         }
         task.updatedAt = now;
+        if (resultingStatus == TaskStatus.open) {
+            outboxService.enqueueForTask(task, task.assigneeId, "reverted");
+        }
         return task;
     }
 

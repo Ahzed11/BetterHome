@@ -670,11 +670,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0081 · Producers for the remaining notification types
 
-* Status: todo
-* Issue / PR: — (suggested: "Send reassigned, overdue, dismissed and reverted notifications")
+* Status: done
+* Issue / PR: — (suggested: "Send reassigned, overdue, dismissed and reverted notifications") / #75
 * Depends on: T-0026
 * Spec: §5
 * Acceptance criteria: tasks-service queues `task_reassigned` (admin reassigns), `overdue` (a task passes its due date), `dismissed` (an admin dismisses someone else's task) and `reverted` (only when the task reopens with a future date, spec §3.3) in the transaction of the change; each has a relay test and appears in the recipient's inbox. Needed by the M6 exit (every spec §5 type).
+* Summary: `OutboxService.enqueueForTask` queues a task event (taskId, taskTitle); the existing producers use it too. New producers in `TaskService`, all in the transaction of the change: `task_assigned` when an admin creates a task for someone else, `task_reassigned` to the new assignee, `dismissed` to the assignee when someone else dismissed it, `reverted` only when the revert reopens the task. An action on yourself notifies nobody. `overdue`: migration V7 (`task.overdue_notified_at`, partial index) and `ReminderService.sendOverdueNotices`, run every 60 s, which claims open tasks past their due date with `FOR UPDATE SKIP LOCKED` and notifies each once.
+* Decisions and deviations: ADR 0017 addendum lists who is notified for what; every spec §5 type now has a producer. The `reason` of a reversion is not sent (not needed by the message, and it can be long). Dismissals caused by an away member or by `nobody_available` notify nobody (`marked_away` covers the first). A task dismissed because the revert came too late notifies nobody (spec). Found, not fixed: the older due-reminder job reads its candidates without a lock, so two replicas can queue the same reminder twice under different outbox ids (T-0085).
+* Verification: JDK 21, Podman. `make test-backend SERVICE=tasks-service` (89 tests; 16 new: each producer and its negative cases, a revert that fails at the ledger leaves no event, overdue only once and not for done, dismissed or undated tasks, the limit, and four concurrent runs queue 20 notices once each) passes with Spotless, Checkstyle and the floors. Live on `make up` + `make seed`: bob's inbox received `task_assigned`, `dismissed`, `reverted` and, after its due time, `overdue`. `task_reassigned` was covered by tests only (with two members round robin picks the acting admin, who is not notified). Not run: the full `make test-backend` and e2e outside CI, Android.
+* Follow-ups: T-0085 (duplicate due reminders), T-0082 (away text).
 
 ### T-0082 · The away notification text promises something that no longer happens
 
@@ -703,4 +707,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: `--retry-all-errors` needs curl 7.71 or newer (the CI runners and Fedora have it). The localhost API calls in `deploy/` are left alone.
 * Verification: syntax check of the three scripts; `make client` (jar cached, so no download), `make test-guard` and the PR's CI run. Not reproduced: the 404 itself.
 * Follow-ups: none.
+
+### T-0085 · Due reminders can be queued twice when several replicas run
+
+* Status: todo
+* Issue / PR: — (suggested: "Reminder job has no row claim")
+* Depends on: T-0081
+* Spec: §5, AGENTS §3 Scheduling
+* Acceptance criteria: `ReminderService.sendDueReminders` claims its candidate tasks with `FOR UPDATE SKIP LOCKED` (as `sendOverdueNotices` does), so two replicas never queue the same reminder under different outbox ids; a test runs several concurrent calls and finds one reminder per task.
 
