@@ -173,7 +173,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0025 · notifications-service core: inbox, preferences, rendering
 
 * Status: in-review
-* Issue / PR: #18 / PR_TBD
+* Issue / PR: #18 / #55
 * Depends on: T-0016
 * Spec: §5, §6.2 NOTIFICATION/PREFERENCE
 * Acceptance criteria: notifications-service owns NOTIFICATION and PREFERENCE. Internal ingest endpoint (service role) accepts typed events with an idempotency key; it renders FR/EN text server-side in the recipient's language, applies per-type preferences, stores the notification and hands it to `PushSender`. App-facing API: list notifications, mark read, read/update preferences. ADR records the event contract and ownership.
