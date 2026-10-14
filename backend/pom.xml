@@ -30,6 +30,12 @@
         <quarkus.platform.version>3.40.1</quarkus.platform.version>
         <openapi-validator.version>3.0.0</openapi-validator.version>
         <jandex.version>3.5.3</jandex.version>
+        <jqwik.version>1.10.2</jqwik.version>
+        <pitest.version>1.30.1</pitest.version>
+        <pitest-junit5.version>1.2.3</pitest-junit5.version>
+        <!-- Modules without mutation targets (see the pitest profile) mutate nothing. -->
+        <targetClasses>com.betterhome.nothing.*</targetClasses>
+        <targetTests>com.betterhome.nothing.*</targetTests>
         <skipITs>true</skipITs>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
         <spotless-plugin.version>3.10.4</spotless-plugin.version>
@@ -70,6 +76,12 @@
                 <artifactId>common-domain</artifactId>
                 <version>${project.version}</version>
                 <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>net.jqwik</groupId>
+                <artifactId>jqwik</artifactId>
+                <version>${jqwik.version}</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -236,4 +248,40 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!--
+            Mutation testing, run on demand (make mutation), never in the normal build. Each service
+            names the pure domain classes and the plain JUnit and jqwik tests that cover them in
+            targetClasses and targetTests; the Quarkus tests are out of scope.
+        -->
+        <profile>
+            <id>pitest</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>${pitest.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.pitest</groupId>
+                                <artifactId>pitest-junit5-plugin</artifactId>
+                                <version>${pitest-junit5.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <outputFormats>
+                                <param>HTML</param>
+                                <param>XML</param>
+                            </outputFormats>
+                            <failWhenNoMutations>false</failWhenNoMutations>
+                            <timestampedReports>false</timestampedReports>
+                            <threads>2</threads>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

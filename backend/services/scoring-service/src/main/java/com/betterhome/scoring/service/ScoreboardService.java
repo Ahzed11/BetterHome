@@ -1,6 +1,7 @@
 package com.betterhome.scoring.service;
 
 import com.betterhome.common.Clock;
+import com.betterhome.scoring.domain.LedgerRules;
 import com.betterhome.scoring.domain.MonthlyRecap;
 import com.betterhome.scoring.domain.MonthlyRecapCelebration;
 import com.betterhome.scoring.domain.PeriodWindows;
@@ -79,7 +80,7 @@ public class ScoreboardService {
         List<Entry> raw = new ArrayList<>();
         int totalPositive = 0;
         for (MemberView member : members) {
-            int score = Math.max(0, sums.getOrDefault(member.userId(), 0));
+            int score = LedgerRules.score(sums.getOrDefault(member.userId(), 0));
             raw.add(new Entry(member.userId(), score, 0, 0));
             totalPositive += score;
         }

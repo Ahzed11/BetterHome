@@ -14,7 +14,7 @@ export PATH := $(JAVA_HOME)/bin:$(PATH)
 export DOCKER_HOST ?= unix://$(XDG_RUNTIME_DIR)/podman/podman.sock
 export TESTCONTAINERS_RYUK_DISABLED ?= true
 
-.PHONY: client doctor up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-guard e2e check update-goldens
+.PHONY: mutation client doctor up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-guard e2e check update-goldens
 
 doctor: ## Check the pinned toolchain (JDK, Podman, Flutter, Android) is installed
 	@bash $(ROOT)/tooling/doctor.sh
@@ -48,6 +48,9 @@ test-backend: ## Spotless, Checkstyle, Quarkus tests and coverage floor; SERVICE
 
 client: ## Generate the Dart client from documentation/api/openapi.yaml into generated/ (gitignored)
 	@bash $(ROOT)/tooling/generate-client.sh
+
+mutation: ## Mutation testing (Pitest) of the pure domain code of tasks and scoring; HTML reports in backend/services/*/target/pit-reports
+	cd $(BACKEND) && ./mvnw -B test-compile org.pitest:pitest-maven:mutationCoverage -Ppitest -pl services/tasks-service,services/scoring-service -am -Djacoco.skip=true -Denforcer.skip=true
 
 test-app: client ## Flutter analyze and tests
 	cd $(ROOT)/app && flutter pub get && dart format --set-exit-if-changed . && flutter analyze && flutter test

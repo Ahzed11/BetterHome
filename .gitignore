@@ -46,3 +46,6 @@ backend/.mvn/wrapper/maven-wrapper.jar
 *.log
 tmp/
 .crc/
+
+# jqwik
+.jqwik-database

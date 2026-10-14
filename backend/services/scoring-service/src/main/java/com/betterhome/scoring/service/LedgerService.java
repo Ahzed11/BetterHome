@@ -1,6 +1,7 @@
 package com.betterhome.scoring.service;
 
 import com.betterhome.common.Clock;
+import com.betterhome.scoring.domain.LedgerRules;
 import com.betterhome.scoring.domain.PointReason;
 import com.betterhome.scoring.domain.PointTransaction;
 import com.betterhome.scoring.domain.ReversionResultingStatus;
@@ -108,7 +109,7 @@ public class LedgerService {
             throw new ScoringException.BadRequest("resultingStatus is required");
         }
         int netForTask = PointTransaction.sumAwardedForTask(householdId, taskId);
-        if (netForTask < pointsToReverse) {
+        if (!LedgerRules.canReverse(netForTask, pointsToReverse)) {
             throw new ScoringException.Conflict(
                     "Cannot reverse more points than remain on this task");
         }
@@ -155,7 +156,7 @@ public class LedgerService {
             throw new ScoringException.BadRequest("Adjustment must be non-zero");
         }
         int current = PointTransaction.sumForUser(householdId, userId);
-        if (current + delta < 0) {
+        if (!LedgerRules.adjustmentKeepsScoreNonNegative(current, delta)) {
             throw new ScoringException.Conflict("Scores never go negative");
         }
         Instant now = clock.now();

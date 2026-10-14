@@ -1,5 +1,6 @@
 package com.betterhome.scoring.service;
 
+import com.betterhome.scoring.domain.LedgerRules;
 import com.betterhome.scoring.domain.MonthlyRecap;
 import com.betterhome.scoring.domain.PeriodWindows.Window;
 import com.betterhome.scoring.domain.PointTransaction;
@@ -36,7 +37,7 @@ public class MonthlyRecapService {
         int winnerPoints = 0;
         int total = 0;
         for (Map.Entry<UUID, Integer> entry : sums.entrySet()) {
-            int score = Math.max(0, entry.getValue());
+            int score = LedgerRules.score(entry.getValue());
             total += score;
             boolean better =
                     score > winnerPoints
