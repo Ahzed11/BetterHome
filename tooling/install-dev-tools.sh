@@ -24,7 +24,7 @@ fi
 echo "== Flutter ${FLUTTER_VERSION}"
 if [[ "$(cat "$DEV_TOOLS_DIR/flutter/.betterhome-version" 2>/dev/null || true)" != "$FLUTTER_VERSION" ]]; then
   mkdir -p "$DEV_TOOLS_DIR"
-  curl -fsSL -o "$WORK/flutter.tar.xz" \
+  curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o "$WORK/flutter.tar.xz" \
     "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_${FLUTTER_VERSION}-stable.tar.xz"
   echo "${FLUTTER_SHA256}  $WORK/flutter.tar.xz" | sha256sum -c -
   rm -rf "$DEV_TOOLS_DIR/flutter"
@@ -39,7 +39,7 @@ bash "$TOOLING_DIR/install-chrome.sh"
 
 echo "== Android command-line tools ${ANDROID_CMDLINE_TOOLS_BUILD}"
 if [[ ! -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]]; then
-  curl -fsSL -o "$WORK/cmdtools.zip" \
+  curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o "$WORK/cmdtools.zip" \
     "https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_BUILD}_latest.zip"
   echo "${ANDROID_CMDLINE_TOOLS_SHA256}  $WORK/cmdtools.zip" | sha256sum -c -
   mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
