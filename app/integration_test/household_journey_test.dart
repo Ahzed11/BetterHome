@@ -1,8 +1,11 @@
 import 'package:betterhome/app.dart';
 import 'package:betterhome/data/households_repository.dart';
+import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/ui/widgets/add_field.dart';
+import 'package:betterhome/ui/widgets/check_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -12,6 +15,7 @@ import 'package:integration_test/integration_test.dart';
 const _householdsUrl = String.fromEnvironment('E2E_HOUSEHOLDS_URL');
 const _tasksUrl = String.fromEnvironment('E2E_TASKS_URL');
 const _scoringUrl = String.fromEnvironment('E2E_SCORING_URL');
+const _listsUrl = String.fromEnvironment('E2E_LISTS_URL');
 const _aliceToken = String.fromEnvironment('E2E_ACCESS_TOKEN');
 const _bobToken = String.fromEnvironment('E2E_ACCESS_TOKEN_BOB');
 
@@ -29,6 +33,10 @@ AppSession _sessionFor(String token) => AppSession(
   ),
   scoringRepository: HttpScoringRepository(
     baseUrl: _scoringUrl,
+    accessToken: () => token,
+  ),
+  listsRepository: HttpListsRepository(
+    baseUrl: _listsUrl,
     accessToken: () => token,
   ),
 );
@@ -178,6 +186,76 @@ void main() {
       expect(find.text('10 pts'), findsNothing);
     },
   );
+
+  testWidgets('lists: create a list, add, check, delete and reset items', (
+    tester,
+  ) async {
+    final session = await _openAs(tester, _aliceToken, _aliceEmail);
+    await _tap(tester, find.textContaining(householdName));
+    await _tap(tester, find.text('Lists'));
+    await _see(tester, find.text('No lists yet. An admin can create one.'));
+
+    // The admin creates a list.
+    await _tap(tester, find.byTooltip('New list'));
+    await tester.enterText(
+      find.widgetWithText(TextField, 'List name'),
+      'Weekly shop',
+    );
+    await _tap(tester, find.widgetWithText(FilledButton, 'Save'));
+    await _see(tester, find.text('Weekly shop · 0'));
+
+    // Any member adds items.
+    // A new finder per use: a finder keeps the elements it found first.
+    Finder field() => find.descendant(
+      of: find.byType(AddField),
+      matching: find.byType(TextField),
+    );
+    for (final item in ['Milk', 'Bread']) {
+      // Tapping the Add button of the previous round took the focus: put it back first.
+      await tester.tap(field());
+      await tester.pump();
+      await tester.enterText(field(), item);
+      await _tap(tester, find.byTooltip('Add'));
+      await _see(tester, find.text(item));
+    }
+    await _see(tester, find.text('Weekly shop · 2'));
+
+    // Checking moves an item to the basket.
+    Finder boxOf(String title) => find.descendant(
+      of: find.ancestor(of: find.text(title), matching: find.byType(CheckRow)),
+      matching: find.byType(InkResponse),
+    );
+    await _tap(tester, boxOf('Milk'));
+    await _see(tester, find.text('IN THE BASKET · 1'));
+    await _see(tester, find.text('Weekly shop · 1'));
+
+    // Deleting removes it for good.
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Bread'),
+          matching: find.byType(CheckRow),
+        ),
+        matching: find.byTooltip('Delete item'),
+      ),
+    );
+    await _seeCount(tester, find.text('Bread'), 0);
+
+    // Resetting asks first, then unchecks everything.
+    await _tap(tester, find.text('Uncheck all'));
+    await _see(tester, find.text('Uncheck every item?'));
+    await _tap(tester, find.widgetWithText(FilledButton, 'Uncheck all'));
+    await _see(tester, find.text('Weekly shop · 1'));
+    expect(find.text('IN THE BASKET · 1'), findsNothing);
+
+    final lists = await session.listsRepository.listLists(householdId);
+    final items = await session.listsRepository.listItems(
+      householdId,
+      lists.single.id,
+    );
+    expect(items.map((i) => i.title), ['Milk']);
+    expect(items.single.isChecked, isFalse);
+  });
 
   testWidgets('invite a member and join with the token', (tester) async {
     final alice = await _openAs(tester, _aliceToken, _aliceEmail);

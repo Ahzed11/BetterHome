@@ -187,13 +187,17 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Verification: `make test-backend` (JDK 21; Spotless, Checkstyle, all five services' tests, JaCoCo floors, contract tests) passed; lists-service has 64 tests, line coverage 98.3%, floor raised 0.90 to 0.97. `make test-docs` OK. Live: `make up`, `make seed`, then as alice (admin) and bob (member) over HTTP on :8084 created a list, added/checked/unchecked/renamed/soft-deleted items (row keeps deleted_by/deleted_at in Postgres), reset, archived; bob got 403 on create/rename/archive, 409 on adding to the archived list, anonymous 401, unknown household 403; `make down`. Not run: Flutter, e2e, CI.
 * Follow-ups: T-0061 (reset permission), T-0062 (415 on body-less POSTs elsewhere), T-0063 (anonymization on account deletion).
 
-### T-0024 · App: Groceries tab
+### T-0024 · App: Lists tab (groceries and other checklists)
 
-* Status: todo
-* Issue / PR: #17
+* Status: done
+* Issue / PR: #17 / #71
 * Depends on: T-0023, T-0020
 * Spec: §4, §8.2
-* Acceptance criteria: Fourth bottom tab with list overview and item screen: create, check, uncheck, delete, reset (admin actions hidden for members). FR/EN strings, loading/empty/error/populated widget tests, goldens. e2e journey "checklist create, check, delete, reset".
+* Acceptance criteria: Fourth bottom tab with list overview and item screen: create, check, uncheck, delete, reset (admin actions hidden for members). FR/EN strings, loading/empty/error/populated widget tests, goldens. e2e journey "checklist create, check, delete, reset". Changed by the product owner on 2026-10-14: the UI follows the Claude Design canvas ("Lists" board) and is built from clean, reusable components.
+* Summary: `ListsRepository` (generated client over lists-service, plus an in-memory fake) and `ListsScreen`, one screen as in the design: header with household name and "Uncheck all", a pill per list with the open count, an add field, the open items in a card and checked items under "In the basket". Admins also see the add pill and a menu to rename or archive the selected list. Members add, check, uncheck, delete and reset. Failed requests show a snackbar. Reusable widgets in `app/lib/ui/widgets/` (`AppPill`, `AppAddPill`, `AppCard`, `ScreenHeader`, `SectionLabel`, `CheckRow`, `AddField`) built on new tokens (`AppTokens`, `AppTypography`). Strings FR/EN; `LISTS_API_BASE_URL` for the app; the e2e journey creates a list, adds, checks, deletes and resets items through the real UI.
+* Decisions and deviations: ADR 0021 (design canvas as reference, widget rules, deviations). Not built: the bottom bar with four tabs and the household switcher (Lists opens from the household screen like Chores and the leaderboard; the shell is T-0031), the design's fonts (T-0079), member names beside checked items (T-0058). Reset is offered to every member, as the service allows (open question T-0061). Spec §8.2 now names the fourth tab "Lists", as in the design. The accessibility baseline (48 px targets, labels, contrast) found and fixed three defects in the first widget draft: pills and check boxes of 44 px, semantics merged into the parent, and a pill without a tap action.
+* Verification: JDK 21, Podman, Flutter 3.47.7. `make test-docs`, `make test-app` (format, analyze, 231 tests including the widget showcase, the lists screen in EN/FR, contract-server tests for the lists repository, goldens, accessibility, 200% text scale), `make test-guard`, and `make e2e` from a cold start (web sign-in journey, then the household, chores, lists and invite journeys against the real stack) pass. Not run: Android, backend tests (no backend change).
+* Follow-ups: T-0079 (fonts), T-0080 (restyle existing screens with the shared widgets), T-0031 (bottom bar and household switcher).
 
 ### T-0025 · notifications-service core: inbox, preferences, rendering
 
@@ -643,4 +647,20 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0073
 * Spec: AGENTS §6.1 (`make check` is everything above, as in CI)
 * Acceptance criteria: `make check` runs `make e2e` like CI does (or AGENTS §6.1 states why not), without a second stack start when one is already up.
+
+### T-0079 · Bundle the design fonts
+
+* Status: todo
+* Issue / PR: — (suggested: "Use Bricolage Grotesque and Figtree")
+* Depends on: T-0024
+* Spec: §8, ADR 0021
+* Acceptance criteria: Bricolage Grotesque (titles) and Figtree (text) from the design canvas are bundled with the app (their licenses allow it) and set in `AppTypography`; goldens use a readable test font (T-0057) so they show the real look. Decide first: bundle files, or fetch at runtime.
+
+### T-0080 · Restyle the existing screens with the shared widgets
+
+* Status: todo
+* Issue / PR: — (suggested: "Apply the Claude Design canvas to chores, leaderboard, households")
+* Depends on: T-0024
+* Spec: §8, ADR 0021
+* Acceptance criteria: Households, chores, quick log, leaderboard and household screens follow their boards in the design canvas, using the widgets and tokens of ADR 0021 (add new shared widgets where several screens need them). Goldens regenerated, accessibility baseline and e2e journeys still pass.
 

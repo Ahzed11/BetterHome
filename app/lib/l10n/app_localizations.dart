@@ -547,6 +547,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign out'**
   String get signOut;
+
+  /// No description provided for @createList.
+  ///
+  /// In en, this message translates to:
+  /// **'Create list'**
+  String get createList;
+
+  /// No description provided for @listName.
+  ///
+  /// In en, this message translates to:
+  /// **'List name'**
+  String get listName;
+
+  /// No description provided for @renameList.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get renameList;
+
+  /// No description provided for @archiveList.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get archiveList;
+
+  /// No description provided for @archiveListConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive this list?'**
+  String get archiveListConfirmTitle;
+
+  /// No description provided for @archiveListConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived lists disappear from this screen and can no longer be changed.'**
+  String get archiveListConfirmBody;
+
+  /// No description provided for @itemsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet. Add the first item.'**
+  String get itemsEmpty;
+
+  /// No description provided for @deleteItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete item'**
+  String get deleteItem;
+
+  /// No description provided for @resetList.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncheck all'**
+  String get resetList;
+
+  /// No description provided for @resetListConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncheck every item?'**
+  String get resetListConfirmTitle;
+
+  /// No description provided for @resetListConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this to start the list over, for example a packing list.'**
+  String get resetListConfirmBody;
+
+  /// No description provided for @openLists.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get openLists;
+
+  /// No description provided for @listsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Lists'**
+  String get listsTitle;
+
+  /// No description provided for @listsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No lists yet. An admin can create one.'**
+  String get listsEmpty;
+
+  /// No description provided for @newList.
+  ///
+  /// In en, this message translates to:
+  /// **'New list'**
+  String get newList;
+
+  /// No description provided for @addItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an item'**
+  String get addItem;
+
+  /// No description provided for @addItemHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an item…'**
+  String get addItemHint;
+
+  /// No description provided for @addItemButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addItemButton;
+
+  /// No description provided for @basketTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'In the basket'**
+  String get basketTitle;
+
+  /// No description provided for @listOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'List options'**
+  String get listOptions;
+
+  /// No description provided for @checkItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Check {title}'**
+  String checkItem(String title);
+
+  /// No description provided for @uncheckItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncheck {title}'**
+  String uncheckItem(String title);
 }
 
 class _AppLocalizationsDelegate

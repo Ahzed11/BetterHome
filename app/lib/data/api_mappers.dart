@@ -1,4 +1,5 @@
 import 'package:betterhome/data/api_support.dart';
+import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
@@ -111,4 +112,19 @@ MonthlyWinner monthlyWinnerFromApi(api.WinnerResponse r) => MonthlyWinner(
   winnerUserId: r.winnerUserId,
   winnerPoints: need(r.winnerPoints, 'winnerPoints'),
   totalPoints: need(r.totalPoints, 'totalPoints'),
+);
+
+Checklist checklistFromApi(api.ListResponse r) => Checklist(
+  id: need(r.id, 'id'),
+  householdId: need(r.householdId, 'householdId'),
+  title: need(r.title, 'title'),
+  archivedAt: r.archivedAt,
+);
+
+ChecklistItem checklistItemFromApi(api.ItemResponse r) => ChecklistItem(
+  id: need(r.id, 'id'),
+  listId: need(r.listId, 'listId'),
+  title: need(r.title, 'title'),
+  position: need(r.position, 'position'),
+  completedAt: r.completedAt,
 );

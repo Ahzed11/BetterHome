@@ -203,7 +203,7 @@ AGENTS.md
 - **Celebrate, don't shame:** Podium, confetti, and effort bar highlight contributions.
 
 ### 8.2 Navigation & Screens
-- **Navigation:** Four bottom tabs (All Chores, My Chores, Leaderboard, Groceries) and a Household Switcher at the top.
+- **Navigation:** Four bottom tabs (All Chores, My Chores, Leaderboard, Lists; the design names the fourth "Lists") and a Household Switcher at the top.
 - **Quick-log flow:** "+ I just did…" floating button with instant single-tap logging and 5-second undo.
 
 ---

@@ -1,4 +1,5 @@
 import 'package:betterhome/data/households_repository.dart';
+import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
@@ -7,6 +8,7 @@ import 'package:betterhome/ui/screens/create_household_screen.dart';
 import 'package:betterhome/ui/screens/household_detail_screen.dart';
 import 'package:betterhome/ui/screens/households_screen.dart';
 import 'package:betterhome/ui/screens/leaderboard_screen.dart';
+import 'package:betterhome/ui/screens/lists_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
 import 'package:betterhome/ui/screens/sign_in_screen.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +33,7 @@ Future<AppSession> _sessionWith({
   HouseholdsRepository? households,
   TasksRepository? tasks,
   ScoringRepository? scoring,
+  ListsRepository? lists,
   bool withHousehold = true,
 }) async {
   final session = AppSession(
@@ -45,6 +48,9 @@ Future<AppSession> _sessionWith({
   }
   if (scoring != null) {
     session.useScoringRepository(scoring);
+  }
+  if (lists != null) {
+    session.useListsRepository(lists);
   }
   return session;
 }
@@ -69,6 +75,19 @@ Future<AppSession> _choresSession({required bool populated}) async {
     );
     await tasks.createOpen(householdId: _household, templateId: sweep.id);
     await tasks.quickLog(householdId: _household, templateId: dishes.id);
+  }
+  return session;
+}
+
+Future<AppSession> _listsSession({required bool populated}) async {
+  final session = await _sessionWith();
+  if (populated) {
+    final lists = session.listsRepository;
+    final groceries = await lists.createList(_household, 'Groceries');
+    await lists.createList(_household, 'Packing');
+    final milk = await lists.addItem(_household, groceries.id, 'Milk');
+    await lists.addItem(_household, groceries.id, 'Bread');
+    await lists.checkItem(_household, groceries.id, milk.id);
   }
   return session;
 }
@@ -195,6 +214,39 @@ final List<_Scenario> _scenarios = [
     'leaderboard_populated',
     () async => LeaderboardScreen(
       session: await _sessionWith(),
+      householdId: _household,
+    ),
+  ),
+  _Scenario(
+    'lists_loading',
+    () async => ListsScreen(
+      session: await _sessionWith(lists: PendingListsRepository()),
+      householdId: _household,
+    ),
+  ),
+  _Scenario(
+    'lists_error',
+    () async => ListsScreen(
+      session: await _sessionWith(lists: FailingListsRepository()),
+      householdId: _household,
+    ),
+  ),
+  _Scenario(
+    'lists_empty',
+    () async => ListsScreen(
+      session: await _listsSession(populated: false),
+      householdId: _household,
+    ),
+  ),
+  _Scenario('lists_no_items', () async {
+    final session = await _listsSession(populated: false);
+    await session.listsRepository.createList(_household, 'Groceries');
+    return ListsScreen(session: session, householdId: _household);
+  }),
+  _Scenario(
+    'lists_populated',
+    () async => ListsScreen(
+      session: await _listsSession(populated: true),
       householdId: _household,
     ),
   ),
