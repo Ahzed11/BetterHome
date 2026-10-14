@@ -1,0 +1,3189 @@
+---
+openapi: "3.1.0"
+info:
+  title: "BetterHome API"
+  version: "1.0.0-SNAPSHOT"
+tags:
+- name: "households"
+- name: "invitations"
+- name: "items"
+- name: "lists"
+- name: "memberships"
+- name: "notifications"
+- name: "points"
+- name: "preferences"
+- name: "recurrence"
+- name: "scoreboard"
+- name: "tasks"
+- name: "templates"
+- name: "users"
+paths:
+  /v1/households:
+    get:
+      summary: "List the households the caller belongs to"
+      operationId: "listMyHouseholds"
+      tags:
+      - "households"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/HouseholdResponse"
+      security:
+      - bearerAuth: []
+    post:
+      summary: "Create a household; the caller becomes its first admin"
+      operationId: "createHousehold"
+      tags:
+      - "households"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHouseholdRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}:
+    patch:
+      summary: "Update household settings (admin)"
+      operationId: "updateHousehold"
+      tags:
+      - "households"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateHouseholdRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+    get:
+      summary: "Get a household"
+      operationId: "getHousehold"
+      tags:
+      - "households"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HouseholdResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      summary: "Delete a household (admin)"
+      operationId: "deleteHousehold"
+      tags:
+      - "households"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: "Deleted"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/invitations:
+    get:
+      summary: "List pending invitations (admin)"
+      operationId: "listPendingInvitations"
+      tags:
+      - "invitations"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/InvitationResponse"
+      security:
+      - bearerAuth: []
+    post:
+      summary: "Invite someone by email (admin)"
+      operationId: "createInvitation"
+      tags:
+      - "invitations"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvitationRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitationResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/lists:
+    get:
+      summary: "List the household's lists; archived ones only when asked"
+      operationId: "listLists"
+      tags:
+      - "lists"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "includeArchived"
+        in: "query"
+        schema:
+          type: "boolean"
+          default: false
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/ListResponse"
+      security:
+      - bearerAuth: []
+    post:
+      summary: "Create a list (admin)"
+      operationId: "createList"
+      tags:
+      - "lists"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TitleRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/lists/{listId}:
+    patch:
+      summary: "Rename an active list (admin)"
+      operationId: "renameList"
+      tags:
+      - "lists"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "listId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TitleRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "The list is archived"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/lists/{listId}/archive:
+    post:
+      summary: "Archive a list; its items become read-only (admin)"
+      operationId: "archiveList"
+      tags:
+      - "lists"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "listId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "The list is already archived"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/lists/{listId}/items:
+    get:
+      summary: "Items of a list in position order, deleted ones left out"
+      operationId: "listItems"
+      tags:
+      - "items"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "listId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not an active member of the household"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/ItemResponse"
+      security:
+      - bearerAuth: []
+    post:
+      summary: "Add an item at the end of the list"
+      operationId: "addItem"
+      tags:
+      - "items"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "listId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TitleRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not an active member of the household"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "The list is archived, its items cannot change"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/lists/{listId}/items/{itemId}:
+    patch:
+      summary: "Edit an item's title"
+      operationId: "renameItem"
+      tags:
+      - "items"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "itemId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "listId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TitleRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not an active member of the household"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "The list is archived, its items cannot change"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      summary: "Soft-delete an item, keeping who deleted it and when"
+      operationId: "deleteItem"
+      tags:
+      - "items"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "itemId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "listId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not an active member of the household"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: "Deleted"
+        "409":
+          description: "The list is archived, its items cannot change"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/lists/{listId}/items/{itemId}/check:
+    post:
+      summary: "Check an item, recording who and when; awards no points"
+      operationId: "checkItem"
+      tags:
+      - "items"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "itemId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "listId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not an active member of the household"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemResponse"
+        "409":
+          description: "The list is archived, its items cannot change"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/lists/{listId}/items/{itemId}/uncheck:
+    post:
+      summary: "Uncheck an item"
+      operationId: "uncheckItem"
+      tags:
+      - "items"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "itemId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "listId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not an active member of the household"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemResponse"
+        "409":
+          description: "The list is archived, its items cannot change"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/lists/{listId}/reset:
+    post:
+      summary: "Uncheck every item of the list (bulk reset) and return the items"
+      operationId: "resetList"
+      tags:
+      - "items"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "listId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not an active member of the household"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "Membership cannot be checked right now"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/ItemResponse"
+        "409":
+          description: "The list is archived, its items cannot change"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/members:
+    get:
+      summary: "List active members"
+      operationId: "listMembers"
+      tags:
+      - "memberships"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/MembershipResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/members/me/leave:
+    post:
+      summary: "Leave the household"
+      operationId: "leaveHousehold"
+      tags:
+      - "memberships"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: "Left"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/members/{userId}/away:
+    post:
+      summary: "Mark a member away and dismiss their open tasks (admin)"
+      operationId: "setMemberAway"
+      tags:
+      - "memberships"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "userId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetAwayRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "tasks-service unavailable; nothing was saved"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+    delete:
+      summary: "Clear away status (admin)"
+      operationId: "clearMemberAway"
+      tags:
+      - "memberships"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "userId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/members/{userId}/role:
+    patch:
+      summary: "Change a member role (admin)"
+      operationId: "changeMemberRole"
+      tags:
+      - "memberships"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "userId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeRoleRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/points/adjust:
+    post:
+      summary: "Manually adjust a member score (admin)"
+      operationId: "adjustPoints"
+      tags:
+      - "points"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdjustRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/points/award:
+    post:
+      summary: "Append an award to the ledger, once per task completion (service role)"
+      operationId: "awardPoints"
+      tags:
+      - "points"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AwardRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "A different award already exists for this task completion"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth:
+        - "service"
+  /v1/households/{householdId}/points/reverse:
+    post:
+      summary: "Append a reversal linked to its reversion record (service role)"
+      operationId: "reversePoints"
+      tags:
+      - "points"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReverseRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReversionResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth:
+        - "service"
+  /v1/households/{householdId}/scoreboard:
+    get:
+      summary: "Scoreboard for a period with podium and effort shares"
+      operationId: "getScoreboard"
+      tags:
+      - "scoreboard"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "period"
+        in: "query"
+        schema:
+          allOf:
+          - $ref: "#/components/schemas/ScorePeriod"
+          - default: "month"
+      - name: "yearMonth"
+        in: "query"
+        schema:
+          type: "string"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreboardResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/scoreboard/close-month:
+    post:
+      summary: "Close a month and record its winner (admin)"
+      operationId: "closeMonth"
+      tags:
+      - "scoreboard"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CloseMonthRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "Closed"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WinnerResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/scoreboard/recaps/{yearMonth}/celebrate:
+    post:
+      summary: "Record that the caller has seen the month confetti"
+      operationId: "markRecapCelebrated"
+      tags:
+      - "scoreboard"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "yearMonth"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CelebrationSeen"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/scoreboard/winners:
+    get:
+      summary: "Hall of past monthly winners"
+      operationId: "listWinners"
+      tags:
+      - "scoreboard"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/WinnerResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks:
+    get:
+      summary: "List tasks, optionally by status or assignee"
+      operationId: "listTasks"
+      tags:
+      - "tasks"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "mine"
+        in: "query"
+        schema:
+          type: "boolean"
+          default: false
+      - name: "status"
+        in: "query"
+        schema:
+          $ref: "#/components/schemas/TaskStatus"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/TaskResponse"
+      security:
+      - bearerAuth: []
+    post:
+      summary: "Create an open task from a template (admin)"
+      operationId: "createOpenTask"
+      tags:
+      - "tasks"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOpenTaskRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/dismiss-away/{userId}:
+    post:
+      summary: "Dismiss the open tasks of a member marked away (admin)"
+      operationId: "dismissAwayMemberTasks"
+      tags:
+      - "tasks"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "userId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DismissedCount"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/manual:
+    post:
+      summary: "Log a chore just done: created already done for the caller"
+      operationId: "quickLogTask"
+      tags:
+      - "tasks"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickLogRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "400":
+          description: "Bad Request"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/reassign-away/{userId}:
+    post:
+      summary: "Deprecated: reassign the open tasks of an away member (admin)"
+      operationId: "reassignAwayMemberTasks"
+      deprecated: true
+      tags:
+      - "tasks"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "userId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReassignedCount"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/{taskId}/complete:
+    post:
+      summary: "Complete a task (assignee or admin)"
+      operationId: "completeTask"
+      tags:
+      - "tasks"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "taskId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/{taskId}/dismiss:
+    post:
+      summary: "Dismiss a task, irreversibly (assignee or admin)"
+      operationId: "dismissTask"
+      tags:
+      - "tasks"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "taskId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/{taskId}/reassign:
+    post:
+      summary: "Reassign a task round robin (admin)"
+      operationId: "reassignTask"
+      tags:
+      - "tasks"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "taskId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/tasks/{taskId}/revert:
+    post:
+      summary: "Revert a done task with a reason (admin)"
+      operationId: "revertTask"
+      tags:
+      - "tasks"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "taskId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevertRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/templates:
+    get:
+      summary: "List active templates"
+      operationId: "listTemplates"
+      tags:
+      - "templates"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/TemplateResponse"
+      security:
+      - bearerAuth: []
+    post:
+      summary: "Create a template (admin)"
+      operationId: "createTemplate"
+      tags:
+      - "templates"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTemplateRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "201":
+          description: "Created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/templates/{templateId}:
+    patch:
+      summary: "Update a template (admin); existing tasks are unchanged"
+      operationId: "updateTemplate"
+      tags:
+      - "templates"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "templateId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTemplateRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/templates/{templateId}/archive:
+    post:
+      summary: "Archive a template and stop its recurrence (admin)"
+      operationId: "archiveTemplate"
+      tags:
+      - "templates"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "templateId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateResponse"
+      security:
+      - bearerAuth: []
+  /v1/households/{householdId}/templates/{templateId}/recurrence:
+    put:
+      summary: "Create or replace a template recurrence (admin)"
+      operationId: "upsertRecurrence"
+      tags:
+      - "recurrence"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "templateId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertRecurrenceRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "Saved"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurrenceResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+    get:
+      summary: "Get a template recurrence"
+      operationId: "getRecurrence"
+      tags:
+      - "recurrence"
+      parameters:
+      - name: "householdId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "templateId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurrenceResponse"
+      security:
+      - bearerAuth: []
+  /v1/invitations/{token}/accept:
+    post:
+      summary: "Accept an invitation with its token"
+      operationId: "acceptInvitation"
+      tags:
+      - "invitations"
+      parameters:
+      - name: "token"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipResponse"
+        "409":
+          description: "Conflicts with the current state"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/me:
+    put:
+      summary: "Create or update the caller profile from the identity token claims"
+      operationId: "syncMyProfile"
+      tags:
+      - "users"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncUserRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+    get:
+      summary: "Get the caller profile"
+      operationId: "getMyProfile"
+      tags:
+      - "users"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+      security:
+      - bearerAuth: []
+  /v1/notification-preferences:
+    get:
+      summary: "Every type and channel with my choice"
+      operationId: "listMyNotificationPreferences"
+      tags:
+      - "preferences"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/PreferenceResponse"
+      security:
+      - bearerAuth: []
+  /v1/notification-preferences/{type}/{channel}:
+    put:
+      summary: "Turn one type on or off for one channel"
+      operationId: "updateMyNotificationPreference"
+      tags:
+      - "preferences"
+      parameters:
+      - name: "channel"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      - name: "type"
+        in: "path"
+        required: true
+        schema:
+          type: "string"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePreferenceRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreferenceResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/notifications:
+    get:
+      summary: "My inbox, newest first; page with before=<id of the last item>"
+      operationId: "listMyNotifications"
+      tags:
+      - "notifications"
+      parameters:
+      - name: "before"
+        in: "query"
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "householdId"
+        in: "query"
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: "limit"
+        in: "query"
+        schema:
+          type: "integer"
+          format: "int32"
+          default: 50
+      - name: "unreadOnly"
+        in: "query"
+        schema:
+          type: "boolean"
+          default: false
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/NotificationResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+  /v1/notifications/read-all:
+    post:
+      summary: "Mark all my unread notifications read, optionally for one household"
+      operationId: "markAllMyNotificationsRead"
+      tags:
+      - "notifications"
+      parameters:
+      - name: "householdId"
+        in: "query"
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadAllResponse"
+      security:
+      - bearerAuth: []
+  /v1/notifications/{notificationId}/read:
+    post:
+      summary: "Mark one of my notifications read"
+      operationId: "markMyNotificationRead"
+      tags:
+      - "notifications"
+      parameters:
+      - name: "notificationId"
+        in: "path"
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationResponse"
+        "404":
+          description: "Not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+components:
+  schemas:
+    AdjustRequest:
+      type: "object"
+      required:
+      - "userId"
+      properties:
+        userId:
+          $ref: "#/components/schemas/UUID"
+        delta:
+          type: "integer"
+          format: "int32"
+    AssignmentMode:
+      type: "string"
+      enum:
+      - "fixed"
+      - "round_robin"
+    AwardRequest:
+      type: "object"
+      required:
+      - "userId"
+      - "taskId"
+      - "reason"
+      properties:
+        userId:
+          $ref: "#/components/schemas/UUID"
+        taskId:
+          $ref: "#/components/schemas/UUID"
+        completionNo:
+          type: "integer"
+          format: "int32"
+          exclusiveMinimum: 0
+        points:
+          type: "integer"
+          format: "int32"
+          exclusiveMinimum: 0
+        reason:
+          $ref: "#/components/schemas/PointReason"
+    CelebrationSeen:
+      type: "object"
+      properties:
+        seen:
+          type: "boolean"
+    ChangeRoleRequest:
+      type: "object"
+      properties:
+        role:
+          $ref: "#/components/schemas/MembershipRole"
+    Channel:
+      type: "string"
+      enum:
+      - "push"
+      - "in_app"
+    CloseMonthRequest:
+      type: "object"
+      required:
+      - "yearMonth"
+      properties:
+        yearMonth:
+          type: "string"
+          pattern: "\\S"
+    CreateHouseholdRequest:
+      type: "object"
+      required:
+      - "name"
+      - "timezone"
+      properties:
+        name:
+          type: "string"
+          pattern: "\\S"
+        timezone:
+          type: "string"
+          pattern: "\\S"
+    CreateInvitationRequest:
+      type: "object"
+      required:
+      - "email"
+      - "role"
+      properties:
+        email:
+          type: "string"
+          pattern: "\\S"
+        role:
+          $ref: "#/components/schemas/MembershipRole"
+    CreateOpenTaskRequest:
+      type: "object"
+      required:
+      - "templateId"
+      properties:
+        templateId:
+          $ref: "#/components/schemas/UUID"
+        assigneeId:
+          $ref: "#/components/schemas/UUID"
+        dueAt:
+          $ref: "#/components/schemas/Instant"
+    CreateTemplateRequest:
+      type: "object"
+      required:
+      - "title"
+      properties:
+        title:
+          type: "string"
+          pattern: "\\S"
+        emoji:
+          type: "string"
+        description:
+          type: "string"
+        points:
+          type: "integer"
+          format: "int32"
+          minimum: 0
+        latePoints:
+          type: "integer"
+          format: "int32"
+          minimum: 0
+        defaultDueOffsetMinutes:
+          type: "integer"
+          format: "int32"
+          minimum: 0
+    DismissalReason:
+      type: "string"
+      enum:
+      - "manual"
+      - "superseded"
+      - "nobody_available"
+      - "reverted_overdue"
+      - "assignee_away"
+    DismissedCount:
+      type: "object"
+      properties:
+        dismissed:
+          type: "integer"
+          format: "int32"
+    ErrorResponse:
+      type: "object"
+      properties:
+        code:
+          type: "string"
+        message:
+          type: "string"
+    HouseholdResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        name:
+          type: "string"
+        timezone:
+          type: "string"
+        reminderDaysBefore:
+          type: "integer"
+          format: "int32"
+        reminderTime:
+          type: "string"
+          format: "partial-time"
+          externalDocs:
+            description: "As defined by 'partial-time' in RFC3339"
+            url: "https://www.rfc-editor.org/rfc/rfc3339.html#section-5.6"
+          pattern: "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$"
+          examples:
+          - "08:00:00"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+    Instant:
+      type: "string"
+      format: "date-time"
+      examples:
+      - "2022-03-10T16:15:50Z"
+    InvitationResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        email:
+          type: "string"
+        role:
+          $ref: "#/components/schemas/MembershipRole"
+        token:
+          type: "string"
+        expiresAt:
+          $ref: "#/components/schemas/Instant"
+        acceptedAt:
+          $ref: "#/components/schemas/Instant"
+    ItemResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        listId:
+          $ref: "#/components/schemas/UUID"
+        title:
+          type: "string"
+        position:
+          type: "integer"
+          format: "int32"
+        creator:
+          $ref: "#/components/schemas/UUID"
+        completer:
+          $ref: "#/components/schemas/UUID"
+        completedAt:
+          $ref: "#/components/schemas/Instant"
+    ListResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        title:
+          type: "string"
+        createdBy:
+          $ref: "#/components/schemas/UUID"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        archivedAt:
+          $ref: "#/components/schemas/Instant"
+    MembershipResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        userId:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        role:
+          $ref: "#/components/schemas/MembershipRole"
+        joinedAt:
+          $ref: "#/components/schemas/Instant"
+        awayFrom:
+          $ref: "#/components/schemas/Instant"
+        awayUntil:
+          $ref: "#/components/schemas/Instant"
+        awaySetBy:
+          $ref: "#/components/schemas/UUID"
+    MembershipRole:
+      type: "string"
+      enum:
+      - "admin"
+      - "member"
+    NotificationResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        type:
+          $ref: "#/components/schemas/NotificationType"
+        channel:
+          $ref: "#/components/schemas/Channel"
+        title:
+          type: "string"
+        body:
+          type: "string"
+        payload:
+          type: "object"
+          additionalProperties:
+            type: "string"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+        readAt:
+          $ref: "#/components/schemas/Instant"
+    NotificationType:
+      type: "string"
+      enum:
+      - "task_assigned"
+      - "task_reassigned"
+      - "due_reminder"
+      - "overdue"
+      - "dismissed"
+      - "superseded"
+      - "reverted"
+      - "marked_away"
+      - "invitation"
+    PointReason:
+      type: "string"
+      enum:
+      - "task_completed"
+      - "task_completed_late"
+      - "reversal"
+      - "manual_adjust"
+    PreferenceResponse:
+      type: "object"
+      properties:
+        type:
+          $ref: "#/components/schemas/NotificationType"
+        channel:
+          $ref: "#/components/schemas/Channel"
+        enabled:
+          type: "boolean"
+    QuickLogRequest:
+      type: "object"
+      required:
+      - "templateId"
+      properties:
+        templateId:
+          $ref: "#/components/schemas/UUID"
+    ReadAllResponse:
+      type: "object"
+      properties:
+        updated:
+          type: "integer"
+          format: "int32"
+    ReassignedCount:
+      type: "object"
+      properties:
+        reassigned:
+          type: "integer"
+          format: "int32"
+    RecurrenceResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        templateId:
+          $ref: "#/components/schemas/UUID"
+        rrule:
+          type: "string"
+        assignmentMode:
+          $ref: "#/components/schemas/AssignmentMode"
+        fixedAssigneeId:
+          $ref: "#/components/schemas/UUID"
+        timezone:
+          type: "string"
+        startsAt:
+          $ref: "#/components/schemas/Instant"
+        endsAt:
+          $ref: "#/components/schemas/Instant"
+        lastGeneratedAt:
+          $ref: "#/components/schemas/Instant"
+        nextRunAt:
+          $ref: "#/components/schemas/Instant"
+    ReverseRequest:
+      type: "object"
+      required:
+      - "taskId"
+      - "assigneeUserId"
+      - "adminUserId"
+      - "reason"
+      - "resultingStatus"
+      properties:
+        taskId:
+          $ref: "#/components/schemas/UUID"
+        assigneeUserId:
+          $ref: "#/components/schemas/UUID"
+        adminUserId:
+          $ref: "#/components/schemas/UUID"
+        points:
+          type: "integer"
+          format: "int32"
+          exclusiveMinimum: 0
+        reason:
+          type: "string"
+          pattern: "\\S"
+        resultingStatus:
+          $ref: "#/components/schemas/ReversionResultingStatus"
+    ReversionResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        taskId:
+          $ref: "#/components/schemas/UUID"
+        adminUserId:
+          $ref: "#/components/schemas/UUID"
+        reason:
+          type: "string"
+        pointsReversed:
+          type: "integer"
+          format: "int32"
+        resultingStatus:
+          $ref: "#/components/schemas/ReversionResultingStatus"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+    ReversionResultingStatus:
+      type: "string"
+      enum:
+      - "reverted"
+      - "open"
+      - "dismissed"
+    RevertRequest:
+      type: "object"
+      required:
+      - "reason"
+      properties:
+        reason:
+          type: "string"
+          pattern: "\\S"
+    ScoreEntryResponse:
+      type: "object"
+      properties:
+        userId:
+          $ref: "#/components/schemas/UUID"
+        points:
+          type: "integer"
+          format: "int32"
+        effortShare:
+          type: "number"
+          format: "double"
+        rank:
+          type: "integer"
+          format: "int32"
+    ScorePeriod:
+      type: "string"
+      enum:
+      - "week"
+      - "month"
+      - "year"
+      - "all"
+    ScoreboardResponse:
+      type: "object"
+      properties:
+        period:
+          $ref: "#/components/schemas/ScorePeriod"
+        yearMonth:
+          type: "string"
+        from:
+          $ref: "#/components/schemas/Instant"
+        to:
+          $ref: "#/components/schemas/Instant"
+        totalPoints:
+          type: "integer"
+          format: "int32"
+        entries:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ScoreEntryResponse"
+        podium:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/ScoreEntryResponse"
+    SetAwayRequest:
+      type: "object"
+      properties:
+        awayFrom:
+          $ref: "#/components/schemas/Instant"
+        awayUntil:
+          $ref: "#/components/schemas/Instant"
+    SyncUserRequest:
+      type: "object"
+      required:
+      - "email"
+      properties:
+        email:
+          type: "string"
+          pattern: "\\S"
+        givenName:
+          type: "string"
+        familyName:
+          type: "string"
+        language:
+          type: "string"
+        timezone:
+          type: "string"
+    TaskOrigin:
+      type: "string"
+      enum:
+      - "manual"
+      - "ad_hoc"
+      - "recurrence"
+    TaskResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        templateId:
+          $ref: "#/components/schemas/UUID"
+        origin:
+          $ref: "#/components/schemas/TaskOrigin"
+        title:
+          type: "string"
+        emoji:
+          type: "string"
+        description:
+          type: "string"
+        points:
+          type: "integer"
+          format: "int32"
+        latePoints:
+          type: "integer"
+          format: "int32"
+        status:
+          $ref: "#/components/schemas/TaskStatus"
+        assigneeId:
+          $ref: "#/components/schemas/UUID"
+        completerId:
+          $ref: "#/components/schemas/UUID"
+        dismissedBy:
+          $ref: "#/components/schemas/UUID"
+        dismissalReason:
+          $ref: "#/components/schemas/DismissalReason"
+        dueAt:
+          $ref: "#/components/schemas/Instant"
+        completedAt:
+          $ref: "#/components/schemas/Instant"
+        pointsAwarded:
+          type: "integer"
+          format: "int32"
+    TaskStatus:
+      type: "string"
+      enum:
+      - "open"
+      - "done"
+      - "dismissed"
+      - "reverted"
+    TemplateResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        title:
+          type: "string"
+        emoji:
+          type: "string"
+        description:
+          type: "string"
+        points:
+          type: "integer"
+          format: "int32"
+        latePoints:
+          type: "integer"
+          format: "int32"
+        defaultDueOffsetMinutes:
+          type: "integer"
+          format: "int32"
+        rotationId:
+          $ref: "#/components/schemas/UUID"
+        archivedAt:
+          $ref: "#/components/schemas/Instant"
+    TitleRequest:
+      type: "object"
+      required:
+      - "title"
+      properties:
+        title:
+          type: "string"
+          pattern: "\\S"
+    TransactionResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        householdId:
+          $ref: "#/components/schemas/UUID"
+        userId:
+          $ref: "#/components/schemas/UUID"
+        taskId:
+          $ref: "#/components/schemas/UUID"
+        reversionId:
+          $ref: "#/components/schemas/UUID"
+        points:
+          type: "integer"
+          format: "int32"
+        reason:
+          $ref: "#/components/schemas/PointReason"
+        createdAt:
+          $ref: "#/components/schemas/Instant"
+    UUID:
+      type: "string"
+      format: "uuid"
+      pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
+    UpdateHouseholdRequest:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+        timezone:
+          type: "string"
+        reminderDaysBefore:
+          type: "integer"
+          format: "int32"
+        reminderTime:
+          type: "string"
+          format: "partial-time"
+          externalDocs:
+            description: "As defined by 'partial-time' in RFC3339"
+            url: "https://www.rfc-editor.org/rfc/rfc3339.html#section-5.6"
+          pattern: "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$"
+          examples:
+          - "08:00:00"
+    UpdatePreferenceRequest:
+      type: "object"
+      required:
+      - "enabled"
+      properties:
+        enabled:
+          type: "boolean"
+    UpdateTemplateRequest:
+      type: "object"
+      properties:
+        title:
+          type: "string"
+        emoji:
+          type: "string"
+        description:
+          type: "string"
+        points:
+          type: "integer"
+          format: "int32"
+          minimum: 0
+        latePoints:
+          type: "integer"
+          format: "int32"
+          minimum: 0
+        defaultDueOffsetMinutes:
+          type: "integer"
+          format: "int32"
+          minimum: 0
+    UpsertRecurrenceRequest:
+      type: "object"
+      required:
+      - "rrule"
+      - "assignmentMode"
+      properties:
+        rrule:
+          type: "string"
+          pattern: "\\S"
+        assignmentMode:
+          $ref: "#/components/schemas/AssignmentMode"
+        fixedAssigneeId:
+          $ref: "#/components/schemas/UUID"
+        startsAt:
+          $ref: "#/components/schemas/Instant"
+        endsAt:
+          $ref: "#/components/schemas/Instant"
+    UserResponse:
+      type: "object"
+      properties:
+        id:
+          $ref: "#/components/schemas/UUID"
+        authSubject:
+          $ref: "#/components/schemas/UUID"
+        email:
+          type: "string"
+        givenName:
+          type: "string"
+        familyName:
+          type: "string"
+        language:
+          type: "string"
+        timezone:
+          type: "string"
+    WinnerResponse:
+      type: "object"
+      properties:
+        yearMonth:
+          type: "string"
+        winnerUserId:
+          $ref: "#/components/schemas/UUID"
+        winnerPoints:
+          type: "integer"
+          format: "int32"
+        totalPoints:
+          type: "integer"
+          format: "int32"
+  securitySchemes:
+    bearerAuth:
+      description: "Authentication"
+      type: "http"
+      scheme: "bearer"
+      bearerFormat: "JWT"

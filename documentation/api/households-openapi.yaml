@@ -731,22 +731,6 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       security:
       - bearerAuth: []
-  /v1/households/{householdId}/tasks/dismiss-away/{userId}:
-    post:
-      parameters:
-      - name: householdId
-        in: path
-        required: true
-        schema:
-          $ref: "#/components/schemas/UUID"
-      - name: userId
-        in: path
-        required: true
-        schema:
-          $ref: "#/components/schemas/UUID"
-      responses:
-        "201":
-          description: Created
   /v1/internal/households/{householdId}/members:
     get:
       summary: "Active members in joining order, with away resolved now (service role)"

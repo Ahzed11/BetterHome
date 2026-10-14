@@ -39,8 +39,9 @@ seed: ## Load a demo household with two members and sample templates through the
 smoke: ## Wait for all services to be ready and make one authenticated call
 	@bash $(ROOT)/deploy/smoke.sh
 
-openapi: ## Regenerate documentation/api/*-openapi.yaml from the annotated code
+openapi: ## Regenerate documentation/api/*-openapi.yaml from the annotated code, then openapi.yaml from those
 	cd $(BACKEND) && ./mvnw -B verify -Dtest=OpenApiContractTest -Dopenapi.update=true -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true -Denforcer.skip=true
+	cd $(BACKEND) && ./mvnw -B verify -pl common-domain -Dtest=OpenApiAggregateTest -Dopenapi.update=true -Djacoco.skip=true -Denforcer.skip=true
 
 test-backend: ## Spotless, Checkstyle, Quarkus tests and coverage floor; SERVICE=tasks-service limits it to one service (dependency audit: T-0005)
 	cd $(BACKEND) && ./mvnw -B verify $(if $(SERVICE),-pl services/$(SERVICE) -am)
