@@ -110,7 +110,8 @@ public class ScoreboardResource {
                                 recap.yearMonth,
                                 recap.winnerUserId,
                                 recap.winnerPoints,
-                                recap.totalPoints))
+                                recap.totalPoints,
+                                false))
                 .build();
     }
 

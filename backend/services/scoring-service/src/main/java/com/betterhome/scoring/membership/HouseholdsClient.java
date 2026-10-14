@@ -19,9 +19,17 @@ public interface HouseholdsClient {
 
     record Member(UUID userId, UUID authSubject, String role, boolean away, Instant joinedAt) {}
 
+    record Settings(String timezone) {}
+
     @GET
     @Path("/members")
     List<Member> members(
+            @HeaderParam("Authorization") String authorization,
+            @PathParam("householdId") UUID householdId);
+
+    @GET
+    @Path("/settings")
+    Settings settings(
             @HeaderParam("Authorization") String authorization,
             @PathParam("householdId") UUID householdId);
 }

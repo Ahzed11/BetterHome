@@ -29,6 +29,9 @@ public class FakeHouseholdsServer implements QuarkusTestResourceLifecycleManager
     /** HTTP status to answer with; {@code -1} drops the connection without any answer. */
     public static volatile int householdsStatus = 200;
 
+    /** The timezone the settings endpoint reports. */
+    public static volatile String timezone = "Europe/Brussels";
+
     private HttpServer server;
 
     @Override
@@ -71,6 +74,14 @@ public class FakeHouseholdsServer implements QuarkusTestResourceLifecycleManager
             respond(exchange, householdsStatus, "{}");
         } else if (!exchange.getRequestURI().getPath().contains(HOUSEHOLD)) {
             respond(exchange, 404, "{\"code\":\"not_found\"}");
+        } else if (exchange.getRequestURI().getPath().endsWith("/settings")) {
+            respond(
+                    exchange,
+                    200,
+                    "{\"timezone\":\""
+                            + timezone
+                            + "\",\"reminderDaysBefore\":0,"
+                            + "\"reminderTime\":\"08:00:00\"}");
         } else {
             respond(
                     exchange,

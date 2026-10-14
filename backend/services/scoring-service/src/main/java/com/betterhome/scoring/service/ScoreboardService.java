@@ -3,6 +3,8 @@ package com.betterhome.scoring.service;
 import com.betterhome.common.Clock;
 import com.betterhome.scoring.domain.MonthlyRecap;
 import com.betterhome.scoring.domain.MonthlyRecapCelebration;
+import com.betterhome.scoring.domain.PeriodWindows;
+import com.betterhome.scoring.domain.PeriodWindows.Window;
 import com.betterhome.scoring.domain.PointTransaction;
 import com.betterhome.scoring.domain.ScorePeriod;
 import com.betterhome.scoring.domain.ScoringException;
@@ -12,15 +14,13 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.ZoneOffset;
-import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -37,23 +37,38 @@ public class ScoreboardService {
             List<Entry> entries,
             List<Entry> podium) {}
 
-    public record Winner(String yearMonth, UUID winnerUserId, int winnerPoints, int totalPoints) {}
+    public record Winner(
+            String yearMonth,
+            UUID winnerUserId,
+            int winnerPoints,
+            int totalPoints,
+            boolean celebrated) {}
 
     private final CallerService callerService;
     private final MembershipGateway membershipGateway;
+    private final MonthlyRecapService recapService;
     private final Clock clock;
 
     @Inject
     public ScoreboardService(
-            CallerService callerService, MembershipGateway membershipGateway, Clock clock) {
+            CallerService callerService,
+            MembershipGateway membershipGateway,
+            MonthlyRecapService recapService,
+            Clock clock) {
         this.callerService = callerService;
         this.membershipGateway = membershipGateway;
+        this.recapService = recapService;
         this.clock = clock;
     }
 
     public Scoreboard scoreboard(UUID householdId, ScorePeriod period, String yearMonth) {
         callerService.requireMember(householdId);
-        Range range = resolveRange(period, yearMonth);
+        Window range =
+                PeriodWindows.of(
+                        period,
+                        membershipGateway.householdZone(householdId),
+                        clock.now(),
+                        period == ScorePeriod.month ? parseOptionalMonth(yearMonth) : null);
         List<PointTransaction> rows =
                 PointTransaction.listForHouseholdInRange(householdId, range.from(), range.to());
         Map<UUID, Integer> sums = new HashMap<>();
@@ -84,65 +99,35 @@ public class ScoreboardService {
         }
         List<Entry> podium = ranked.stream().filter(e -> e.rank() <= 3).limit(3).toList();
         return new Scoreboard(
-                period,
-                range.yearMonthLabel(),
-                range.from(),
-                range.to(),
-                totalPositive,
-                ranked,
-                podium);
+                period, range.label(), range.from(), range.to(), totalPositive, ranked, podium);
     }
 
     public List<Winner> winners(UUID householdId) {
-        callerService.requireMember(householdId);
+        MemberView caller = callerService.requireMember(householdId);
+        Set<UUID> seen = MonthlyRecapCelebration.recapIdsSeenBy(caller.userId());
         return MonthlyRecap.listForHousehold(householdId).stream()
-                .map(r -> new Winner(r.yearMonth, r.winnerUserId, r.winnerPoints, r.totalPoints))
+                .map(
+                        r ->
+                                new Winner(
+                                        r.yearMonth,
+                                        r.winnerUserId,
+                                        r.winnerPoints,
+                                        r.totalPoints,
+                                        seen.contains(r.id)))
                 .toList();
     }
 
-    /** Persist (or refresh) the monthly recap for a closed month from the ledger. */
+    /**
+     * Persists (or refreshes) the recap of a month from the ledger, cutting the month at the
+     * household's local midnight. The scheduled close does the same on its own once a month ends.
+     */
     @Transactional
     public MonthlyRecap closeMonth(UUID householdId, String yearMonth) {
         callerService.requireAdmin(householdId);
-        YearMonth ym = parseYearMonth(yearMonth);
-        Instant from = ym.atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-        Instant to = ym.plusMonths(1).atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-        List<PointTransaction> rows =
-                PointTransaction.listForHouseholdInRange(householdId, from, to);
-        Map<UUID, Integer> sums = new HashMap<>();
-        for (PointTransaction row : rows) {
-            sums.merge(row.userId, row.points, Integer::sum);
-        }
-        UUID winner = null;
-        int winnerPoints = 0;
-        int total = 0;
-        for (Map.Entry<UUID, Integer> e : sums.entrySet()) {
-            int score = Math.max(0, e.getValue());
-            total += score;
-            if (score > winnerPoints) {
-                winnerPoints = score;
-                winner = e.getKey();
-            }
-        }
-        Instant now = clock.now();
-        MonthlyRecap recap =
-                MonthlyRecap.findByHouseholdAndMonth(householdId, ym.toString())
-                        .orElseGet(
-                                () -> {
-                                    MonthlyRecap created = new MonthlyRecap();
-                                    created.id = UUID.randomUUID();
-                                    created.householdId = householdId;
-                                    created.yearMonth = ym.toString();
-                                    created.createdAt = now;
-                                    return created;
-                                });
-        recap.winnerUserId = winner;
-        recap.winnerPoints = winnerPoints;
-        recap.totalPoints = total;
-        if (!MonthlyRecap.getEntityManager().contains(recap)) {
-            recap.persist();
-        }
-        return recap;
+        YearMonth month = parseYearMonth(yearMonth);
+        Window window = PeriodWindows.month(month, membershipGateway.householdZone(householdId));
+        return recapService.upsert(
+                householdId, month, recapService.summarize(householdId, window), clock.now());
     }
 
     @Transactional
@@ -161,35 +146,8 @@ public class ScoreboardService {
         seen.persist();
     }
 
-    private Range resolveRange(ScorePeriod period, String yearMonth) {
-        Instant now = clock.now();
-        LocalDate today = LocalDate.ofInstant(now, ZoneOffset.UTC);
-        return switch (period) {
-            case all -> new Range(null, null, null);
-            case week -> {
-                LocalDate monday =
-                        today.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-                Instant from = monday.atStartOfDay().toInstant(ZoneOffset.UTC);
-                yield new Range(from, null, null);
-            }
-            case year -> {
-                Instant from =
-                        LocalDate.of(today.getYear(), 1, 1)
-                                .atStartOfDay()
-                                .toInstant(ZoneOffset.UTC);
-                yield new Range(from, null, String.valueOf(today.getYear()));
-            }
-            case month -> {
-                YearMonth ym =
-                        yearMonth == null || yearMonth.isBlank()
-                                ? YearMonth.from(today)
-                                : parseYearMonth(yearMonth);
-                Instant from = ym.atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                Instant to = ym.plusMonths(1).atDay(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                // current month is open-ended up to "now" semantics via to exclusive next month
-                yield new Range(from, to, ym.toString());
-            }
-        };
+    private static YearMonth parseOptionalMonth(String value) {
+        return value == null || value.isBlank() ? null : parseYearMonth(value);
     }
 
     private static YearMonth parseYearMonth(String value) {
@@ -199,6 +157,4 @@ public class ScoreboardService {
             throw new ScoringException.BadRequest("yearMonth must be YYYY-MM");
         }
     }
-
-    private record Range(Instant from, Instant to, String yearMonthLabel) {}
 }

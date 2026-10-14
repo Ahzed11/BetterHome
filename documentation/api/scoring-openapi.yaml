@@ -209,6 +209,8 @@ components:
         totalPoints:
           type: integer
           format: int32
+        celebrated:
+          type: boolean
   securitySchemes:
     bearerAuth:
       description: Authentication
