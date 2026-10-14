@@ -128,11 +128,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0019 · One app contract: merge the generated per-service OpenAPI documents
 
-* Status: todo
-* Issue / PR: #12
+* Status: in-review
+* Issue / PR: #12 / PR pending
 * Depends on: T-0010
 * Spec: §7 API style, ADR 0006, ADR 0007
 * Acceptance criteria: `documentation/api/openapi.yaml` is produced by merging the per-service documents generated in T-0005 (app-facing operations of all services; operations tagged `internal` excluded) and is guarded the same way (a test fails when the committed aggregate differs from the merge). Operation ids and schema names must stay unique across services.
+* Summary: `OpenApiAggregate` (common-domain test-jar) merges the five service documents into `documentation/api/openapi.yaml` (41 paths, 53 operations, 51 schemas); `OpenApiAggregateTest` fails when the committed file differs from the merge and when two services collide on method and path, operation id, or schema name with different content (tests on tampered inputs). `make openapi` regenerates the service documents, then the aggregate.
+* Decisions and deviations: `meta` operations (`/v1/meta`, present in all five services) are excluded like `internal` ones, since they are per-service info and not app-facing. Defect found and fixed: households-openapi documented `POST .../tasks/dismiss-away/{userId}` with no operationId, a path households does not serve; SmallRye was scanning the `TasksClient` REST client. It is now excluded with `mp.openapi.scan.exclude.classes`, which removes 16 lines from `households-openapi.yaml`. Schemas only used by dropped operations are pruned.
+* Verification: JDK 21, Podman. `make openapi` (service documents unchanged except the households phantom path, aggregate written), `make test-backend` (Spotless, Checkstyle, all services' tests, floors, contract tests, `OpenApiAggregateTest` 7 tests) and `make test-docs` pass. Negative check: renaming a path in the committed `openapi.yaml` fails the test with "no longer matches"; reverted. Not run: app, e2e. The local Compose stack was torn down with `make down` because it held ports 8081-8085 (its session had crashed); a first `make test-backend` hit one Postgres container start timeout, the rerun was green.
 
 ### T-0020 · Generated Dart client replaces hand-written repositories
 
