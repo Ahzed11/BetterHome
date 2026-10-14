@@ -1,24 +1,13 @@
-import 'dart:convert';
-
+import 'package:betterhome/data/api_mappers.dart';
+import 'package:betterhome/data/api_support.dart';
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/scoring_repository.dart';
+import 'package:betterhome_api/api.dart' as api;
 import 'package:http/http.dart' as http;
 
 enum TaskStatus { open, done, dismissed, reverted }
 
-enum TaskOrigin {
-  manual,
-  adHoc,
-  recurrence;
-
-  static TaskOrigin fromApi(String value) {
-    return switch (value) {
-      'manual' => TaskOrigin.manual,
-      'ad_hoc' => TaskOrigin.adHoc,
-      'recurrence' => TaskOrigin.recurrence,
-      _ => throw FormatException('Unknown task origin: $value'),
-    };
-  }
-}
+enum TaskOrigin { manual, adHoc, recurrence }
 
 class TaskTemplate {
   const TaskTemplate({
@@ -40,19 +29,6 @@ class TaskTemplate {
   final int points;
   final int latePoints;
   final int defaultDueOffsetMinutes;
-
-  factory TaskTemplate.fromJson(Map<String, dynamic> json) {
-    return TaskTemplate(
-      id: json['id'] as String,
-      householdId: json['householdId'] as String,
-      title: json['title'] as String,
-      emoji: json['emoji'] as String?,
-      description: json['description'] as String? ?? '',
-      points: json['points'] as int,
-      latePoints: json['latePoints'] as int,
-      defaultDueOffsetMinutes: json['defaultDueOffsetMinutes'] as int? ?? 1440,
-    );
-  }
 }
 
 class ChoreTask {
@@ -85,28 +61,6 @@ class ChoreTask {
   final DateTime? dueAt;
   final DateTime? completedAt;
   final int? pointsAwarded;
-
-  factory ChoreTask.fromJson(Map<String, dynamic> json) {
-    return ChoreTask(
-      id: json['id'] as String,
-      householdId: json['householdId'] as String,
-      templateId: json['templateId'] as String,
-      origin: TaskOrigin.fromApi(json['origin'] as String),
-      title: json['title'] as String,
-      emoji: json['emoji'] as String?,
-      points: json['points'] as int,
-      latePoints: json['latePoints'] as int,
-      status: TaskStatus.values.byName(json['status'] as String),
-      assigneeId: json['assigneeId'] as String,
-      dueAt: json['dueAt'] == null
-          ? null
-          : DateTime.parse(json['dueAt'] as String),
-      completedAt: json['completedAt'] == null
-          ? null
-          : DateTime.parse(json['completedAt'] as String),
-      pointsAwarded: json['pointsAwarded'] as int?,
-    );
-  }
 }
 
 enum AssignmentMode { fixed, roundRobin }
@@ -137,31 +91,6 @@ class TaskRecurrence {
   final DateTime? endsAt;
   final DateTime? lastGeneratedAt;
   final DateTime? nextRunAt;
-
-  factory TaskRecurrence.fromJson(Map<String, dynamic> json) {
-    final mode = json['assignmentMode'] as String;
-    return TaskRecurrence(
-      id: json['id'] as String,
-      householdId: json['householdId'] as String,
-      templateId: json['templateId'] as String,
-      rrule: json['rrule'] as String,
-      assignmentMode: mode == 'fixed'
-          ? AssignmentMode.fixed
-          : AssignmentMode.roundRobin,
-      fixedAssigneeId: json['fixedAssigneeId'] as String?,
-      timezone: json['timezone'] as String,
-      startsAt: DateTime.parse(json['startsAt'] as String),
-      endsAt: json['endsAt'] == null
-          ? null
-          : DateTime.parse(json['endsAt'] as String),
-      lastGeneratedAt: json['lastGeneratedAt'] == null
-          ? null
-          : DateTime.parse(json['lastGeneratedAt'] as String),
-      nextRunAt: json['nextRunAt'] == null
-          ? null
-          : DateTime.parse(json['nextRunAt'] as String),
-    );
-  }
 }
 
 abstract class TasksRepository {
@@ -221,46 +150,25 @@ abstract class TasksRepository {
 
 class HttpTasksRepository implements TasksRepository {
   HttpTasksRepository({
-    required this.baseUrl,
-    required this.accessToken,
+    required String baseUrl,
+    required String accessToken,
     http.Client? client,
-  }) : _client = client ?? http.Client();
+  }) : _client = buildApiClient(
+         baseUrl: baseUrl,
+         accessToken: accessToken,
+         client: client,
+       );
 
-  final String baseUrl;
-  final String accessToken;
-  final http.Client _client;
+  final api.ApiClient _client;
 
-  Map<String, String> get _headers => {
-    'Authorization': 'Bearer $accessToken',
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  };
-
-  Uri _uri(String path) => Uri.parse('$baseUrl$path');
-
-  Future<Map<String, dynamic>> _json(http.Response response) async {
-    if (response.statusCode >= 400) {
-      throw ApiException(response.body, statusCode: response.statusCode);
-    }
-    return jsonDecode(response.body) as Map<String, dynamic>;
-  }
-
-  Future<List<dynamic>> _jsonList(http.Response response) async {
-    if (response.statusCode >= 400) {
-      throw ApiException(response.body, statusCode: response.statusCode);
-    }
-    return jsonDecode(response.body) as List<dynamic>;
-  }
+  api.TemplatesApi get _templates => api.TemplatesApi(_client);
+  api.TasksApi get _tasks => api.TasksApi(_client);
+  api.RecurrenceApi get _recurrence => api.RecurrenceApi(_client);
 
   @override
   Future<List<TaskTemplate>> listTemplates(String householdId) async {
-    final response = await _client.get(
-      _uri('/v1/households/$householdId/templates'),
-      headers: _headers,
-    );
-    return (await _jsonList(
-      response,
-    )).map((e) => TaskTemplate.fromJson(e as Map<String, dynamic>)).toList();
+    final list = await call(() => _templates.listTemplates(householdId));
+    return list.map(taskTemplateFromApi).toList();
   }
 
   @override
@@ -272,18 +180,20 @@ class HttpTasksRepository implements TasksRepository {
     required int points,
     required int latePoints,
   }) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/templates'),
-      headers: _headers,
-      body: jsonEncode({
-        'title': title,
-        'emoji': emoji,
-        'description': description,
-        'points': points,
-        'latePoints': latePoints,
-      }),
+    return taskTemplateFromApi(
+      await call(
+        () => _templates.createTemplate(
+          householdId,
+          api.CreateTemplateRequest(
+            title: title,
+            emoji: emoji,
+            description: description,
+            points: points,
+            latePoints: latePoints,
+          ),
+        ),
+      ),
     );
-    return TaskTemplate.fromJson(await _json(response));
   }
 
   @override
@@ -292,17 +202,16 @@ class HttpTasksRepository implements TasksRepository {
     TaskStatus? status,
     bool mine = false,
   }) async {
-    final query = <String, String>{'mine': '$mine'};
-    if (status != null) {
-      query['status'] = status.name;
-    }
-    final response = await _client.get(
-      _uri('/v1/households/$householdId/tasks').replace(queryParameters: query),
-      headers: _headers,
+    final list = await call(
+      () => _tasks.listTasks(
+        householdId,
+        mine: mine,
+        status: status == null
+            ? null
+            : api.TaskStatus.values.byName(status.name),
+      ),
     );
-    return (await _jsonList(
-      response,
-    )).map((e) => ChoreTask.fromJson(e as Map<String, dynamic>)).toList();
+    return list.map(choreTaskFromApi).toList();
   }
 
   @override
@@ -310,12 +219,14 @@ class HttpTasksRepository implements TasksRepository {
     required String householdId,
     required String templateId,
   }) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/tasks/manual'),
-      headers: _headers,
-      body: jsonEncode({'templateId': templateId}),
+    return choreTaskFromApi(
+      await call(
+        () => _tasks.quickLogTask(
+          householdId,
+          api.QuickLogRequest(templateId: templateId),
+        ),
+      ),
     );
-    return ChoreTask.fromJson(await _json(response));
   }
 
   @override
@@ -323,40 +234,33 @@ class HttpTasksRepository implements TasksRepository {
     required String householdId,
     required String templateId,
   }) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/tasks'),
-      headers: _headers,
-      body: jsonEncode({'templateId': templateId}),
+    return choreTaskFromApi(
+      await call(
+        () => _tasks.createOpenTask(
+          householdId,
+          api.CreateOpenTaskRequest(templateId: templateId),
+        ),
+      ),
     );
-    return ChoreTask.fromJson(await _json(response));
   }
 
   @override
-  Future<ChoreTask> complete(String householdId, String taskId) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/tasks/$taskId/complete'),
-      headers: _headers,
-    );
-    return ChoreTask.fromJson(await _json(response));
-  }
+  Future<ChoreTask> complete(String householdId, String taskId) async =>
+      choreTaskFromApi(
+        await call(() => _tasks.completeTask(householdId, taskId)),
+      );
 
   @override
-  Future<ChoreTask> dismiss(String householdId, String taskId) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/tasks/$taskId/dismiss'),
-      headers: _headers,
-    );
-    return ChoreTask.fromJson(await _json(response));
-  }
+  Future<ChoreTask> dismiss(String householdId, String taskId) async =>
+      choreTaskFromApi(
+        await call(() => _tasks.dismissTask(householdId, taskId)),
+      );
 
   @override
-  Future<ChoreTask> reassign(String householdId, String taskId) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/tasks/$taskId/reassign'),
-      headers: _headers,
-    );
-    return ChoreTask.fromJson(await _json(response));
-  }
+  Future<ChoreTask> reassign(String householdId, String taskId) async =>
+      choreTaskFromApi(
+        await call(() => _tasks.reassignTask(householdId, taskId)),
+      );
 
   @override
   Future<ChoreTask> revert(
@@ -364,12 +268,15 @@ class HttpTasksRepository implements TasksRepository {
     String taskId, {
     required String reason,
   }) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/tasks/$taskId/revert'),
-      headers: _headers,
-      body: jsonEncode({'reason': reason}),
+    return choreTaskFromApi(
+      await call(
+        () => _tasks.revertTask(
+          householdId,
+          taskId,
+          api.RevertRequest(reason: reason),
+        ),
+      ),
     );
-    return ChoreTask.fromJson(await _json(response));
   }
 
   @override
@@ -377,14 +284,16 @@ class HttpTasksRepository implements TasksRepository {
     String householdId,
     String templateId,
   ) async {
-    final response = await _client.get(
-      _uri('/v1/households/$householdId/templates/$templateId/recurrence'),
-      headers: _headers,
-    );
-    if (response.statusCode == 404) {
-      return null;
+    try {
+      return taskRecurrenceFromApi(
+        await call(() => _recurrence.getRecurrence(householdId, templateId)),
+      );
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) {
+        return null;
+      }
+      rethrow;
     }
-    return TaskRecurrence.fromJson(await _json(response));
   }
 
   @override
@@ -396,19 +305,22 @@ class HttpTasksRepository implements TasksRepository {
     String? fixedAssigneeId,
     DateTime? startsAt,
   }) async {
-    final response = await _client.put(
-      _uri('/v1/households/$householdId/templates/$templateId/recurrence'),
-      headers: _headers,
-      body: jsonEncode({
-        'rrule': rrule,
-        'assignmentMode': assignmentMode == AssignmentMode.fixed
-            ? 'fixed'
-            : 'round_robin',
-        'fixedAssigneeId': fixedAssigneeId,
-        'startsAt': (startsAt ?? DateTime.now().toUtc()).toIso8601String(),
-      }),
+    return taskRecurrenceFromApi(
+      await call(
+        () => _recurrence.upsertRecurrence(
+          householdId,
+          templateId,
+          api.UpsertRecurrenceRequest(
+            rrule: rrule,
+            assignmentMode: api.AssignmentMode.values.byName(
+              assignmentMode.name,
+            ),
+            fixedAssigneeId: fixedAssigneeId,
+            startsAt: startsAt ?? DateTime.now().toUtc(),
+          ),
+        ),
+      ),
     );
-    return TaskRecurrence.fromJson(await _json(response));
   }
 
   @override
@@ -418,9 +330,12 @@ class HttpTasksRepository implements TasksRepository {
 }
 
 class FakeTasksRepository implements TasksRepository {
-  FakeTasksRepository({this.currentUserId = 'user-1'});
+  FakeTasksRepository({this.currentUserId = 'user-1', this.ledger});
 
   final String currentUserId;
+
+  /// Stands in for the real backend, where tasks-service writes the ledger itself.
+  final FakeScoringRepository? ledger;
   final Map<String, List<TaskTemplate>> _templates = {};
   final Map<String, List<ChoreTask>> _tasks = {};
   final Map<String, TaskRecurrence> _recurrences = {};
@@ -491,6 +406,7 @@ class FakeTasksRepository implements TasksRepository {
       pointsAwarded: template.points,
     );
     _tasks.putIfAbsent(householdId, () => []).add(task);
+    await _award(task);
     return task;
   }
 
@@ -521,7 +437,7 @@ class FakeTasksRepository implements TasksRepository {
 
   @override
   Future<ChoreTask> complete(String householdId, String taskId) async {
-    return _replace(
+    final done = _replace(
       householdId,
       taskId,
       (t) => ChoreTask(
@@ -540,6 +456,8 @@ class FakeTasksRepository implements TasksRepository {
         pointsAwarded: t.points,
       ),
     );
+    await _award(done);
+    return done;
   }
 
   @override
@@ -595,10 +513,12 @@ class FakeTasksRepository implements TasksRepository {
     if (reason.trim().isEmpty) {
       throw ApiException('reason required', statusCode: 400);
     }
-    return _replace(householdId, taskId, (t) {
+    var credited = 0;
+    final reverted = _replace(householdId, taskId, (t) {
       if (t.status != TaskStatus.done) {
         throw ApiException('only done', statusCode: 409);
       }
+      credited = t.pointsAwarded ?? t.points;
       final resulting = t.origin == TaskOrigin.manual
           ? TaskStatus.reverted
           : (t.dueAt != null && t.dueAt!.isAfter(DateTime.now().toUtc())
@@ -618,6 +538,15 @@ class FakeTasksRepository implements TasksRepository {
         dueAt: t.dueAt,
       );
     });
+    await ledger?.reverse(
+      householdId: householdId,
+      taskId: taskId,
+      assigneeUserId: reverted.assigneeId,
+      points: credited,
+      reason: reason,
+      resultingStatus: reverted.status.name,
+    );
+    return reverted;
   }
 
   @override
@@ -720,6 +649,22 @@ class FakeTasksRepository implements TasksRepository {
       spawned++;
     }
     return spawned;
+  }
+
+  Future<void> _award(ChoreTask done) async {
+    final points = done.pointsAwarded ?? done.points;
+    final completedAt = done.completedAt;
+    final dueAt = done.dueAt;
+    if (points > 0) {
+      await ledger?.award(
+        householdId: done.householdId,
+        userId: done.assigneeId,
+        taskId: done.id,
+        points: points,
+        late:
+            dueAt != null && completedAt != null && completedAt.isAfter(dueAt),
+      );
+    }
   }
 
   ChoreTask _replace(

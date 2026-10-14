@@ -54,16 +54,20 @@ class AppSession extends ChangeNotifier {
         language: language,
         timezone: timezone,
       );
-      if (_tasksRepository is FakeTasksRepository) {
-        useTasksRepository(
-          FakeTasksRepository(currentUserId: profile?.id ?? 'user-1'),
-        );
-      }
       if (_scoringRepository is FakeScoringRepository) {
         final fake = FakeScoringRepository(
           memberIds: [profile?.id ?? 'user-1', 'user-2'],
         );
         useScoringRepository(fake);
+      }
+      if (_tasksRepository is FakeTasksRepository) {
+        final ledger = _scoringRepository;
+        useTasksRepository(
+          FakeTasksRepository(
+            currentUserId: profile?.id ?? 'user-1',
+            ledger: ledger is FakeScoringRepository ? ledger : null,
+          ),
+        );
       }
     });
   }

@@ -80,6 +80,13 @@ jobs:
           set -euo pipefail
           . tooling/versions.env
           echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> "$GITHUB_ENV"
+          echo "JAVA_MAJOR=$JAVA_MAJOR" >> "$GITHUB_ENV"
+
+      # The Dart client generator is a Java program.
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_MAJOR }}
 
       # Third-party, justified in documentation/tasks.md (T-0018): installs the exact Flutter version and caches pub.
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
@@ -88,12 +95,16 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
 
+      # The app depends on the generated client (gitignored, ADR 0006): generate it before resolving.
+      - name: Generate the Dart client
+        run: make client
+
       # The Makefile assumes a prepared checkout; a fresh runner has no .dart_tool package config yet.
       - name: Resolve app dependencies from the lockfile
         working-directory: app
         run: flutter pub get --enforce-lockfile
 
-      - run: make test-app
+      - run: make test-app test-guard
 
   # The one result to require on master (T-0053). It fails when any job above failed or was skipped.
   check:

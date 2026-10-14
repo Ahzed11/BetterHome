@@ -1,6 +1,7 @@
-import 'dart:convert';
-
+import 'package:betterhome/data/api_mappers.dart';
+import 'package:betterhome/data/api_support.dart';
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome_api/api.dart' as api;
 import 'package:http/http.dart' as http;
 
 /// Households API surface (OpenAPI paths under households-service).
@@ -43,45 +44,21 @@ abstract class HouseholdsRepository {
 
 class HttpHouseholdsRepository implements HouseholdsRepository {
   HttpHouseholdsRepository({
-    required this.baseUrl,
-    required this.accessToken,
+    required String baseUrl,
+    required String accessToken,
     http.Client? client,
-  }) : _client = client ?? http.Client();
+  }) : _client = buildApiClient(
+         baseUrl: baseUrl,
+         accessToken: accessToken,
+         client: client,
+       );
 
-  final String baseUrl;
-  final String accessToken;
-  final http.Client _client;
+  final api.ApiClient _client;
 
-  Map<String, String> get _headers => {
-    'Authorization': 'Bearer $accessToken',
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  };
-
-  Uri _uri(String path) => Uri.parse('$baseUrl$path');
-
-  Future<Map<String, dynamic>> _json(http.Response response) async {
-    if (response.statusCode >= 400) {
-      throw ApiException(
-        response.body.isEmpty ? 'HTTP ${response.statusCode}' : response.body,
-        statusCode: response.statusCode,
-      );
-    }
-    if (response.body.isEmpty) {
-      return {};
-    }
-    return jsonDecode(response.body) as Map<String, dynamic>;
-  }
-
-  Future<List<dynamic>> _jsonList(http.Response response) async {
-    if (response.statusCode >= 400) {
-      throw ApiException(
-        response.body.isEmpty ? 'HTTP ${response.statusCode}' : response.body,
-        statusCode: response.statusCode,
-      );
-    }
-    return jsonDecode(response.body) as List<dynamic>;
-  }
+  api.UsersApi get _users => api.UsersApi(_client);
+  api.HouseholdsApi get _households => api.HouseholdsApi(_client);
+  api.MembershipsApi get _memberships => api.MembershipsApi(_client);
+  api.InvitationsApi get _invitations => api.InvitationsApi(_client);
 
   @override
   Future<UserProfile> syncMe({
@@ -91,36 +68,29 @@ class HttpHouseholdsRepository implements HouseholdsRepository {
     String language = 'en',
     String timezone = 'UTC',
   }) async {
-    final response = await _client.put(
-      _uri('/v1/me'),
-      headers: _headers,
-      body: jsonEncode({
-        'email': email,
-        'givenName': givenName,
-        'familyName': familyName,
-        'language': language,
-        'timezone': timezone,
-      }),
+    return userProfileFromApi(
+      await call(
+        () => _users.syncMyProfile(
+          api.SyncUserRequest(
+            email: email,
+            givenName: givenName,
+            familyName: familyName,
+            language: language,
+            timezone: timezone,
+          ),
+        ),
+      ),
     );
-    return UserProfile.fromJson(await _json(response));
   }
 
   @override
-  Future<UserProfile> getMe() async {
-    final response = await _client.get(_uri('/v1/me'), headers: _headers);
-    return UserProfile.fromJson(await _json(response));
-  }
+  Future<UserProfile> getMe() async =>
+      userProfileFromApi(await call(_users.getMyProfile));
 
   @override
   Future<List<Household>> listHouseholds() async {
-    final response = await _client.get(
-      _uri('/v1/households'),
-      headers: _headers,
-    );
-    final list = await _jsonList(response);
-    return list
-        .map((e) => Household.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final list = await call(_households.listMyHouseholds);
+    return list.map(householdFromApi).toList();
   }
 
   @override
@@ -128,33 +98,23 @@ class HttpHouseholdsRepository implements HouseholdsRepository {
     required String name,
     required String timezone,
   }) async {
-    final response = await _client.post(
-      _uri('/v1/households'),
-      headers: _headers,
-      body: jsonEncode({'name': name, 'timezone': timezone}),
+    return householdFromApi(
+      await call(
+        () => _households.createHousehold(
+          api.CreateHouseholdRequest(name: name, timezone: timezone),
+        ),
+      ),
     );
-    return Household.fromJson(await _json(response));
   }
 
   @override
-  Future<Household> getHousehold(String householdId) async {
-    final response = await _client.get(
-      _uri('/v1/households/$householdId'),
-      headers: _headers,
-    );
-    return Household.fromJson(await _json(response));
-  }
+  Future<Household> getHousehold(String householdId) async =>
+      householdFromApi(await call(() => _households.getHousehold(householdId)));
 
   @override
   Future<List<Membership>> listMembers(String householdId) async {
-    final response = await _client.get(
-      _uri('/v1/households/$householdId/members'),
-      headers: _headers,
-    );
-    final list = await _jsonList(response);
-    return list
-        .map((e) => Membership.fromJson(e as Map<String, dynamic>))
-        .toList();
+    final list = await call(() => _memberships.listMembers(householdId));
+    return list.map(membershipFromApi).toList();
   }
 
   @override
@@ -163,52 +123,46 @@ class HttpHouseholdsRepository implements HouseholdsRepository {
     required String email,
     MembershipRole role = MembershipRole.member,
   }) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/invitations'),
-      headers: _headers,
-      body: jsonEncode({'email': email, 'role': role.name}),
+    return invitationFromApi(
+      await call(
+        () => _invitations.createInvitation(
+          householdId,
+          api.CreateInvitationRequest(
+            email: email,
+            role: api.MembershipRole.values.byName(role.name),
+          ),
+        ),
+      ),
     );
-    return Invitation.fromJson(await _json(response));
   }
 
   @override
-  Future<Membership> acceptInvitation(String token) async {
-    final response = await _client.post(
-      _uri('/v1/invitations/$token/accept'),
-      headers: _headers,
-    );
-    return Membership.fromJson(await _json(response));
-  }
+  Future<Membership> acceptInvitation(String token) async =>
+      membershipFromApi(await call(() => _invitations.acceptInvitation(token)));
 
   @override
   Future<Membership> setAway(String householdId, String userId) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/members/$userId/away'),
-      headers: _headers,
-      body: '{}',
+    return membershipFromApi(
+      await call(
+        () => _memberships.setMemberAway(
+          householdId,
+          userId,
+          api.SetAwayRequest(),
+        ),
+      ),
     );
-    return Membership.fromJson(await _json(response));
   }
 
   @override
   Future<Membership> clearAway(String householdId, String userId) async {
-    final response = await _client.delete(
-      _uri('/v1/households/$householdId/members/$userId/away'),
-      headers: _headers,
+    return membershipFromApi(
+      await call(() => _memberships.clearMemberAway(householdId, userId)),
     );
-    return Membership.fromJson(await _json(response));
   }
 
   @override
-  Future<void> leave(String householdId) async {
-    final response = await _client.post(
-      _uri('/v1/households/$householdId/members/me/leave'),
-      headers: _headers,
-    );
-    if (response.statusCode >= 400) {
-      throw ApiException(response.body, statusCode: response.statusCode);
-    }
-  }
+  Future<void> leave(String householdId) =>
+      callVoid(() => _memberships.leaveHousehold(householdId));
 }
 
 /// In-memory repository for widget tests and offline demo mode.
