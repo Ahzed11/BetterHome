@@ -178,6 +178,21 @@ void main() {
       expect(server.requests, ['GET /v1/households/$_household/tasks']);
     });
 
+    test('an open task can be created with a due date', () async {
+      final due = DateTime.utc(2026, 10, 1, 9);
+
+      await tasks().createOpen(
+        householdId: _household,
+        templateId: _sampleId,
+        dueAt: due,
+      );
+
+      expect(
+        server.lastBody['createOpenTask'],
+        containsPair('dueAt', due.toIso8601String()),
+      );
+    });
+
     test('creates, completes, dismisses, reassigns and reverts', () async {
       final repo = tasks();
 

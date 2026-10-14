@@ -392,4 +392,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get householdDetails => 'Household details';
+
+  @override
+  String overdueStill(int points) {
+    return 'Overdue · still +$points';
+  }
 }

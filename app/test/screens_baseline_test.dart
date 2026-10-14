@@ -163,6 +163,16 @@ final List<_Scenario> _scenarios = [
       body: HouseholdSheet(current: second, households: households),
     );
   }),
+  _Scenario('chores_overdue', () async {
+    final session = await _choresSession(populated: true);
+    final templates = await session.tasksRepository.listTemplates(_household);
+    await session.tasksRepository.createOpen(
+      householdId: _household,
+      templateId: templates.first.id,
+      dueAt: DateTime.utc(2020),
+    );
+    return ChoresScreen(session: session, householdId: _household);
+  }),
   _Scenario(
     'chores_mine',
     () async => ChoresScreen(

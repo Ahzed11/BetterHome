@@ -218,12 +218,16 @@ void main() {
       await _tap(tester, find.text('Leaderboard'));
       await _see(tester, find.text('10 pts'));
 
-      // Dismissal asks for confirmation and awards nothing.
+      // A chore past its due date is shown in soft coral with what is still possible.
       await session.tasksRepository.createOpen(
         householdId: householdId,
         templateId: template.id,
+        dueAt: DateTime.now().toUtc().subtract(const Duration(days: 1)),
       );
       await _tap(tester, find.text('All chores'));
+      await _see(tester, find.text('Overdue · still +2'));
+
+      // Dismissal asks for confirmation and awards nothing.
       await _see(tester, find.byTooltip('Dismiss'));
       await tester.tap(find.byTooltip('Dismiss').first);
       await _see(tester, find.text('Dismiss this chore?'));
