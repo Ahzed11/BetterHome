@@ -307,8 +307,8 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0090 · Quick-log "+ I just did…" with single tap and 5-second cancel
 
-* Status: in-review
-* Issue / PR: #24 / PR pending
+* Status: done
+* Issue / PR: #24 / #88
 * Depends on: T-0031
 * Spec: §8.2
 * Acceptance criteria: Decided by the product owner on 2026-10-14: whoever quick-logs a task has 5 seconds to cancel their log. Built as delayed logging: picking a template shows a snackbar with Undo for 5 seconds and the task is only sent to the server when they pass without a cancel (nothing is created or reverted if cancelled; the ledger stays append-only). Leaving the screen within the 5 seconds sends the log. The spec text "5-second undo" says this. FR/EN, widget and e2e coverage ("quick-log a manual task and cancel it", "quick-log and keep it").
