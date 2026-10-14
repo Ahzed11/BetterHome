@@ -710,9 +710,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0085 · Due reminders can be queued twice when several replicas run
 
-* Status: todo
-* Issue / PR: — (suggested: "Reminder job has no row claim")
+* Status: done
+* Issue / PR: — (suggested: "Reminder job has no row claim") / PR pending
 * Depends on: T-0081
 * Spec: §5, AGENTS §3 Scheduling
 * Acceptance criteria: `ReminderService.sendDueReminders` claims its candidate tasks with `FOR UPDATE SKIP LOCKED` (as `sendOverdueNotices` does), so two replicas never queue the same reminder under different outbox ids; a test runs several concurrent calls and finds one reminder per task.
-
+* Summary: The candidate query is now a native `SELECT id ... FOR UPDATE SKIP LOCKED` followed by loading each task, like the recurrence spawn and the overdue job. `NotificationProducersTest.severalReplicasNeverQueueTheSameReminderTwice` runs four concurrent calls over 20 due tasks: before the fix it found 80 reminders (4 per task) on each of three runs; now 20.
+* Decisions and deviations: No row limit, as before: whether a reminder is due depends on household settings computed in code, so a SQL limit could starve rows. The locks are held during the per-household settings lookups, as the transaction already did.
+* Verification: the new test failed before (80 instead of 20, three runs) and passes after; `make test-backend SERVICE=tasks-service` and CI. Not run: e2e outside CI.
+* Follow-ups: none.

@@ -2,7 +2,6 @@ package com.betterhome.tasks.service;
 
 import com.betterhome.common.Clock;
 import com.betterhome.tasks.domain.Task;
-import com.betterhome.tasks.domain.TaskStatus;
 import com.betterhome.tasks.membership.MembershipGateway;
 import com.betterhome.tasks.membership.MembershipGateway.HouseholdSettings;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,16 +35,29 @@ public class ReminderService {
         this.entityManager = entityManager;
     }
 
+    /**
+     * Queues the reminders that are due now. Candidate rows are claimed with {@code FOR UPDATE SKIP
+     * LOCKED}, so replicas never queue the same reminder twice: a second one skips the rows the
+     * first holds and finds them marked sent once it is done.
+     */
     @Transactional
     public int sendDueReminders() {
         Instant now = clock.now();
-        List<Task> candidates =
-                Task.find(
-                                "status = ?1 and dueAt is not null and dueReminderSentAt is null",
-                                TaskStatus.open)
-                        .list();
+        List<?> ids =
+                entityManager
+                        .createNativeQuery(
+                                """
+                                SELECT id FROM task
+                                WHERE status = 'open' AND due_at IS NOT NULL
+                                  AND due_reminder_sent_at IS NULL
+                                ORDER BY due_at
+                                FOR UPDATE SKIP LOCKED
+                                """)
+                        .getResultList();
         int sent = 0;
-        for (Task task : candidates) {
+        for (Object rawId : ids) {
+            UUID id = rawId instanceof UUID uuid ? uuid : UUID.fromString(rawId.toString());
+            Task task = Task.findById(id);
             HouseholdSettings settings = membershipGateway.householdSettings(task.householdId);
             ZoneId zone;
             try {
