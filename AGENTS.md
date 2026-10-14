@@ -273,6 +273,8 @@ Since 2026-10-14 the product owner lets agents merge the pull requests they open
 - it is a merge commit (`gh pr merge --merge`), the history on `master` keeps one merge per pull request;
 - it is the agent's own pull request, or one the product owner asked it to merge. An agent does not merge someone else's pull request on its own initiative.
 
+**While GitHub Actions is unavailable** (for example the minutes limit is reached; the product owner said so on 2026-10-14), the local run replaces the CI result: the agent runs `make check` and `make e2e` on the pull request's latest commit, from a clean checkout of the branch, and writes the commands and results in the pull request description before merging. A failing or skipped step blocks the merge exactly as a red job would, and "the run on `master`" below becomes the same local run on `master`. When Actions is available again this paragraph no longer applies; the product owner says when.
+
 After merging, the agent checks that the run on `master` is green, deletes nothing it did not create, and tells the product owner what was merged. If `master` turns red, fixing or reverting it comes before any new work. Branch protection (T-0053) stays a repository setting for the product owner; this rule does not replace it.
 
 Some agent environments block `gh pr merge` unless a permission rule allows it; the product owner adds that rule in the agent's settings.
