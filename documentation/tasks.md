@@ -260,7 +260,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0030 · Scheduler concurrency and invariant tests
 
 * Status: done
-* Issue / PR: #23 / PR pending
+* Issue / PR: #23 / #83
 * Depends on: T-0017
 * Spec: AGENTS §5.1
 * Acceptance criteria: Concurrency tests with several scheduler instances prove no double spawn or double close. jqwik property tests: round robin never picks an ineligible member, ledger sum equals awarded minus reversed points, scores never go negative. Pitest run on tasks and scoring documented.
