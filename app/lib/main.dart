@@ -2,6 +2,7 @@ import 'package:betterhome/app.dart';
 import 'package:betterhome/auth/oidc_auth_service.dart';
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/lists_repository.dart';
+import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
@@ -10,7 +11,8 @@ import 'package:flutter/material.dart';
 /// Entry point. Runs in demo mode (in-memory repositories) unless both are set:
 /// API: `--dart-define=API_BASE_URL=http://localhost:8081` (households), optionally
 ///   `TASKS_API_BASE_URL` (:8082) and `SCORING_API_BASE_URL` (:8083), which default to API_BASE_URL.
-///   and `LISTS_API_BASE_URL` (:8084), which also defaults to API_BASE_URL.
+///   `LISTS_API_BASE_URL` (:8084) and `NOTIFICATIONS_API_BASE_URL` (:8085), which also default to
+///   API_BASE_URL.
 /// Sign-in: `--dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome`,
 ///   optionally `KEYCLOAK_CLIENT_ID` (default `betterhome-app`).
 /// On the Android emulator use 10.0.2.2 for the API and run `adb reverse tcp:8180 tcp:8180`, because
@@ -21,6 +23,9 @@ void main() {
   const tasksApiBaseUrl = String.fromEnvironment('TASKS_API_BASE_URL');
   const scoringApiBaseUrl = String.fromEnvironment('SCORING_API_BASE_URL');
   const listsApiBaseUrl = String.fromEnvironment('LISTS_API_BASE_URL');
+  const notificationsApiBaseUrl = String.fromEnvironment(
+    'NOTIFICATIONS_API_BASE_URL',
+  );
   const keycloakIssuer = String.fromEnvironment('KEYCLOAK_ISSUER');
   const keycloakClientId = String.fromEnvironment(
     'KEYCLOAK_CLIENT_ID',
@@ -58,6 +63,12 @@ void main() {
         ),
         listsRepository: HttpListsRepository(
           baseUrl: listsApiBaseUrl.isEmpty ? apiBaseUrl : listsApiBaseUrl,
+          accessToken: auth.accessToken,
+        ),
+        notificationsRepository: HttpNotificationsRepository(
+          baseUrl: notificationsApiBaseUrl.isEmpty
+              ? apiBaseUrl
+              : notificationsApiBaseUrl,
           accessToken: auth.accessToken,
         ),
       ),

@@ -318,4 +318,58 @@ class AppLocalizationsFr extends AppLocalizations {
   String uncheckItem(String title) {
     return 'Décocher $title';
   }
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsEmpty => 'Vous êtes à jour.';
+
+  @override
+  String get markAllRead => 'Tout marquer comme lu';
+
+  @override
+  String get loadMore => 'Voir plus';
+
+  @override
+  String get notificationSettings => 'Réglages des notifications';
+
+  @override
+  String get channelPush => 'Notification push';
+
+  @override
+  String get channelInApp => 'Dans l\'app';
+
+  @override
+  String get notificationsBellUnread => 'Notifications, non lues';
+
+  @override
+  String get unreadLabel => 'non lue';
+
+  @override
+  String get typeTaskAssigned => 'Nouvelle tâche';
+
+  @override
+  String get typeTaskReassigned => 'Tâche qui vous est réattribuée';
+
+  @override
+  String get typeDueReminder => 'Rappels';
+
+  @override
+  String get typeOverdue => 'Tâches en retard';
+
+  @override
+  String get typeDismissed => 'Tâche fermée';
+
+  @override
+  String get typeSuperseded => 'Tâche remplacée';
+
+  @override
+  String get typeReverted => 'Tâche rouverte';
+
+  @override
+  String get typeMarkedAway => 'Absence enregistrée';
+
+  @override
+  String get typeInvitation => 'Invitations';
 }

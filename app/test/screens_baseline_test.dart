@@ -1,5 +1,6 @@
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/lists_repository.dart';
+import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
@@ -9,6 +10,8 @@ import 'package:betterhome/ui/screens/household_detail_screen.dart';
 import 'package:betterhome/ui/screens/households_screen.dart';
 import 'package:betterhome/ui/screens/leaderboard_screen.dart';
 import 'package:betterhome/ui/screens/lists_screen.dart';
+import 'package:betterhome/ui/screens/notification_preferences_screen.dart';
+import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
 import 'package:betterhome/ui/screens/sign_in_screen.dart';
 import 'package:flutter/material.dart';
@@ -34,6 +37,7 @@ Future<AppSession> _sessionWith({
   TasksRepository? tasks,
   ScoringRepository? scoring,
   ListsRepository? lists,
+  NotificationsRepository? notifications,
   bool withHousehold = true,
 }) async {
   final session = AppSession(
@@ -51,6 +55,9 @@ Future<AppSession> _sessionWith({
   }
   if (lists != null) {
     session.useListsRepository(lists);
+  }
+  if (notifications != null) {
+    session.useNotificationsRepository(notifications);
   }
   return session;
 }
@@ -91,6 +98,20 @@ Future<AppSession> _listsSession({required bool populated}) async {
   }
   return session;
 }
+
+AppNotification _notification(
+  String id,
+  String title,
+  String body, {
+  bool read = false,
+}) => AppNotification(
+  id: id,
+  type: NotificationType.taskAssigned,
+  title: title,
+  body: body,
+  createdAt: DateTime.utc(2026, 10, 14, 10),
+  readAt: read ? DateTime.utc(2026, 10, 14, 11) : null,
+);
 
 final List<_Scenario> _scenarios = [
   _Scenario('sign_in', () async => SignInScreen(onSignIn: () {})),
@@ -250,6 +271,61 @@ final List<_Scenario> _scenarios = [
       householdId: _household,
     ),
   ),
+  _Scenario(
+    'notifications_loading',
+    () async => NotificationsScreen(
+      session: await _sessionWith(
+        notifications: PendingNotificationsRepository(),
+      ),
+    ),
+  ),
+  _Scenario(
+    'notifications_error',
+    () async => NotificationsScreen(
+      session: await _sessionWith(
+        notifications: FailingNotificationsRepository(),
+      ),
+    ),
+  ),
+  _Scenario(
+    'notifications_empty',
+    () async => NotificationsScreen(session: await _sessionWith()),
+  ),
+  _Scenario('notifications_populated', () async {
+    final repo = FakeNotificationsRepository()
+      ..add(_notification('1', 'Reminder', '"Vacuum" is due soon.', read: true))
+      ..add(_notification('2', 'New chore', '"Dishes" is yours.'));
+    return NotificationsScreen(
+      session: await _sessionWith(notifications: repo),
+    );
+  }),
+  _Scenario(
+    'notification_settings_loading',
+    () async => NotificationPreferencesScreen(
+      session: await _sessionWith(
+        notifications: PendingNotificationsRepository(),
+      ),
+    ),
+  ),
+  _Scenario(
+    'notification_settings_error',
+    () async => NotificationPreferencesScreen(
+      session: await _sessionWith(
+        notifications: FailingNotificationsRepository(),
+      ),
+    ),
+  ),
+  _Scenario('notification_settings_populated', () async {
+    final repo = FakeNotificationsRepository();
+    await repo.setPreference(
+      NotificationType.dueReminder,
+      NotificationChannel.push,
+      enabled: false,
+    );
+    return NotificationPreferencesScreen(
+      session: await _sessionWith(notifications: repo),
+    );
+  }),
 ];
 
 void main() {

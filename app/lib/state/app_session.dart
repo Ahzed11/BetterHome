@@ -1,6 +1,7 @@
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -11,15 +12,19 @@ class AppSession extends ChangeNotifier {
     TasksRepository? tasksRepository,
     ScoringRepository? scoringRepository,
     ListsRepository? listsRepository,
+    NotificationsRepository? notificationsRepository,
   }) : _repository = repository,
        _tasksRepository = tasksRepository ?? FakeTasksRepository(),
        _scoringRepository = scoringRepository ?? FakeScoringRepository(),
-       _listsRepository = listsRepository ?? FakeListsRepository();
+       _listsRepository = listsRepository ?? FakeListsRepository(),
+       _notificationsRepository =
+           notificationsRepository ?? FakeNotificationsRepository();
 
   HouseholdsRepository _repository;
   TasksRepository _tasksRepository;
   ScoringRepository _scoringRepository;
   ListsRepository _listsRepository;
+  NotificationsRepository _notificationsRepository;
   UserProfile? profile;
   Object? lastError;
   bool busy = false;
@@ -28,6 +33,8 @@ class AppSession extends ChangeNotifier {
   TasksRepository get tasksRepository => _tasksRepository;
   ScoringRepository get scoringRepository => _scoringRepository;
   ListsRepository get listsRepository => _listsRepository;
+  NotificationsRepository get notificationsRepository =>
+      _notificationsRepository;
 
   void useRepository(HouseholdsRepository repository) {
     _repository = repository;
@@ -41,6 +48,11 @@ class AppSession extends ChangeNotifier {
 
   void useListsRepository(ListsRepository repository) {
     _listsRepository = repository;
+    notifyListeners();
+  }
+
+  void useNotificationsRepository(NotificationsRepository repository) {
+    _notificationsRepository = repository;
     notifyListeners();
   }
 

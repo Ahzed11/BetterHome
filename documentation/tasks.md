@@ -234,11 +234,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0028 · App: notification inbox and preferences
 
-* Status: todo
-* Issue / PR: #21
+* Status: done
+* Issue / PR: #21 / #79
 * Depends on: T-0025, T-0020, T-0024
 * Spec: §5
 * Acceptance criteria: Split by the product owner on 2026-10-14: this task is the inbox and the preferences, which need only the notifications API that exists (T-0025); the push permission prompt and token registration moved to T-0086. Inbox screen reachable from the home screen with an unread count, read state (open one to mark it read, mark all read) and paging; a preferences screen with a toggle per notification type and channel. Built from the shared widgets and tokens (ADR 0021); the design canvas has only a bell icon on the Chores board, no inbox board, so the screens extend its look. FR/EN, widget and golden tests, e2e journey (a member invited by an admin finds the invitation in the inbox).
+* Summary: `NotificationsRepository` (generated client plus an in-memory fake) and three UI pieces: `NotificationsScreen` (newest first, a dot and bold title while unread, tap an unread one to mark it read, "Mark all read", "Load more" using the API's `before` cursor, empty/loading/error states), `NotificationPreferencesScreen` (a card per type with a push and an in-app switch, all on by default) and `NotificationsBell` on the home screen with a coral dot while something is unread. New widgets `ToggleRow` and `NotificationRow`, a shared `runGuarded` that shows a snackbar when a request fails (the lists screen uses it too), FR/EN strings including the nine type names, `NOTIFICATIONS_API_BASE_URL`. Titles and bodies are the server-rendered text in the user's language.
+* Decisions and deviations: ADR 0021 addendum. The e2e journey differs from the acceptance text: an invitation only produces a notification when the invited email already has an account, which is not the case in the invite journey, so the journey marks bob away through the API and bob reads that notification in the UI (and changes a setting). The bell shows a dot, not a count. Preferences are per user and not per household, as the API is. The inbox lives behind the bell on the home screen until the navigation shell of T-0031 exists.
+* Verification: JDK 21, Podman, Flutter 3.47.7. `make test-docs`, `make test-app` (format, analyze, 300 tests: contract-server tests for the repository incl. both new enums, fake repository, inbox, preferences and bell flows in EN/FR, widget states and semantics, goldens, accessibility and 200% text scale for every new screen), `make test-guard`, and a cold `make e2e` (web sign-in, then the household, chores, lists, invite and the new notifications journeys through the relays and notifications-service) pass. Not run: Android.
+* Follow-ups: T-0086 (push permission and token registration), T-0031 (shell with the bell and the household switcher).
 
 ### T-0029 · Scoring in household time and automated month end
 

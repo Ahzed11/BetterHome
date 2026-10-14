@@ -4,6 +4,7 @@ import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/screens/create_household_screen.dart';
 import 'package:betterhome/ui/screens/household_detail_screen.dart';
+import 'package:betterhome/ui/widgets/notifications_bell.dart';
 import 'package:flutter/material.dart';
 
 class HouseholdsScreen extends StatefulWidget {
@@ -49,6 +50,7 @@ class _HouseholdsScreenState extends State<HouseholdsScreen> {
       appBar: AppBar(
         title: Text(l10n.householdsTitle),
         actions: [
+          NotificationsBell(session: widget.session),
           if (widget.onSignOut != null)
             IconButton(
               tooltip: l10n.signOut,

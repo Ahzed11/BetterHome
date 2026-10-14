@@ -7,6 +7,7 @@ import 'package:betterhome/ui/widgets/add_field.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
+import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/text_prompt.dart';
@@ -87,17 +88,11 @@ class _ListsScreenState extends State<ListsScreen> {
     });
   }
 
-  /// Runs [action]; a failed request is shown instead of being lost.
+  /// A failed request is shown, and the items are reloaded so the screen shows the truth.
   Future<void> _guard(Future<void> Function() action) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final message = AppLocalizations.of(context).errorGeneric;
-    try {
-      await action();
-    } on ApiException catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(message)));
-      if (mounted) {
-        setState(_reloadItems);
-      }
+    final ok = await runGuarded(context, action);
+    if (!ok && mounted) {
+      setState(_reloadItems);
     }
   }
 

@@ -7,8 +7,8 @@ The product owner designed the app in a Claude Design canvas ("Household app red
 ## Decision
 
 - The canvas is the visual reference for every new or changed screen. Its colors, radii, spacing and type sizes become tokens in `app/lib/theme/tokens.dart` (`AppTokens`, `AppTypography`); screens use tokens only.
-- Screens are assembled from small reusable widgets in `app/lib/ui/widgets/` (`AppPill`, `AppAddPill`, `AppCard`, `ScreenHeader`, `SectionLabel`, `CheckRow`, `AddField`). Each widget owns its semantics (labels, button and selected state, tap actions, `container: true` so it is not merged into its parent) and keeps a 48 px tap target around the design's drawn size. `app/test/widgets_test.dart` covers states, targets, semantics, FR/EN goldens and 200% text scale; the baseline test covers every screen.
-- First screen built this way: Lists (T-0024).
+- Screens are assembled from small reusable widgets in `app/lib/ui/widgets/` (`AppPill`, `AppAddPill`, `AppCard`, `ScreenHeader`, `SectionLabel`, `CheckRow`, `AddField`, `ToggleRow`, `NotificationRow`). Each widget owns its semantics (labels, button and selected state, tap actions, `container: true` so it is not merged into its parent) and keeps a 48 px tap target around the design's drawn size. `app/test/widgets_test.dart` covers states, targets, semantics, FR/EN goldens and 200% text scale; the baseline test covers every screen.
+- First screen built this way: Lists (T-0024). Next: the notification inbox and settings (T-0028). The canvas has no board for them, only the bell with a coral dot on the Chores board, so they extend the same tokens and widgets; the bell sits on the home screen until the shell of T-0031 exists. A failed request on these screens is always shown (`runGuarded`), never dropped.
 
 ## Deviations from the canvas, on purpose
 

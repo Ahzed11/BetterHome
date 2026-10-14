@@ -39,6 +39,7 @@ if [[ "$E2E_TARGET" == web ]]; then
     --dart-define=TASKS_API_BASE_URL=http://localhost:8082 \
     --dart-define=SCORING_API_BASE_URL=http://localhost:8083 \
     --dart-define=LISTS_API_BASE_URL=http://localhost:8084 \
+    --dart-define=NOTIFICATIONS_API_BASE_URL=http://localhost:8085 \
     --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome >"$(mktemp)" 2>&1 &
   server_pid=$!
 fi
@@ -60,6 +61,7 @@ set_defines() {
     "--dart-define=E2E_TASKS_URL=http://${host}:8082"
     "--dart-define=E2E_SCORING_URL=http://${host}:8083"
     "--dart-define=E2E_LISTS_URL=http://${host}:8084"
+    "--dart-define=E2E_NOTIFICATIONS_URL=http://${host}:8085"
     "--dart-define=E2E_ACCESS_TOKEN=$(get_token "$E2E_USER" "$E2E_PASSWORD")"
     "--dart-define=E2E_ACCESS_TOKEN_BOB=$(get_token bob "$E2E_PASSWORD")"
   )

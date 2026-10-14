@@ -1,6 +1,7 @@
 import 'package:betterhome/app.dart';
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/lists_repository.dart';
+import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
@@ -16,6 +17,7 @@ const _householdsUrl = String.fromEnvironment('E2E_HOUSEHOLDS_URL');
 const _tasksUrl = String.fromEnvironment('E2E_TASKS_URL');
 const _scoringUrl = String.fromEnvironment('E2E_SCORING_URL');
 const _listsUrl = String.fromEnvironment('E2E_LISTS_URL');
+const _notificationsUrl = String.fromEnvironment('E2E_NOTIFICATIONS_URL');
 const _aliceToken = String.fromEnvironment('E2E_ACCESS_TOKEN');
 const _bobToken = String.fromEnvironment('E2E_ACCESS_TOKEN_BOB');
 
@@ -37,6 +39,10 @@ AppSession _sessionFor(String token) => AppSession(
   ),
   listsRepository: HttpListsRepository(
     baseUrl: _listsUrl,
+    accessToken: () => token,
+  ),
+  notificationsRepository: HttpNotificationsRepository(
+    baseUrl: _notificationsUrl,
     accessToken: () => token,
   ),
 );
@@ -64,6 +70,22 @@ Future<void> _seeCount(WidgetTester tester, Finder finder, int count) async {
     await Future<void>.delayed(const Duration(milliseconds: 100));
   }
   expect(finder, findsNWidgets(count));
+}
+
+/// Polls [condition] on real time: the relays that carry events between services run every 15 s.
+Future<void> _waitFor(
+  Future<bool> Function() condition,
+  String what, {
+  Duration timeout = const Duration(seconds: 90),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    if (await condition()) {
+      return;
+    }
+    await Future<void>.delayed(const Duration(seconds: 2));
+  }
+  fail('Timed out waiting for $what');
 }
 
 /// Goes back once the previous navigation has finished animating, so only one back button exists.
@@ -291,4 +313,49 @@ void main() {
     final joined = await bob.repository.listMembers(householdId);
     expect(joined.map((m) => m.userId), contains(bob.profile?.id));
   });
+
+  testWidgets(
+    'notifications: an event reaches the inbox, is read and a setting changes',
+    (tester) async {
+      // Alice (admin) marks bob away through the API; the households outbox relays it to
+      // notifications-service within a few seconds.
+      final alice = _sessionFor(_aliceToken);
+      final bobApi = _sessionFor(_bobToken);
+      final bobId = (await bobApi.repository.getMe()).id;
+      await alice.repository.setAway(householdId, bobId);
+      await _waitFor(
+        () async => (await bobApi.notificationsRepository.list(
+          unreadOnly: true,
+        )).isNotEmpty,
+        'the away notification in bob\'s inbox',
+      );
+
+      // Bob sees the dot, opens the inbox and reads the notification.
+      await _openAs(tester, _bobToken, _bobEmail);
+      await _tap(tester, find.byTooltip('Notifications, unread'));
+      await _see(tester, find.text('Marked away'));
+      await _see(tester, find.textContaining('dismissed'));
+      await _tap(tester, find.text('Marked away'));
+      await _seeCount(tester, find.text('Mark all read'), 0);
+      expect(
+        await bobApi.notificationsRepository.list(unreadOnly: true),
+        isEmpty,
+      );
+
+      // A setting changes and is saved on the server.
+      await _tap(tester, find.byTooltip('Notification settings'));
+      await _see(tester, find.byType(Switch));
+      await tester.tap(find.byType(Switch).first);
+      await tester.pump();
+      await _waitFor(() async {
+        final saved = await bobApi.notificationsRepository.preferences();
+        return saved.any((p) => !p.enabled);
+      }, 'the switched-off preference');
+
+      // Back on the home screen the dot is gone.
+      await _back(tester);
+      await _back(tester);
+      await _see(tester, find.byTooltip('Notifications'));
+    },
+  );
 }
