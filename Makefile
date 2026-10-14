@@ -60,9 +60,8 @@ test-policy: ## Dependency policy checks (Phase 0 stub)
 test-guard: ## Generated-client drift guard (Phase 0 stub)
 	@echo "test-guard: OpenAPI client guard deferred until client generation is wired"
 
-e2e: ## Full stack e2e (requires emulator; Phase 0 stub)
-	@echo "e2e: deferred until Phase 1 journeys exist"
-	@exit 1
+e2e: ## Journeys against the real stack; E2E_TARGET=web (default) or android, E2E_STACK=running to reuse `make up`
+	@bash $(ROOT)/tooling/e2e.sh
 
 check: test-docs test-backend ## CI entrypoint (app/e2e when present)
 	@if [[ -d $(ROOT)/app ]]; then $(MAKE) test-app; fi

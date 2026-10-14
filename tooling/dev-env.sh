@@ -8,7 +8,8 @@ set +a
 export DEV_TOOLS_DIR="${DEV_TOOLS_DIR:-$HOME/dev-tools}"
 export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}"
 export ANDROID_HOME="$ANDROID_SDK_ROOT"
-PATH="$HOME/.jbang/bin:$DEV_TOOLS_DIR/flutter/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/emulator:$PATH"
+export CHROME_EXECUTABLE="${CHROME_EXECUTABLE:-$DEV_TOOLS_DIR/chrome/chrome-linux64/chrome}"
+PATH="$DEV_TOOLS_DIR/chrome/chromedriver-linux64:$HOME/.jbang/bin:$DEV_TOOLS_DIR/flutter/bin:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/emulator:$PATH"
 if command -v jbang >/dev/null 2>&1; then
   JAVA_HOME="$(jbang jdk home "$JAVA_MAJOR" 2>/dev/null || true)"
   if [[ -n "$JAVA_HOME" ]]; then

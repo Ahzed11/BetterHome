@@ -162,12 +162,12 @@ Agents must not claim something works without having run it.
 | `make test-docs` | Resolve documentation's relative links and its ADR/ledger references |
 | `make test-policy` | Require every dependency unvulnerable and verified against policies |
 | `make test-guard` | Prove the generated-client guard fails when the document or the client is broken |
-| `make e2e` | Full microservice stack up on OpenShift/Podman, app launched on an emulator, integration tests run against Keycloak Auth |
+| `make e2e` | Full microservice stack up on OpenShift/Podman, app launched on the selected target (`E2E_TARGET=web` default, or `android`), integration tests run against Keycloak Auth |
 | `make check` | Everything above, as in CI |
 | `make down` | Stop and clean containers/cluster resources |
 
 ### 6.2 End-to-end: launch the real app against the real stack
-- `make e2e` boots the microservice stack on OpenShift/Podman (including Keycloak realm import), applies Flyway migrations, launches the Flutter app on an Android emulator (headless in CI), authenticates against Keycloak, and runs the `integration_test` suite against the deployed OpenAPI Routes and PostgreSQL DBs. Notification delivery uses a fake push gateway endpoint.
+- `make e2e` boots the microservice stack on OpenShift/Podman (including Keycloak realm import), applies Flyway migrations, launches the Flutter app on the target chosen with `E2E_TARGET` (`web` in headless Chrome by default, or `android` on a headless emulator; `decisions/0018-e2e-target-is-selectable-web-first.md`), authenticates against Keycloak, and runs the `integration_test` suite against the deployed OpenAPI Routes and PostgreSQL DBs. Notification delivery uses a fake push gateway endpoint.
 
 - Required journeys, each mapped to a spec rule: sign up and create a household; invite and join; admin creates a template and a recurrence; scheduler spawns a task and assigns round robin; assignee completes it (on time and late); quick-log a manual task and undo; dismiss with confirmation; admin reverts with a reason and the assignee sees it; mark a member away and watch tasks reassign; leaderboard period views; checklist create, check, delete, reset; household switcher with two households; French and English.
 
