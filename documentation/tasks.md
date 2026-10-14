@@ -430,3 +430,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0018
 * Spec: AGENTS §6.2
 * Acceptance criteria: Branch protection on `master` requires the `check` job from `.github/workflows/check.yml` to pass before merge. Repository setting (admin), no code change.
+
+### T-0047 · `reminderEnqueuesWhenDue` fails before 08:00 UTC
+
+* Status: in-review
+* Issue / PR: — (suggested: "Test depends on the wall clock") / #60
+* Depends on: —
+* Spec: AGENTS §5.1 (control time with the clock)
+* Acceptance criteria: `TaskPhase4AutomationTest.reminderEnqueuesWhenDue` passes at any time of day by using a fake `Clock`. Observed at 06:09 UTC: the test set `dueAt` to `Instant.now()+2h` and the household reminder time is 08:00 UTC, so no reminder was due yet.
+* Summary: tasks-service tests get a `TestClock` (`@Alternative`, follows system time until a test fixes it). The test fixes it at 2026-03-10T12:00Z and derives the recurrence start and due date from it.
+* Decisions and deviations: Only this test fixes the clock, so other tests keep system time and are unchanged.
+* Verification: JDK 21, `./mvnw verify -pl services/tasks-service -am` (42 tests pass, coverage floor met) at 06:44 UTC, a time at which the test failed before. Not run: `make check`, app, e2e.
+* Follow-ups: none.
