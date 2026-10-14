@@ -272,7 +272,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0031 · App: navigation shell and household switcher
 
 * Status: in-review
-* Issue / PR: #24 / PR pending
+* Issue / PR: #24 / #85
 * Depends on: T-0020, T-0024, T-0028
 * Spec: §8.2
 * Acceptance criteria: Split by the product owner on 2026-10-14 (the overdue tone, the reverted reason and the quick-log undo moved to T-0088, T-0089 and T-0090). The four bottom tabs (All Chores, My Chores, Leaderboard, Lists) and a household switcher at the top, with the notifications bell reachable from the shell. Built from the shared widgets and tokens (ADR 0021) following the design canvas. The switcher lists the user's households, the choice survives a restart, and every screen reads the selected household. FR/EN, widget and golden tests, e2e journey "household switcher with two households".
