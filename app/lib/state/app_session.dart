@@ -1,4 +1,5 @@
 import 'package:betterhome/data/households_repository.dart';
+import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
@@ -9,13 +10,16 @@ class AppSession extends ChangeNotifier {
     required HouseholdsRepository repository,
     TasksRepository? tasksRepository,
     ScoringRepository? scoringRepository,
+    ListsRepository? listsRepository,
   }) : _repository = repository,
        _tasksRepository = tasksRepository ?? FakeTasksRepository(),
-       _scoringRepository = scoringRepository ?? FakeScoringRepository();
+       _scoringRepository = scoringRepository ?? FakeScoringRepository(),
+       _listsRepository = listsRepository ?? FakeListsRepository();
 
   HouseholdsRepository _repository;
   TasksRepository _tasksRepository;
   ScoringRepository _scoringRepository;
+  ListsRepository _listsRepository;
   UserProfile? profile;
   Object? lastError;
   bool busy = false;
@@ -23,6 +27,7 @@ class AppSession extends ChangeNotifier {
   HouseholdsRepository get repository => _repository;
   TasksRepository get tasksRepository => _tasksRepository;
   ScoringRepository get scoringRepository => _scoringRepository;
+  ListsRepository get listsRepository => _listsRepository;
 
   void useRepository(HouseholdsRepository repository) {
     _repository = repository;
@@ -31,6 +36,11 @@ class AppSession extends ChangeNotifier {
 
   void useTasksRepository(TasksRepository repository) {
     _tasksRepository = repository;
+    notifyListeners();
+  }
+
+  void useListsRepository(ListsRepository repository) {
+    _listsRepository = repository;
     notifyListeners();
   }
 

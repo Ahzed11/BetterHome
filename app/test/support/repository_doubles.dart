@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:betterhome/data/households_repository.dart';
+import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
@@ -92,4 +93,28 @@ class FailingScoringRepository extends FakeScoringRepository {
     ScorePeriod period = ScorePeriod.month,
     String? yearMonth,
   }) async => throw ApiException('boom', statusCode: 500);
+}
+
+/// Lists repository whose reads never complete (loading state).
+class PendingListsRepository extends FakeListsRepository {
+  @override
+  Future<List<Checklist>> listLists(String householdId) =>
+      Completer<List<Checklist>>().future;
+
+  @override
+  Future<List<ChecklistItem>> listItems(String householdId, String listId) =>
+      Completer<List<ChecklistItem>>().future;
+}
+
+/// Lists repository whose reads fail (error state).
+class FailingListsRepository extends FakeListsRepository {
+  @override
+  Future<List<Checklist>> listLists(String householdId) async =>
+      throw ApiException('boom', statusCode: 500);
+
+  @override
+  Future<List<ChecklistItem>> listItems(
+    String householdId,
+    String listId,
+  ) async => throw ApiException('boom', statusCode: 500);
 }

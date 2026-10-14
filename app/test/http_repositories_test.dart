@@ -1,4 +1,5 @@
 import 'package:betterhome/data/households_repository.dart';
+import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
@@ -218,6 +219,68 @@ void main() {
       expect(
         server.lastBody['upsertRecurrence'],
         containsPair('assignmentMode', 'round_robin'),
+      );
+    });
+  });
+
+  group('lists', () {
+    HttpListsRepository lists() => HttpListsRepository(
+      baseUrl: 'http://lists.test',
+      accessToken: () => 'test-token',
+      client: server.client,
+    );
+
+    test('lists, creates, renames and archives', () async {
+      final repo = lists();
+
+      expect((await repo.listLists(_household)).single.title, 'text');
+      await repo.createList(_household, 'Groceries');
+      await repo.renameList(_household, _sampleId, 'Food');
+      final archived = await repo.archiveList(_household, _sampleId);
+
+      expect(archived.isArchived, isTrue);
+      expect(server.lastBody['createList'], containsPair('title', 'Groceries'));
+      expect(server.lastBody['renameList'], containsPair('title', 'Food'));
+      expect(server.requests, [
+        'GET /v1/households/$_household/lists',
+        'POST /v1/households/$_household/lists',
+        'PATCH /v1/households/$_household/lists/$_sampleId',
+        'POST /v1/households/$_household/lists/$_sampleId/archive',
+      ]);
+    });
+
+    test('adds, checks, unchecks, deletes and resets items', () async {
+      final repo = lists();
+
+      expect((await repo.listItems(_household, _sampleId)).single.position, 1);
+      await repo.addItem(_household, _sampleId, 'Milk');
+      final checked = await repo.checkItem(_household, _sampleId, _sampleId);
+      await repo.uncheckItem(_household, _sampleId, _sampleId);
+      await repo.deleteItem(_household, _sampleId, _sampleId);
+      final reset = await repo.resetList(_household, _sampleId);
+
+      expect(checked.isChecked, isTrue);
+      expect(reset, hasLength(1));
+      expect(server.lastBody['addItem'], containsPair('title', 'Milk'));
+      expect(server.requests, [
+        'GET /v1/households/$_household/lists/$_sampleId/items',
+        'POST /v1/households/$_household/lists/$_sampleId/items',
+        'POST /v1/households/$_household/lists/$_sampleId/items/$_sampleId/check',
+        'POST /v1/households/$_household/lists/$_sampleId/items/$_sampleId/uncheck',
+        'DELETE /v1/households/$_household/lists/$_sampleId/items/$_sampleId',
+        'POST /v1/households/$_household/lists/$_sampleId/reset',
+      ]);
+    });
+
+    test('a change to an archived list is reported with its status', () async {
+      server.respondWith('addItem', 409, {
+        'code': 'conflict',
+        'message': 'archived',
+      });
+
+      await expectLater(
+        lists().addItem(_household, _sampleId, 'Milk'),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 409)),
       );
     });
   });

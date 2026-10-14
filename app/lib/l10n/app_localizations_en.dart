@@ -242,4 +242,76 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signOut => 'Sign out';
+
+  @override
+  String get createList => 'Create list';
+
+  @override
+  String get listName => 'List name';
+
+  @override
+  String get renameList => 'Rename';
+
+  @override
+  String get archiveList => 'Archive';
+
+  @override
+  String get archiveListConfirmTitle => 'Archive this list?';
+
+  @override
+  String get archiveListConfirmBody =>
+      'Archived lists disappear from this screen and can no longer be changed.';
+
+  @override
+  String get itemsEmpty => 'Nothing here yet. Add the first item.';
+
+  @override
+  String get deleteItem => 'Delete item';
+
+  @override
+  String get resetList => 'Uncheck all';
+
+  @override
+  String get resetListConfirmTitle => 'Uncheck every item?';
+
+  @override
+  String get resetListConfirmBody =>
+      'Use this to start the list over, for example a packing list.';
+
+  @override
+  String get openLists => 'Lists';
+
+  @override
+  String get listsTitle => 'Lists';
+
+  @override
+  String get listsEmpty => 'No lists yet. An admin can create one.';
+
+  @override
+  String get newList => 'New list';
+
+  @override
+  String get addItem => 'Add an item';
+
+  @override
+  String get addItemHint => 'Add an item…';
+
+  @override
+  String get addItemButton => 'Add';
+
+  @override
+  String get basketTitle => 'In the basket';
+
+  @override
+  String get listOptions => 'List options';
+
+  @override
+  String checkItem(String title) {
+    return 'Check $title';
+  }
+
+  @override
+  String uncheckItem(String title) {
+    return 'Uncheck $title';
+  }
 }

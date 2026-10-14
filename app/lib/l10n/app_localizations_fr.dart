@@ -244,4 +244,78 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get signOut => 'Se déconnecter';
+
+  @override
+  String get createList => 'Créer une liste';
+
+  @override
+  String get listName => 'Nom de la liste';
+
+  @override
+  String get renameList => 'Renommer';
+
+  @override
+  String get archiveList => 'Archiver';
+
+  @override
+  String get archiveListConfirmTitle => 'Archiver cette liste ?';
+
+  @override
+  String get archiveListConfirmBody =>
+      'Les listes archivées disparaissent de cet écran et ne peuvent plus être modifiées.';
+
+  @override
+  String get itemsEmpty =>
+      'Rien ici pour le moment. Ajoutez le premier élément.';
+
+  @override
+  String get deleteItem => 'Supprimer l\'élément';
+
+  @override
+  String get resetList => 'Tout décocher';
+
+  @override
+  String get resetListConfirmTitle => 'Décocher tous les éléments ?';
+
+  @override
+  String get resetListConfirmBody =>
+      'Pratique pour repartir de zéro, par exemple une liste de valise.';
+
+  @override
+  String get openLists => 'Listes';
+
+  @override
+  String get listsTitle => 'Listes';
+
+  @override
+  String get listsEmpty =>
+      'Aucune liste pour le moment. Un admin peut en créer une.';
+
+  @override
+  String get newList => 'Nouvelle liste';
+
+  @override
+  String get addItem => 'Ajouter un élément';
+
+  @override
+  String get addItemHint => 'Ajouter un élément…';
+
+  @override
+  String get addItemButton => 'Ajouter';
+
+  @override
+  String get basketTitle => 'Dans le panier';
+
+  @override
+  String get listOptions => 'Options de la liste';
+
+  @override
+  String checkItem(String title) {
+    return 'Cocher $title';
+  }
+
+  @override
+  String uncheckItem(String title) {
+    return 'Décocher $title';
+  }
 }

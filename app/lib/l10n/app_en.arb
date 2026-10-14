@@ -89,5 +89,37 @@
   "signInButton": "Sign in",
   "signingIn": "Signing in…",
   "signInFailed": "Sign-in did not complete. Try again.",
-  "signOut": "Sign out"
+  "signOut": "Sign out",
+  "createList": "Create list",
+  "listName": "List name",
+  "renameList": "Rename",
+  "archiveList": "Archive",
+  "archiveListConfirmTitle": "Archive this list?",
+  "archiveListConfirmBody": "Archived lists disappear from this screen and can no longer be changed.",
+  "itemsEmpty": "Nothing here yet. Add the first item.",
+  "deleteItem": "Delete item",
+  "resetList": "Uncheck all",
+  "resetListConfirmTitle": "Uncheck every item?",
+  "resetListConfirmBody": "Use this to start the list over, for example a packing list.",
+  "openLists": "Lists",
+  "listsTitle": "Lists",
+  "listsEmpty": "No lists yet. An admin can create one.",
+  "newList": "New list",
+  "addItem": "Add an item",
+  "addItemHint": "Add an item…",
+  "addItemButton": "Add",
+  "basketTitle": "In the basket",
+  "listOptions": "List options",
+  "checkItem": "Check {title}",
+  "@checkItem": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "uncheckItem": "Uncheck {title}",
+  "@uncheckItem": {
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  }
 }
