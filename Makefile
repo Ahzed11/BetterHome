@@ -43,8 +43,8 @@ openapi: ## Regenerate documentation/api/*-openapi.yaml from the annotated code,
 	cd $(BACKEND) && ./mvnw -B verify -Dtest=OpenApiContractTest -Dopenapi.update=true -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true -Denforcer.skip=true
 	cd $(BACKEND) && ./mvnw -B verify -pl common-domain -Dtest=OpenApiAggregateTest -Dopenapi.update=true -Djacoco.skip=true -Denforcer.skip=true
 
-test-backend: ## Spotless, Checkstyle, Quarkus tests and coverage floor (dependency audit: T-0005)
-	cd $(BACKEND) && ./mvnw -B verify
+test-backend: ## Spotless, Checkstyle, Quarkus tests and coverage floor; SERVICE=tasks-service limits it to one service (dependency audit: T-0005)
+	cd $(BACKEND) && ./mvnw -B verify $(if $(SERVICE),-pl services/$(SERVICE) -am)
 
 client: ## Generate the Dart client from documentation/api/openapi.yaml into generated/ (gitignored)
 	@bash $(ROOT)/tooling/generate-client.sh

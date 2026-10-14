@@ -559,6 +559,18 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Spec: §2, §9, AGENTS §6.2
 * Acceptance criteria: decide and implement how the web build signs in to Keycloak (`flutter_appauth` has no web support), or record that web e2e stays token-injected. Needs a product decision first.
 
+### T-0070 · Faster CI: run the gates as parallel jobs
+
+* Status: in-review
+* Issue / PR: — (suggested: "CI takes too long to go green") / this PR
+* Depends on: T-0018
+* Spec: AGENTS §6.2, ADR 0019
+* Acceptance criteria: A green `check` on a pull request arrives noticeably sooner than the 5 minutes of the single `make check` job, with the same gates, and a failing gate still fails `check`.
+* Summary: Measured one run (run 38530080319): `make check` 268 s, of which the five services built in sequence took 3m47, plus 39 s of Flutter setup. The workflow now runs `docs`, one `backend` job per service (`make test-backend SERVICE=<name>`, new optional variable) and `app` in parallel, joined by a `check` job that fails unless all succeeded.
+* Decisions and deviations: AGENTS §6.2 says CI runs `make check`; CI now runs the same make targets split across jobs, and `make check` is unchanged locally (ADR 0019). The service matrix is read from `backend/services` so a new service cannot silently go untested. Flutter is installed only in the app job. Path filtering to skip jobs was not added: the wall time is set by the slowest job, so it would add logic without saving wait.
+* Verification: see the PR description for the measured time of the new workflow against the 5 minute baseline. Not run: `make check` locally as a whole.
+* Follow-ups: when T-0053 is done, require the `check` job; add jobs here when T-0021 (e2e), T-0046 (images) and T-0038 (dependency audit) land.
+
 ### T-0071 · Contract: mark response fields as required
 
 * Status: todo
