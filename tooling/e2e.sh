@@ -63,11 +63,16 @@ if [[ "$E2E_TARGET" == web ]]; then
     --dart-define=SCORING_API_BASE_URL=http://localhost:8083 \
     --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome >"$(mktemp)" 2>&1 &
   server_pid=$!
+  # While the app compiles, the dev server answers every path with index.html (HTTP 200), so only a
+  # JavaScript answer means the app is ready.
+  app_is_served() {
+    [[ "$(curl -s -o /dev/null -w '%{content_type}' "http://localhost:${E2E_WEB_PORT}/main.dart.js")" == *javascript* ]]
+  }
   for _ in $(seq 1 150); do
-    curl -sf "http://localhost:${E2E_WEB_PORT}/main.dart.js" -o /dev/null && break
+    app_is_served && break
     sleep 2
   done
-  curl -sf "http://localhost:${E2E_WEB_PORT}/main.dart.js" -o /dev/null || { echo "e2e: the app was not served" >&2; exit 1; }
+  app_is_served || { echo "e2e: the app was not served" >&2; exit 1; }
   dart run test_driver/web_sign_in.dart "http://localhost:${E2E_WEB_PORT}" "$E2E_USER" "$E2E_PASSWORD"
   kill "$server_pid"; wait "$server_pid" 2>/dev/null || true
   server_pid=

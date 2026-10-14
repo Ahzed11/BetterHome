@@ -131,19 +131,24 @@ jobs:
           cache: maven
           cache-dependency-path: backend/**/pom.xml
 
+      # The slow parts of `make e2e` that need no Flutter run in the background while Flutter is set up:
+      # the Podman API socket, the images the stack uses (read from the files that name them) and the jars.
+      - name: Prepare the stack in the background
+        run: |
+          podman --version
+          setsid nohup podman system service --time=0 unix:///tmp/podman.sock >/tmp/podman-service.log 2>&1 &
+          images="$(grep -h '^\s*image:' deploy/podman-compose.yml | awk '{print $2}') \
+            $(grep -oP 'FLYWAY_IMAGE:-\K[^}]+' deploy/migrate.sh) \
+            $(grep -h '^FROM' backend/services/*/src/main/docker/Dockerfile.jvm | awk '{print $2}' | sort -u)"
+          setsid nohup sh -c 'for i in '"$images"'; do podman pull -q "$i" & done; wait' >/tmp/pull.log 2>&1 &
+          echo $! > /tmp/pull.pid
+          (cd backend && setsid nohup ./mvnw -B -q -DskipTests package >/tmp/mvn.log 2>&1 & echo $! > /tmp/mvn.pid)
+
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-
-      - name: Start the Podman API socket
-        run: |
-          podman --version
-          podman compose version || true
-          podman system service --time=0 unix:///tmp/podman.sock &
-          for _ in $(seq 1 30); do [ -S /tmp/podman.sock ] && break; sleep 1; done
-          podman info --format '{{.Host.Security.Rootless}}'
 
       - name: Install Chrome for Testing and chromedriver (pinned, checksummed)
         run: bash tooling/install-chrome.sh
@@ -167,25 +172,15 @@ jobs:
         working-directory: app
         run: flutter pub get --enforce-lockfile
 
-      - name: TEMP full-path diagnosis
+      # Everything started in the background above must have finished before the stack is built.
+      - name: Wait for the background preparation
         run: |
-          . tooling/dev-env.sh
-          CORS_ORIGINS=http://localhost:8090 make up >/tmp/up.log 2>&1 || { tail -30 /tmp/up.log; exit 1; }
-          make -s -C . client >/dev/null 2>&1 || true
-          cd app && flutter pub get >/dev/null
-          chromedriver --port=4444 --verbose --log-path=/tmp/cd.log >/dev/null 2>&1 &
-          flutter run -d web-server --release --no-pub --web-port=8090 \
-            --dart-define=API_BASE_URL=http://localhost:8081 --dart-define=TASKS_API_BASE_URL=http://localhost:8082 \
-            --dart-define=SCORING_API_BASE_URL=http://localhost:8083 --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome >/tmp/server.log 2>&1 &
-          for _ in $(seq 1 150); do curl -sf http://localhost:8090/main.dart.js -o /dev/null && break; sleep 2; done
-          date -u +%T; uptime
-          bash -c '. ../deploy/lib.sh; ensure_user alice demo alice@betterhome.local alice' >/dev/null 2>&1
-          dart run test_driver/web_sign_in.dart http://localhost:8090 alice demo 2>&1 | tail -6 || true
-          date -u +%T
-          echo "--- devtools exceptions/console ---"
-          grep -A12 -E "Runtime.consoleAPICalled|Runtime.exceptionThrown|Log.entryAdded" /tmp/cd.log | grep -E '"(text|description|value|url|level|type)"' | cut -c1-300 | head -40
-          echo "--- server log ---"; tail -15 /tmp/server.log
-          echo "--- sandbox/gpu lines ---"; grep -iE "gpu|webgl|swiftshader|crash" /tmp/cd.log | cut -c1-300 | head -10
+          while kill -0 "$(cat /tmp/mvn.pid)" 2>/dev/null; do sleep 2; done
+          while kill -0 "$(cat /tmp/pull.pid)" 2>/dev/null; do sleep 2; done
+          cat /tmp/pull.log
+          [ -S /tmp/podman.sock ]
+
+      - run: make e2e
 
   # The one result to require on master (T-0053). It fails when any job above failed or was skipped.
   check:
