@@ -683,7 +683,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0082 · The away notification text promises something that no longer happens
 
 * Status: done
-* Issue / PR: — (suggested: "Fix marked_away text: chores are dismissed, not passed on") / PR pending
+* Issue / PR: — (suggested: "Fix marked_away text: chores are dismissed, not passed on") / #76
 * Depends on: T-0026
 * Spec: §3.3 Away, §5
 * Acceptance criteria: The `marked_away` title and body in `notifications_en/fr.properties` say what happens since T-0003 (open chores are dismissed, not passed on); the rendering test still covers both languages.
