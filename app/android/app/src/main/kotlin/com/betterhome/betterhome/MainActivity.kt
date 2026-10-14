@@ -1,5 +1,6 @@
 package com.betterhome.betterhome
 
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity()
+// A ComponentActivity host lets the OIDC plugin use Chrome Auth Tab, which survives process death.
+class MainActivity : FlutterFragmentActivity()

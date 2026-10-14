@@ -17,19 +17,19 @@ void main() {
 
   HttpHouseholdsRepository households() => HttpHouseholdsRepository(
     baseUrl: 'http://households.test/',
-    accessToken: 'test-token',
+    accessToken: () => 'test-token',
     client: server.client,
   );
 
   HttpTasksRepository tasks() => HttpTasksRepository(
     baseUrl: 'http://tasks.test',
-    accessToken: 'test-token',
+    accessToken: () => 'test-token',
     client: server.client,
   );
 
   HttpScoringRepository scoring() => HttpScoringRepository(
     baseUrl: 'http://scoring.test',
-    accessToken: 'test-token',
+    accessToken: () => 'test-token',
     client: server.client,
   );
 
@@ -122,7 +122,7 @@ void main() {
     test('a missing token is refused by the server', () async {
       final repo = HttpHouseholdsRepository(
         baseUrl: 'http://households.test',
-        accessToken: '',
+        accessToken: () => '',
         client: server.client,
       );
 

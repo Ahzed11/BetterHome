@@ -40,13 +40,17 @@ CI: [.github/workflows/check.yml](.github/workflows/check.yml) runs the gates of
 
 Service HTTP ports: households `8081`, tasks `8082`, scoring `8083`, lists `8084`, notifications `8085`.
 
-Real API from the app (the app uses a Dart client generated from `documentation/api/openapi.yaml`: run `make client` once, and again after the API changes):
+Real API from the app, signing in through Keycloak (the app uses a Dart client generated from `documentation/api/openapi.yaml`: run `make client` once, and again after the API changes). Keycloak accepts the web redirect only from port 8090:
 
 ```bash
-make client && cd app && flutter pub get && flutter run \
-  --dart-define=API_BASE_URL=http://10.0.2.2:8081 \
-  --dart-define=ACCESS_TOKEN=<keycloak-access-token>
+make client && cd app && flutter pub get && flutter run -d chrome --web-port 8090 \
+  --dart-define=API_BASE_URL=http://localhost:8081 \
+  --dart-define=TASKS_API_BASE_URL=http://localhost:8082 \
+  --dart-define=SCORING_API_BASE_URL=http://localhost:8083 \
+  --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome
 ```
+
+Without `API_BASE_URL` and `KEYCLOAK_ISSUER` the app runs in demo mode on in-memory data. `make seed` creates the users `alice` and `bob` (password `demo`). On the Android emulator use `10.0.2.2` for the API URLs and run `adb reverse tcp:8180 tcp:8180`, because Keycloak advertises `localhost:8180`. After changing the realm file run `make down && make up`, since it is imported only once.
 
 `make seed` creates its demo users itself. Manual Keycloak user setup: [deploy/keycloak/README.md](deploy/keycloak/README.md).
 

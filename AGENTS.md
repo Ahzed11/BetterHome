@@ -73,7 +73,7 @@ scoring-service/
 lists-service/
 notifications-service/
 common-domain/
-app/            Flutter app (integrating appauth / flutter_appauth for OIDC)
+app/            Flutter app (OIDC sign-in with the `oidc` package, ADR 0020)
 deploy/         Helm / Kustomize manifests for OpenShift, Keycloak Realm exports, Containerfiles, local Podman scripts
 documentation/  project-specification.md, tasks.md (ledger), decisions/ (ADRs), api/openapi.yaml
 AGENTS.md

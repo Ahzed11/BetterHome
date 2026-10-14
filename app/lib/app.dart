@@ -1,24 +1,144 @@
+import 'package:betterhome/auth/auth_service.dart';
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/app_theme.dart';
 import 'package:betterhome/ui/screens/households_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
+import 'package:betterhome/ui/screens/sign_in_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 class BetterHomeApp extends StatefulWidget {
-  const BetterHomeApp({super.key, required this.session, this.initialLocale});
+  const BetterHomeApp({
+    super.key,
+    required this.session,
+    this.auth,
+    this.initialLocale,
+  });
 
   final AppSession session;
+
+  /// Signs the user in with the identity provider. Without it the app runs in demo mode.
+  final AuthService? auth;
   final Locale? initialLocale;
 
   @override
   State<BetterHomeApp> createState() => _BetterHomeAppState();
 }
 
+enum _Phase { restoring, signedOut, signingIn, loadingProfile, ready }
+
 class _BetterHomeAppState extends State<BetterHomeApp> {
   bool _synced = false;
+  _Phase _phase = _Phase.restoring;
+  bool _signInFailed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.auth != null) {
+      _restore();
+    }
+  }
+
+  Future<void> _restore() async {
+    try {
+      await _enter(await widget.auth?.restore());
+    } on AuthException {
+      _set(_Phase.signedOut, failed: true);
+    }
+  }
+
+  Future<void> _signIn() async {
+    _set(_Phase.signingIn);
+    try {
+      await _enter(await widget.auth?.signIn());
+    } on AuthException {
+      _set(_Phase.signedOut, failed: true);
+    }
+  }
+
+  Future<void> _signOut() async {
+    await widget.auth?.signOut();
+    _set(_Phase.signedOut);
+  }
+
+  Future<void> _enter(AuthUser? user) async {
+    if (user == null) {
+      _set(_Phase.signedOut);
+      return;
+    }
+    _set(_Phase.loadingProfile);
+    await widget.session.loadProfile(
+      email: user.email,
+      givenName: user.givenName,
+      familyName: user.familyName,
+      language: _language,
+    );
+    if (widget.session.profile == null) {
+      _set(_Phase.signedOut, failed: true);
+    } else {
+      _set(_Phase.ready);
+    }
+  }
+
+  void _set(_Phase phase, {bool failed = false}) {
+    if (mounted) {
+      setState(() {
+        _phase = phase;
+        _signInFailed = failed;
+      });
+    }
+  }
+
+  String get _language {
+    final code =
+        widget.initialLocale?.languageCode ??
+        WidgetsBinding.instance.platformDispatcher.locale.languageCode;
+    return code == 'fr' ? 'fr' : 'en';
+  }
+
+  Widget _home() {
+    if (widget.auth == null) {
+      return _synced
+          ? HouseholdsScreen(session: widget.session)
+          : _demoProfileScreen();
+    }
+    return switch (_phase) {
+      _Phase.restoring || _Phase.loadingProfile => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      _Phase.signedOut || _Phase.signingIn => SignInScreen(
+        onSignIn: _signIn,
+        busy: _phase == _Phase.signingIn,
+        failed: _signInFailed,
+      ),
+      _Phase.ready => HouseholdsScreen(
+        session: widget.session,
+        onSignOut: _signOut,
+      ),
+    };
+  }
+
+  Widget _demoProfileScreen() {
+    return ProfileSyncScreen(
+      session: widget.session,
+      onSynced: () => setState(() => _synced = true),
+      onUseDemo: () async {
+        widget.session.useRepository(FakeHouseholdsRepository());
+        await widget.session.syncProfile(
+          email: 'demo@betterhome.local',
+          givenName: 'Demo',
+          familyName: 'User',
+          language: widget.initialLocale?.languageCode ?? 'en',
+        );
+        if (mounted) {
+          setState(() => _synced = true);
+        }
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,24 +153,7 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: _synced
-          ? HouseholdsScreen(session: widget.session)
-          : ProfileSyncScreen(
-              session: widget.session,
-              onSynced: () => setState(() => _synced = true),
-              onUseDemo: () async {
-                widget.session.useRepository(FakeHouseholdsRepository());
-                await widget.session.syncProfile(
-                  email: 'demo@betterhome.local',
-                  givenName: 'Demo',
-                  familyName: 'User',
-                  language: widget.initialLocale?.languageCode ?? 'en',
-                );
-                if (mounted) {
-                  setState(() => _synced = true);
-                }
-              },
-            ),
+      home: _home(),
     );
   }
 }

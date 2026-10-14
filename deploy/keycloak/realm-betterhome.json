@@ -33,16 +33,17 @@
       "enabled": true,
       "publicClient": true,
       "redirectUris": [
-        "com.betterhome.app://callback",
-        "http://localhost:*"
+        "com.betterhome.betterhome:/oauth2redirect",
+        "http://localhost:8090/redirect.html"
       ],
-      "webOrigins": ["*"],
+      "webOrigins": ["http://localhost:8090"],
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "protocol": "openid-connect",
       "fullScopeAllowed": true,
       "attributes": {
-        "pkce.code.challenge.method": "S256"
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "com.betterhome.betterhome:/oauth2redirect##http://localhost:8090/redirect.html"
       }
     },
     {

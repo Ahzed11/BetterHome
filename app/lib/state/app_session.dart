@@ -72,6 +72,31 @@ class AppSession extends ChangeNotifier {
     });
   }
 
+  /// Loads the profile of a signed-in user. The profile is created from the identity provider's
+  /// claims on the first sign-in only, so later sign-ins never overwrite what the user saved.
+  Future<void> loadProfile({
+    required String email,
+    String? givenName,
+    String? familyName,
+    String language = 'en',
+  }) async {
+    await _run(() async {
+      try {
+        profile = await _repository.getMe();
+      } on ApiException catch (e) {
+        if (e.statusCode != 404) {
+          rethrow;
+        }
+        profile = await _repository.syncMe(
+          email: email,
+          givenName: givenName,
+          familyName: familyName,
+          language: language,
+        );
+      }
+    });
+  }
+
   Future<T?> _run<T>(Future<T> Function() action) async {
     busy = true;
     lastError = null;

@@ -45,7 +45,7 @@ abstract class HouseholdsRepository {
 class HttpHouseholdsRepository implements HouseholdsRepository {
   HttpHouseholdsRepository({
     required String baseUrl,
-    required String accessToken,
+    required String Function() accessToken,
     http.Client? client,
   }) : _client = buildApiClient(
          baseUrl: baseUrl,
