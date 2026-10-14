@@ -13,7 +13,7 @@ JAR="$DEV_TOOLS_DIR/openapi-generator/openapi-generator-cli-${OPENAPI_GENERATOR_
 if [[ ! -f "$JAR" ]]; then
   mkdir -p "$(dirname "$JAR")"
   PART="$(mktemp)"
-  curl -fsSL -o "$PART" \
+  curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 -o "$PART" \
     "https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/${OPENAPI_GENERATOR_VERSION}/openapi-generator-cli-${OPENAPI_GENERATOR_VERSION}.jar"
   echo "${OPENAPI_GENERATOR_SHA256}  $PART" | sha256sum -c - >/dev/null || { rm -f "$PART"; echo "generator checksum mismatch" >&2; exit 1; }
   mv "$PART" "$JAR"
