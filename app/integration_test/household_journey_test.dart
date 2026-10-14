@@ -58,6 +58,13 @@ Future<void> _seeCount(WidgetTester tester, Finder finder, int count) async {
   expect(finder, findsNWidgets(count));
 }
 
+/// Goes back once the previous navigation has finished animating, so only one back button exists.
+Future<void> _back(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  await tester.pageBack();
+  await tester.pumpAndSettle();
+}
+
 Future<void> _tap(WidgetTester tester, Finder finder) async {
   await _see(tester, finder);
   await tester.tap(finder.first);
@@ -72,7 +79,12 @@ Future<AppSession> _openAs(
 ) async {
   final session = _sessionFor(token);
   await tester.pumpWidget(
-    BetterHomeApp(session: session, initialLocale: const Locale('en')),
+    // A new key per user, otherwise the previous user's app state is kept.
+    BetterHomeApp(
+      key: UniqueKey(),
+      session: session,
+      initialLocale: const Locale('en'),
+    ),
   );
   await _see(tester, find.text('Your profile'));
   await tester.enterText(find.widgetWithText(TextField, 'Email'), email);
@@ -132,14 +144,12 @@ void main() {
       await _see(tester, find.text('open · 5 pts'));
       await _tap(tester, find.byTooltip('Complete'));
       await _seeCount(tester, find.text('done · 5 pts'), 2);
-      await tester.pageBack();
-      await tester.pumpAndSettle();
+      await _back(tester);
 
       // Both completions show on the leaderboard, through tasks -> scoring over HTTP.
       await _tap(tester, find.text('Leaderboard'));
       await _see(tester, find.text('10 pts'));
-      await tester.pageBack();
-      await tester.pumpAndSettle();
+      await _back(tester);
 
       // Dismissal asks for confirmation and awards nothing.
       await session.tasksRepository.createOpen(
@@ -162,8 +172,7 @@ void main() {
       );
       await _tap(tester, find.widgetWithText(FilledButton, 'Revert'));
       await _seeCount(tester, find.byTooltip('Revert'), 1);
-      await tester.pageBack();
-      await tester.pumpAndSettle();
+      await _back(tester);
       await _tap(tester, find.text('Leaderboard'));
       await _see(tester, find.text('5 pts'));
       expect(find.text('10 pts'), findsNothing);
