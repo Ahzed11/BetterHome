@@ -41,6 +41,18 @@ class MessageRendererTest {
     }
 
     @Test
+    void theAwayMessageSaysTheOpenChoresWereDismissedNotPassedOn() {
+        // Spec 3.3: marking a member away dismisses their open chores, it does not reassign them.
+        Message en = renderer.render(NotificationType.marked_away, Map.of(), "en");
+        Message fr = renderer.render(NotificationType.marked_away, Map.of(), "fr");
+
+        assertTrue(en.body().contains("dismissed"), en.body());
+        assertFalse(en.body().contains("passed on"), en.body());
+        assertTrue(fr.body().contains("fermées"), fr.body());
+        assertFalse(fr.body().contains("transmises"), fr.body());
+    }
+
+    @Test
     void frenchAndEnglishTextsDiffer() {
         for (NotificationType type : NotificationType.values()) {
             assertNotEquals(

@@ -682,11 +682,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0082 · The away notification text promises something that no longer happens
 
-* Status: todo
-* Issue / PR: — (suggested: "Fix marked_away text: chores are dismissed, not passed on")
+* Status: done
+* Issue / PR: — (suggested: "Fix marked_away text: chores are dismissed, not passed on") / PR pending
 * Depends on: T-0026
 * Spec: §3.3 Away, §5
 * Acceptance criteria: The `marked_away` title and body in `notifications_en/fr.properties` say what happens since T-0003 (open chores are dismissed, not passed on); the rendering test still covers both languages.
+* Summary: The body now reads "Your open chores were dismissed." / "Vos tâches ouvertes ont été fermées." (it said "passed on" / "transmises"). `MessageRendererTest` gets a test that fails on the old text: the English body says "dismissed" and not "passed on", the French one says "fermées" and not "transmises".
+* Decisions and deviations: Wording only; the titles are unchanged. "fermées" was chosen for the French because the spec's own term "dismissed" has no established app wording in French yet (the UI shows the English status names, T-0058).
+* Verification: `MessageRendererTest` failed before the change and passes after; `make test-backend SERVICE=notifications-service` and CI. Not run: app, e2e outside CI.
+* Follow-ups: none.
 
 ### T-0083 · Drop the unused title and body columns of tasks' outbox
 
