@@ -695,7 +695,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0084 · Retry the tool downloads in CI and local setup
 
 * Status: done
-* Issue / PR: — (suggested: "A single 404 from Maven Central failed CI") / PR pending
+* Issue / PR: — (suggested: "A single 404 from Maven Central failed CI") / #74
 * Depends on: T-0020, T-0073
 * Spec: AGENTS §6.2
 * Acceptance criteria: The downloads of the Dart client generator, Chrome for Testing, Flutter and the Android command-line tools retry on transient errors, so one failed fetch does not fail the build.
