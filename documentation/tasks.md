@@ -692,3 +692,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Spec: AGENTS §4 (expand then contract)
 * Acceptance criteria: A new Flyway migration drops `notification_outbox.title` and `.body` once no running replica writes them (T-0026 stopped writing them).
 
+### T-0084 · Retry the tool downloads in CI and local setup
+
+* Status: done
+* Issue / PR: — (suggested: "A single 404 from Maven Central failed CI") / #74
+* Depends on: T-0020, T-0073
+* Spec: AGENTS §6.2
+* Acceptance criteria: The downloads of the Dart client generator, Chrome for Testing, Flutter and the Android command-line tools retry on transient errors, so one failed fetch does not fail the build.
+* Summary: Observed on PR #73: the `app` job failed in `make client` because the pinned generator jar answered 404 once from Maven Central (the same URL answered 200 a minute later, and in every earlier run); re-running the job passed. The four `curl` downloads in `tooling/` now use `--retry 5 --retry-all-errors --retry-delay 3`. Checksums are still verified after the download, so a retry never weakens the pin.
+* Decisions and deviations: `--retry-all-errors` needs curl 7.71 or newer (the CI runners and Fedora have it). The localhost API calls in `deploy/` are left alone.
+* Verification: syntax check of the three scripts; `make client` (jar cached, so no download), `make test-guard` and the PR's CI run. Not reproduced: the 404 itself.
+* Follow-ups: none.
+
