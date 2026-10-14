@@ -325,6 +325,34 @@ class NotificationProducersTest {
         assertEquals(20, queued().size(), "one notice per task, no duplicates");
     }
 
+    @Test
+    void severalReplicasNeverQueueTheSameReminderTwice() throws Exception {
+        // Default household settings remind at 08:00 on the due date: these are due for it at
+        // 10:00.
+        for (int i = 0; i < 20; i++) {
+            openTaskFor(MEMBER_USER, NOW.plusSeconds(7200));
+        }
+
+        ExecutorService pool = Executors.newFixedThreadPool(4);
+        try {
+            List<Future<Integer>> runs =
+                    List.of(
+                            pool.submit(() -> reminderService.sendDueReminders()),
+                            pool.submit(() -> reminderService.sendDueReminders()),
+                            pool.submit(() -> reminderService.sendDueReminders()),
+                            pool.submit(() -> reminderService.sendDueReminders()));
+            int total = 0;
+            for (Future<Integer> run : runs) {
+                total += run.get(60, TimeUnit.SECONDS);
+            }
+            assertEquals(20, total);
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertEquals(20, queued().size(), "one reminder per task, no duplicates");
+    }
+
     private <T> T asUser(UUID authSubject, Supplier<T> action) {
         SecurityIdentity previous = identityAssociation.getIdentity();
         identityAssociation.setIdentity(
