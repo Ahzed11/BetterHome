@@ -63,7 +63,7 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 - **Completion:** by the assignee or an admin. Points always go to the assignee. The person who clicked is stored as `completer_id` for audit. Completing before `due_at` awards points, after it awards `late_points`.
 - **Dismissal:** by the assignee on their own task or by an admin on any task. The UI asks for confirmation, since it is irreversible. Dismissed tasks never award points. Reasons: `manual`, `superseded`, `nobody_available`, `reverted_overdue`, `assignee_away`.
 - **Reassignment:** admin only, round robin among eligible members.
-- **Away:** when a member is marked away, their open tasks are dismissed (`assignee_away`, recorded against the admin who set the member away) instead of being reassigned. If tasks-service cannot be reached, marking the member away fails and nothing is saved. Later assignment (round robin, fixed-assignee fallback) ignores away members.
+- **Away:** when a member is marked away, their open tasks are dismissed (`assignee_away`, recorded against the admin who set the member away) instead of being reassigned. If tasks-service cannot be reached, marking the member away fails and nothing is saved. Later assignment (round robin, fixed-assignee fallback) ignores away members. When `away_from` is in the future, nothing happens at the request; when that instant arrives, a households scheduler dismisses the member's open tasks (`assignee_away`, recorded against the admin who set the period) exactly once. If tasks-service cannot be reached then, the dismissal is retried on the next run. A period that was cleared, ended or whose member left before it began dismisses nothing.
 - **Manual tasks:** a member logs a chore they just did ("I took out the garbage"). It is created already done, assigned to its creator, with full points and no due date. It does not affect recurring tasks.
 - **Reversion (admin, reason required):**
   - The completion's points are reversed with a negative ledger entry.
@@ -107,7 +107,7 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 | :--- | :--- |
 | `USER` | `auth_subject` (Keycloak sub UUID, unique), `email` (synced copy), names, language, timezone, `deleted_at` |
 | `HOUSEHOLD` | `name`, `timezone`, `reminder_days_before`, `reminder_time`, `created_by`, `deleted_at` |
-| `MEMBERSHIP` | `user`, `household`, `role`, `joined_at`, `left_at`, `away_from`, `away_until`, `away_set_by` |
+| `MEMBERSHIP` | `user`, `household`, `role`, `joined_at`, `left_at`, `away_from`, `away_until`, `away_set_by`, `away_tasks_dismissed_at` |
 | `INVITATION` | `household`, `email`, `role`, `token` (unique), `expires_at`, `accepted_at` |
 | `LIST` / `ITEM` | List: `title`, `created_by`, `archived_at`. Item: `title`, `position`, `creator`, `completer`, `completed_at`, `deleted_at`, `deleted_by` |
 | `TASK_TEMPLATE` | `title`, optional `emoji`, `description`, `points`, `late_points`, default due offset, `archived_at`. No categories |

@@ -71,6 +71,9 @@ services:
       <<: *service-env
       DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_households
       TASKS_SERVICE_URL: http://tasks-service:8082
+      OIDC_SERVICE_CLIENT_ID: betterhome-households-service
+      # Local-dev placeholder, same value as the secret in realm-betterhome.json
+      OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
       - "8081:8081"
 
