@@ -13,7 +13,7 @@ The product owner designed the app in a Claude Design canvas ("Household app red
 ## Deviations from the canvas, on purpose
 
 - **Fonts:** the design uses Bricolage Grotesque (titles) and Figtree (text) from Google Fonts. They are not bundled yet; `AppTypography` is the one place to add them (T-0079).
-- **Navigation:** the bottom bar with four tabs and the household switcher are not built; Lists is reached from the household screen like Chores and the leaderboard. The shell belongs with T-0031.
+- **Navigation:** built in T-0031, see the addendum.
 - **Check box outline:** `#7F8F8A` instead of the design's `#B9C4BF`, which is below the 3:1 contrast of a control boundary.
 - **Tab name:** the design says "Lists" where the spec said "Groceries"; the spec is updated to "Lists".
 - **Delete item:** the design has no delete control but the spec requires deleting items, so each row has a delete icon.
@@ -22,3 +22,10 @@ The product owner designed the app in a Claude Design canvas ("Household app red
 ## Consequences
 
 Restyling the existing screens onto these widgets is separate work (T-0080). Changes to the canvas are followed by token and widget changes in the same commit as the screen that needs them.
+
+## Addendum: navigation shell (T-0031)
+
+- `HomeShell` is the signed-in app: the household switcher in the top bar (a pill with the current household that opens a sheet to switch, create a household or open its details), the notifications bell and sign-out next to it, and a Material 3 `NavigationBar` with the four tabs All chores, My chores, Leaderboard and Lists. The tab screens carry their own `ScreenHeader` instead of an app bar, like the Lists screen did. The household list and the old per-household menu screen are gone; the details (members, invitations, away, leave) are one action in the switcher sheet.
+- The selected household lives in `AppSession` and is remembered per user with `shared_preferences` (already in the dependency tree through `oidc_default_store`; now a direct dependency, test doubles use its in-memory mock). A remembered household that no longer exists falls back to the first one.
+- The design canvas has no switcher board, so the sheet extends its look (rounded sheet, brand tint for the selected household). Accepting an invitation stays in the household details, as before.
+

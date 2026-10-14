@@ -271,11 +271,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0031 · App: navigation shell and household switcher
 
-* Status: todo
-* Issue / PR: #24
+* Status: in-review
+* Issue / PR: #24 / #85
 * Depends on: T-0020, T-0024, T-0028
 * Spec: §8.2
-* Acceptance criteria: Split by the product owner on 2026-10-14 (the overdue tone, the reverted reason and the quick-log undo moved to T-0088, T-0089 and T-0090). The four bottom tabs (All Chores, My Chores, Leaderboard, Lists) and a household switcher at the top, with the notifications bell and the preferences reachable from the shell. Built from the shared widgets and tokens (ADR 0021) following the design canvas. The switcher lists the user's households, the choice survives a restart, and every screen reads the selected household. FR/EN, widget and golden tests, e2e journey "household switcher with two households".
+* Acceptance criteria: Split by the product owner on 2026-10-14 (the overdue tone, the reverted reason and the quick-log undo moved to T-0088, T-0089 and T-0090). The four bottom tabs (All Chores, My Chores, Leaderboard, Lists) and a household switcher at the top, with the notifications bell reachable from the shell. Built from the shared widgets and tokens (ADR 0021) following the design canvas. The switcher lists the user's households, the choice survives a restart, and every screen reads the selected household. FR/EN, widget and golden tests, e2e journey "household switcher with two households".
+* Summary: `HomeShell` (switcher pill and sheet in `household_switcher.dart`, bell, sign-out, `NavigationBar`) replaces `HouseholdsScreen`. `ChoresScreen` takes `mine` instead of its own two tabs, and the chores, leaderboard and lists screens use a `ScreenHeader` rather than an app bar. `AppSession` keeps `selectedHouseholdId` (`ensureSelection`, `selectHousehold`) and remembers it per user in `shared_preferences`. The details of a household (members, invite, accept, away, leave) open from the sheet; its three navigation buttons were removed. French tab labels are now "Toutes les tâches" and "Mes tâches".
+* Decisions and deviations: ADR 0021 addendum (design has no switcher board; `shared_preferences` becomes a direct dependency, already transitive). The household list screen and its goldens and the strings `householdsTitle`, `openChores`, `openLeaderboard`, `openLists` are removed as obsolete. The notification preferences screen is still reached from the inbox, not from the shell. Tab bodies reload when a tab or household is selected (no kept state across tabs). An invited user with no household still has no way to accept an invitation before creating one (as before; accept lives in the household details).
+* Verification: `make test-docs`, `make test-app` (345 tests incl. shell behaviour tests: tabs, switching, restart, vanished household, creating from the sheet, details, empty state, FR; new goldens `home_*`, `household_sheet`, `chores_mine`), a cold `make e2e` including the new journey "household switcher: two households each show their own chores"; results in the PR. Not run: Android.
+* Follow-ups: T-0090 can start; suggested: let a user with no household accept an invitation from the empty state.
 
 ### T-0088 · App: overdue in soft coral with "still +N"
 
@@ -293,13 +297,13 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Spec: §3.3 (reversion), §8
 * Acceptance criteria: When an admin reverts a task, the assignee sees the reason on the task in the app. The task API has to expose the latest reversion reason (check first what the tasks API already returns; document any change in the OpenAPI files, the spec and the contract tests). FR/EN, widget and golden tests, and an e2e journey "admin reverts with a reason and the assignee sees it".
 
-### T-0090 · Quick-log "+ I just did…" with single tap and 5-second undo
+### T-0090 · Quick-log "+ I just did…" with single tap and 5-second cancel
 
-* Status: blocked
-* Issue / PR: — (suggested: "Quick-log with single-tap logging and 5-second undo")
+* Status: todo
+* Issue / PR: — (suggested: "Quick-log with single-tap logging and 5-second cancel")
 * Depends on: T-0031
-* Spec: §8.2, §3.3 (reversion is admin-only, with a reason)
-* Blocked by: a product decision. Today the app has a quick-log dialog, and the only way to take a manual task back is the admin reversion, which needs a reason. The spec asks for a 5-second undo for whoever logged, who may be a plain member. Question for the product owner: is the undo (a) a real undo of the creator within 5 seconds that removes the task and its points without a reversion record, (b) an automatic admin-style reversion allowed for the creator during the 5 seconds, or (c) delayed logging (the task is only sent after the 5 seconds unless undone). Then restyle the button and flow after the design (single tap on a template, snackbar with Undo), with FR/EN, widget, golden and e2e coverage ("quick-log a manual task and undo").
+* Spec: §8.2
+* Acceptance criteria: Decided by the product owner on 2026-10-14: whoever quick-logs a task has 5 seconds to cancel their log. Built as delayed logging: a single tap on a template shows a snackbar with Undo for 5 seconds and the task is only sent to the server when they pass without a cancel (nothing is created or reverted if cancelled; the ledger stays append-only). Leaving the screen or the app within the 5 seconds sends the log. Restyle the button and flow after the design. The spec text "5-second undo" is changed to say this. FR/EN, widget, golden and e2e coverage ("quick-log a manual task and cancel it", "quick-log and keep it").
 
 ### T-0032 · Account deletion and anonymization
 

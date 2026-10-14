@@ -2,7 +2,7 @@ import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/state/app_session.dart';
-import 'package:betterhome/ui/screens/households_screen.dart';
+import 'package:betterhome/ui/screens/home_shell.dart';
 import 'package:betterhome/ui/screens/notification_preferences_screen.dart';
 import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:flutter/material.dart';
@@ -222,7 +222,7 @@ void main() {
     Future<void> home(WidgetTester tester, AppSession session) async {
       await pumpScreen(
         tester,
-        home: HouseholdsScreen(session: session),
+        home: HomeShell(session: session),
         locale: const Locale('en'),
       );
       await tester.pumpAndSettle();

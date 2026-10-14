@@ -3,6 +3,7 @@ import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/month_recap_dialog.dart';
 import 'package:flutter/material.dart';
@@ -137,9 +138,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.leaderboardTitle)),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppTokens.spaceMd,
+              AppTokens.spaceSm,
+              AppTokens.spaceMd,
+              0,
+            ),
+            child: ScreenHeader(title: l10n.leaderboardTitle),
+          ),
           Padding(
             padding: const EdgeInsets.all(AppTokens.spaceMd),
             child: SegmentedButton<ScorePeriod>(

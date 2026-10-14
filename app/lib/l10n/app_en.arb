@@ -1,7 +1,6 @@
 {
   "@@locale": "en",
   "appTitle": "BetterHome",
-  "householdsTitle": "Your households",
   "householdsEmpty": "No households yet. Create one to get started.",
   "createHousehold": "Create household",
   "householdName": "Household name",
@@ -49,9 +48,7 @@
   "dismissConfirmBody": "Dismissal is permanent and awards no points.",
   "createTemplate": "New chore template",
   "templateTitle": "Title",
-  "openChores": "Open chores",
   "leaderboardTitle": "Leaderboard",
-  "openLeaderboard": "Leaderboard",
   "periodWeek": "Week",
   "periodMonth": "Month",
   "periodYear": "Year",
@@ -101,7 +98,6 @@
   "resetList": "Uncheck all",
   "resetListConfirmTitle": "Uncheck every item?",
   "resetListConfirmBody": "Use this to start the list over, for example a packing list.",
-  "openLists": "Lists",
   "listsTitle": "Lists",
   "listsEmpty": "No lists yet. An admin can create one.",
   "newList": "New list",
@@ -173,5 +169,8 @@
       "month": {"type": "String"}
     }
   },
-  "recapClose": "Nice!"
+  "recapClose": "Nice!",
+  "switchHousehold": "Household {name}, switch household",
+  "@switchHousehold": {"placeholders": {"name": {"type": "String"}}},
+  "householdDetails": "Household details"
 }

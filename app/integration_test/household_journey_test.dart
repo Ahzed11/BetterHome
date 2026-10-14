@@ -7,6 +7,7 @@ import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/widgets/add_field.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
+import 'package:betterhome/ui/widgets/household_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -119,11 +120,51 @@ Future<AppSession> _openAs(
   await _see(tester, find.text('Your profile'));
   await tester.enterText(find.widgetWithText(TextField, 'Email'), email);
   await _tap(tester, find.text('Continue'));
-  await _see(tester, find.text('Your households'));
+  await _see(
+    tester,
+    find.byWidgetPredicate(
+      (w) =>
+          w is NavigationBar ||
+          (w is Text && (w.data ?? '').contains('No households yet')),
+    ),
+  );
   return session;
 }
 
+/// Makes [name] the household every tab shows, through the switcher.
+Future<void> _selectHousehold(WidgetTester tester, String name) async {
+  await _see(tester, find.byType(HouseholdSwitcher));
+  final current = tester
+      .widget<HouseholdSwitcher>(find.byType(HouseholdSwitcher))
+      .current;
+  if (current.name == name) {
+    return;
+  }
+  await _tap(tester, find.byType(HouseholdSwitcher));
+  await _tap(
+    tester,
+    find.descendant(of: find.byType(HouseholdSheet), matching: find.text(name)),
+  );
+  await _see(
+    tester,
+    find.descendant(
+      of: find.byType(HouseholdSwitcher),
+      matching: find.text(name),
+    ),
+  );
+}
+
+/// Opens the details of the current household from the switcher sheet.
+Future<void> _openDetails(WidgetTester tester) async {
+  await _tap(tester, find.byType(HouseholdSwitcher));
+  await _tap(tester, find.text('Household details'));
+}
+
+/// Creates a household: from the empty state of a new user, or from the switcher sheet.
 Future<void> _createHousehold(WidgetTester tester, String name) async {
+  if (find.byType(HouseholdSwitcher).evaluate().isNotEmpty) {
+    await _tap(tester, find.byType(HouseholdSwitcher));
+  }
   await _tap(tester, find.text('Create household'));
   await _see(tester, find.widgetWithText(TextField, 'Household name'));
   await tester.enterText(
@@ -150,8 +191,6 @@ void main() {
           .id;
 
       // Alice is the only member, so every open task is hers.
-      await _tap(tester, find.textContaining(householdName));
-      await _tap(tester, find.text('Open chores'));
       await _see(tester, find.textContaining('No chores yet'));
 
       // Admin creates a template (the household has none) and quick-logs a manual task.
@@ -174,19 +213,17 @@ void main() {
       await _see(tester, find.text('open · 5 pts'));
       await _tap(tester, find.byTooltip('Complete'));
       await _seeCount(tester, find.text('done · 5 pts'), 2);
-      await _back(tester);
 
       // Both completions show on the leaderboard, through tasks -> scoring over HTTP.
       await _tap(tester, find.text('Leaderboard'));
       await _see(tester, find.text('10 pts'));
-      await _back(tester);
 
       // Dismissal asks for confirmation and awards nothing.
       await session.tasksRepository.createOpen(
         householdId: householdId,
         templateId: template.id,
       );
-      await _tap(tester, find.text('Open chores'));
+      await _tap(tester, find.text('All chores'));
       await _see(tester, find.byTooltip('Dismiss'));
       await tester.tap(find.byTooltip('Dismiss').first);
       await _see(tester, find.text('Dismiss this chore?'));
@@ -202,18 +239,38 @@ void main() {
       );
       await _tap(tester, find.widgetWithText(FilledButton, 'Revert'));
       await _seeCount(tester, find.byTooltip('Revert'), 1);
-      await _back(tester);
       await _tap(tester, find.text('Leaderboard'));
       await _see(tester, find.text('5 pts'));
       expect(find.text('10 pts'), findsNothing);
     },
   );
 
+  testWidgets('household switcher: two households each show their own chores', (
+    tester,
+  ) async {
+    await _openAs(tester, _aliceToken, _aliceEmail);
+    await _selectHousehold(tester, householdName);
+    await _see(tester, find.textContaining('pts'));
+
+    // A new household opens on its own, empty chores.
+    final cabin = 'E2E cabin ${DateTime.now().millisecondsSinceEpoch}';
+    await _createHousehold(tester, cabin);
+    await _see(tester, find.textContaining('No chores yet'));
+
+    // Switching back brings the first household's chores again, and the lists tab follows too.
+    await _selectHousehold(tester, householdName);
+    await _see(tester, find.textContaining('pts'));
+    expect(find.textContaining('No chores yet'), findsNothing);
+    await _tap(tester, find.text('Lists'));
+    await _selectHousehold(tester, cabin);
+    await _see(tester, find.text('No lists yet. An admin can create one.'));
+  });
+
   testWidgets('lists: create a list, add, check, delete and reset items', (
     tester,
   ) async {
     final session = await _openAs(tester, _aliceToken, _aliceEmail);
-    await _tap(tester, find.textContaining(householdName));
+    await _selectHousehold(tester, householdName);
     await _tap(tester, find.text('Lists'));
     await _see(tester, find.text('No lists yet. An admin can create one.'));
 
@@ -281,8 +338,8 @@ void main() {
 
   testWidgets('invite a member and join with the token', (tester) async {
     final alice = await _openAs(tester, _aliceToken, _aliceEmail);
-    await _see(tester, find.textContaining(householdName));
-    await _tap(tester, find.textContaining(householdName));
+    await _selectHousehold(tester, householdName);
+    await _openDetails(tester);
     await _tap(tester, find.byTooltip('Invite'));
     await tester.enterText(
       find.widgetWithText(TextField, 'Email to invite'),
@@ -302,7 +359,7 @@ void main() {
       tester,
       'Bob home ${DateTime.now().millisecondsSinceEpoch}',
     );
-    await _tap(tester, find.textContaining('Bob home'));
+    await _openDetails(tester);
     await _tap(tester, find.byTooltip('Accept invitation'));
     await tester.enterText(
       find.widgetWithText(TextField, 'Invitation token'),

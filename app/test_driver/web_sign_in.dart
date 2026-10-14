@@ -79,7 +79,7 @@ Future<void> _journey(
   // The Keycloak tab closes itself once the app has the answer; go back to the app tab.
   await driver.switchTo.window(appWindow);
   await _until(
-    () => _contains(driver, 'Your households'),
+    () => _contains(driver, 'No households yet'),
     'the households screen',
   );
 
