@@ -1,6 +1,7 @@
 ---
 openapi: 3.1.0
 tags:
+- name: internal
 - name: meta
 - name: recurrence
 - name: tasks
@@ -948,6 +949,43 @@ paths:
                 $ref: "#/components/schemas/RecurrenceResponse"
       security:
       - bearerAuth: []
+  /v1/internal/households/{householdId}/tasks/dismiss-away/{userId}:
+    post:
+      summary: Dismiss the open tasks of a member whose away period started (service
+        role)
+      operationId: dismissAwayMemberTasksInternal
+      tags:
+      - internal
+      parameters:
+      - name: householdId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      - name: dismissedBy
+        in: query
+        schema:
+          $ref: "#/components/schemas/UUID"
+        required: true
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DismissedCount"
+      security:
+      - bearerAuth:
+        - service
   /v1/meta:
     get:
       summary: "Service name, server time and caller subject"
