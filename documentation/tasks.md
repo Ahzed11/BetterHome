@@ -190,7 +190,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0024 · App: Lists tab (groceries and other checklists)
 
 * Status: done
-* Issue / PR: #17 / PR pending
+* Issue / PR: #17 / #71
 * Depends on: T-0023, T-0020
 * Spec: §4, §8.2
 * Acceptance criteria: Fourth bottom tab with list overview and item screen: create, check, uncheck, delete, reset (admin actions hidden for members). FR/EN strings, loading/empty/error/populated widget tests, goldens. e2e journey "checklist create, check, delete, reset". Changed by the product owner on 2026-10-14: the UI follows the Claude Design canvas ("Lists" board) and is built from clean, reusable components.
