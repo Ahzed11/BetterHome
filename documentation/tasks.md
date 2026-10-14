@@ -283,8 +283,8 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0088 · App: overdue in soft coral with "still +N"
 
-* Status: in-review
-* Issue / PR: — / PR pending
+* Status: done
+* Issue / PR: #24 / #86
 * Depends on: T-0031
 * Spec: §8.1, §3.3
 * Acceptance criteria: An overdue open task is shown in the soft coral token (never red) with the points that are still possible after the due date ("still +N", N = late points). FR/EN, widget and golden tests, and the overdue case in the chores e2e journey.
