@@ -164,11 +164,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0023 · lists-service: checklists, items and bulk reset
 
-* Status: todo
-* Issue / PR: #16
+* Status: in-review
+* Issue / PR: #16 / #53
 * Depends on: T-0008, T-0016
 * Spec: §4, §2 permissions, §6.2 LIST/ITEM
 * Acceptance criteria: Flyway schema for LIST and ITEM with constraints; admins create, rename and archive lists; any member adds, edits, checks, unchecks and soft-deletes items (who and when); bulk reset unchecks all items. Membership through households internal endpoints with a service account (ADR 0014). Authorization matrix tests for every endpoint (admin, member, non-member, left member, other household). OpenAPI updated.
+* Summary: Migration V2 adds `list` and `item` (FK item to list, NOT NULL, CHECKs for non-blank title, position >= 0, completer/completed_at and deleted_by/deleted_at set together, unique position per list; no cross-service FK). Endpoints under `/v1/households/{id}/lists`: list (`includeArchived`), create, rename, archive (admin) and, for any active member, list/add/rename/check/uncheck/delete items and `POST .../reset`. Rules live in the `Checklist`/`ChecklistItem` entities and `ChecklistService`/`ItemService`; membership comes from households-service through `HttpMembershipGateway` with the `betterhome-lists-service` service account (realm export and Compose updated).
+* Decisions and deviations: Archived lists answer 409 Conflict to rename, archive again and every item change (reading items stays allowed); deleted items answer 404. Checking a checked item (or unchecking an unchecked one) is a no-op, so the first completer is kept. Positions are append-only (max incl. deleted + 1, list row locked on add) and never reused. Delete returns 204; reset returns the items. Spec gap: who may reset is not stated; implemented as any active member (bulk uncheck), see Discovered T-0061. `@Consumes(JSON)` is on body-bearing methods only so body-less POST actions do not answer 415 (see T-0062). No ADR: it reuses ADR 0014/0015. After merging T-0039 (answer validation against the contract), lists-service also omits null fields (`quarkus.jackson.serialization-inclusion=non-null`) and answers bean validation failures with `ErrorResponse` through a `ConstraintViolationMapper`, like the other services.
+* Verification: `make test-backend` (JDK 21; Spotless, Checkstyle, all five services' tests, JaCoCo floors, contract tests) passed; lists-service has 64 tests, line coverage 98.3%, floor raised 0.90 to 0.97. `make test-docs` OK. Live: `make up`, `make seed`, then as alice (admin) and bob (member) over HTTP on :8084 created a list, added/checked/unchecked/renamed/soft-deleted items (row keeps deleted_by/deleted_at in Postgres), reset, archived; bob got 403 on create/rename/archive, 409 on adding to the archived list, anonymous 401, unknown household 403; `make down`. Not run: Flutter, e2e, CI.
+* Follow-ups: T-0061 (reset permission), T-0062 (415 on body-less POSTs elsewhere), T-0063 (anonymization on account deletion).
 
 ### T-0024 · App: Groceries tab
 
@@ -491,3 +495,27 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0022
 * Spec: AGENTS §5.2
 * Acceptance criteria: Scenarios for the non-admin household detail and chores views and for every dialog and snackbar, with goldens and accessibility checks in FR and EN.
+
+### T-0061 · Spec: who may reset a list, and archived-list rules
+
+* Status: todo
+* Issue / PR: #50
+* Depends on: T-0023
+* Spec: §2, §4
+* Acceptance criteria: Spec states who can bulk reset (T-0023 allows any active member), that items of an archived list are frozen (409), and that re-checking is a no-op; code follows if the decision differs.
+
+### T-0062 · tasks-service: body-less POST actions answer 415 without a Content-Type
+
+* Status: todo
+* Issue / PR: #51
+* Depends on: —
+* Spec: AGENTS §3 (API style)
+* Acceptance criteria: `@Consumes` moves from class level to body-bearing methods in tasks-service (and any other service with the same pattern); a test posts an action without Content-Type and gets 2xx.
+
+### T-0063 · lists-service: anonymize user ids on account deletion
+
+* Status: todo
+* Issue / PR: #52
+* Depends on: T-0023
+* Spec: AGENTS §8
+* Acceptance criteria: Internal service-role endpoint anonymizes `list.created_by` and `item.creator/completer/deleted_by` for a user; covered once the account-deletion flow exists.
