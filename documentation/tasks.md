@@ -671,7 +671,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0081 · Producers for the remaining notification types
 
 * Status: done
-* Issue / PR: — (suggested: "Send reassigned, overdue, dismissed and reverted notifications") / PR pending
+* Issue / PR: — (suggested: "Send reassigned, overdue, dismissed and reverted notifications") / #75
 * Depends on: T-0026
 * Spec: §5
 * Acceptance criteria: tasks-service queues `task_reassigned` (admin reassigns), `overdue` (a task passes its due date), `dismissed` (an admin dismisses someone else's task) and `reverted` (only when the task reopens with a future date, spec §3.3) in the transaction of the change; each has a relay test and appears in the recipient's inbox. Needed by the M6 exit (every spec §5 type).
