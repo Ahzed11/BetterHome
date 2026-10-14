@@ -10,6 +10,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -19,17 +20,20 @@ public class MembershipService {
     private final MembershipGuard membershipGuard;
     private final Clock clock;
     private final AwayTaskDismissal awayTaskDismissal;
+    private final OutboxService outboxService;
 
     @Inject
     public MembershipService(
             CurrentUserService currentUserService,
             MembershipGuard membershipGuard,
             Clock clock,
-            AwayTaskDismissal awayTaskDismissal) {
+            AwayTaskDismissal awayTaskDismissal,
+            OutboxService outboxService) {
         this.currentUserService = currentUserService;
         this.membershipGuard = membershipGuard;
         this.clock = clock;
         this.awayTaskDismissal = awayTaskDismissal;
+        this.outboxService = outboxService;
     }
 
     public List<Membership> list(UUID householdId) {
@@ -82,6 +86,7 @@ public class MembershipService {
         if (!from.isAfter(clock.now())) {
             awayTaskDismissal.dismissOpenTasks(householdId, targetUserId);
         }
+        outboxService.enqueue(householdId, targetUserId, "marked_away", Map.of());
         return target;
     }
 

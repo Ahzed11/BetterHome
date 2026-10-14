@@ -1,6 +1,6 @@
 package com.betterhome.tasks.scheduler;
 
-import com.betterhome.tasks.service.OutboxService;
+import com.betterhome.tasks.service.OutboxRelay;
 import com.betterhome.tasks.service.RecurrenceSpawnService;
 import com.betterhome.tasks.service.ReminderService;
 import io.quarkus.scheduler.Scheduled;
@@ -12,16 +12,16 @@ public class AutomationScheduler {
 
     private final RecurrenceSpawnService spawnService;
     private final ReminderService reminderService;
-    private final OutboxService outboxService;
+    private final OutboxRelay outboxRelay;
 
     @Inject
     public AutomationScheduler(
             RecurrenceSpawnService spawnService,
             ReminderService reminderService,
-            OutboxService outboxService) {
+            OutboxRelay outboxRelay) {
         this.spawnService = spawnService;
         this.reminderService = reminderService;
-        this.outboxService = outboxService;
+        this.outboxRelay = outboxRelay;
     }
 
     @Scheduled(every = "30s", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
@@ -36,6 +36,6 @@ public class AutomationScheduler {
 
     @Scheduled(every = "15s", concurrentExecution = Scheduled.ConcurrentExecution.SKIP)
     void drainOutbox() {
-        outboxService.drain(50);
+        outboxRelay.relayDue(50);
     }
 }

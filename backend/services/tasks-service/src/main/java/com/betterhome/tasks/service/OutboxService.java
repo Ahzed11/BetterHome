@@ -1,57 +1,53 @@
 package com.betterhome.tasks.service;
 
 import com.betterhome.common.Clock;
-import com.betterhome.common.PushSender;
 import com.betterhome.tasks.domain.NotificationOutbox;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import java.util.List;
+import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
+/** Writes events into the outbox in the caller's transaction; {@link OutboxRelay} sends them. */
 @ApplicationScoped
 public class OutboxService {
 
     private final Clock clock;
-    private final PushSender pushSender;
+    private final ObjectMapper objectMapper;
 
     @Inject
-    public OutboxService(Clock clock, PushSender pushSender) {
+    public OutboxService(Clock clock, ObjectMapper objectMapper) {
         this.clock = clock;
-        this.pushSender = pushSender;
+        this.objectMapper = objectMapper;
     }
 
+    /**
+     * Queues an event for {@code userId} and returns its id. The payload holds short strings only
+     * (ADR 0017), for example {@code taskId} and {@code taskTitle}.
+     */
     @Transactional
-    public void enqueue(
-            UUID householdId,
-            UUID userId,
-            String type,
-            String title,
-            String body,
-            String payloadJson) {
+    public UUID enqueue(UUID householdId, UUID userId, String type, Map<String, String> payload) {
+        Instant now = clock.now();
         NotificationOutbox row = new NotificationOutbox();
         row.id = UUID.randomUUID();
         row.householdId = householdId;
         row.userId = userId;
         row.type = type;
-        row.title = title;
-        row.body = body;
-        row.payloadJson = payloadJson == null ? "{}" : payloadJson;
-        row.createdAt = clock.now();
+        row.payloadJson = json(payload);
+        row.createdAt = now;
+        row.availableAt = now;
         row.persist();
+        return row.id;
     }
 
-    @Transactional
-    public int drain(int limit) {
-        List<NotificationOutbox> pending = NotificationOutbox.listPending(limit);
-        int count = 0;
-        for (NotificationOutbox row : pending) {
-            pushSender.send(
-                    new PushSender.PushMessage(
-                            row.userId.toString(), row.type, row.title, row.body, row.payloadJson));
-            row.processedAt = clock.now();
-            count++;
+    private String json(Map<String, String> payload) {
+        try {
+            return objectMapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("A string map cannot be written as JSON", e);
         }
-        return count;
     }
 }

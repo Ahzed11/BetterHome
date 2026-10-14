@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class ReminderService {
@@ -56,9 +57,7 @@ public class ReminderService {
                         task.householdId,
                         task.assigneeId,
                         "due_reminder",
-                        "Reminder",
-                        task.title,
-                        "{\"taskId\":\"" + task.id + "\"}");
+                        Map.of("taskId", task.id.toString(), "taskTitle", task.title));
                 task.dueReminderSentAt = now;
                 task.updatedAt = now;
                 sent++;
