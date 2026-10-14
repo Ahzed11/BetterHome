@@ -817,6 +817,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Overdue · still +{points}'**
   String overdueStill(int points);
+
+  /// No description provided for @revertedBecause.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverted: {reason}'**
+  String revertedBecause(String reason);
 }
 
 class _AppLocalizationsDelegate

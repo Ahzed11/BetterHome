@@ -174,5 +174,7 @@
   "@switchHousehold": {"placeholders": {"name": {"type": "String"}}},
   "householdDetails": "Household details",
   "overdueStill": "Overdue · still +{points}",
-  "@overdueStill": {"placeholders": {"points": {"type": "int"}}}
+  "@overdueStill": {"placeholders": {"points": {"type": "int"}}},
+  "revertedBecause": "Reverted: {reason}",
+  "@revertedBecause": {"placeholders": {"reason": {"type": "String"}}}
 }

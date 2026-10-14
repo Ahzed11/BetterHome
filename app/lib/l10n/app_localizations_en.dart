@@ -397,4 +397,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String overdueStill(int points) {
     return 'Overdue · still +$points';
   }
+
+  @override
+  String revertedBecause(String reason) {
+    return 'Reverted: $reason';
+  }
 }

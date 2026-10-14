@@ -295,11 +295,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0089 · App: a reverted task shows its reason to the assignee
 
-* Status: todo
-* Issue / PR: — (suggested: "Assignee sees the reason a task was reverted")
+* Status: done
+* Issue / PR: #24 / #87
 * Depends on: T-0031
 * Spec: §3.3 (reversion), §8
-* Acceptance criteria: When an admin reverts a task, the assignee sees the reason on the task in the app. The task API has to expose the latest reversion reason (check first what the tasks API already returns; document any change in the OpenAPI files, the spec and the contract tests). FR/EN, widget and golden tests, and an e2e journey "admin reverts with a reason and the assignee sees it".
+* Acceptance criteria: When an admin reverts a task, the assignee sees the reason on the task in the app (the task API exposes the latest reversion reason, documented in OpenAPI, spec and contract tests). FR/EN, widget and golden tests, and an e2e journey "admin reverts with a reason and the assignee sees it".
+* Summary: tasks-service: migration `V8__task_reversion_reason.sql` (nullable `reversion_reason`, non-blank check), set by `TaskService.revert` with the trimmed reason and exposed as `reversionReason` in `TaskResponse` (OpenAPI regenerated). The app maps it into `ChoreTask`; the chores list shows "Reverted: <reason>" under the status of any chore that is not done (reverted, reopened or dismissed as `reverted_overdue`), FR "Annulée : …". The fake repository sets it too.
+* Decisions and deviations: the reason is a copy on the task; the reversion record stays in scoring-service. It is returned to every member who can read the task, not only the assignee (tasks are visible household-wide, and the spec does not restrict it). A task reverted again gets the new reason; one completed again stops showing the old one in the app (the API still returns it until the next reversion). The e2e journey has one user, alice, who is admin and assignee, so it checks what the assignee sees but not a second member's view; the service test reads it as the member.
+* Verification: `make test-backend` (new service tests: reason stored trimmed for manual, reopened and overdue-dismissed reversions, read back as the member, replaced by a later reversion, blank refused by the database; contract tests), `make test-app` (widget tests incl. FR and done-again, contract mapping test, goldens `chores_reverted`), `make check`, cold `make e2e` with "Reverted: Not clean" in the chores journey; results in the PR. Not run: Android.
+* Follow-ups: none.
 
 ### T-0090 · Quick-log "+ I just did…" with single tap and 5-second cancel
 

@@ -173,6 +173,15 @@ final List<_Scenario> _scenarios = [
     );
     return ChoresScreen(session: session, householdId: _household);
   }),
+  _Scenario('chores_reverted', () async {
+    final session = await _choresSession(populated: true);
+    final tasks = session.tasksRepository;
+    final done = (await tasks.listTasks(
+      _household,
+    )).firstWhere((t) => t.status == TaskStatus.done);
+    await tasks.revert(_household, done.id, reason: 'Not clean');
+    return ChoresScreen(session: session, householdId: _household);
+  }),
   _Scenario(
     'chores_mine',
     () async => ChoresScreen(

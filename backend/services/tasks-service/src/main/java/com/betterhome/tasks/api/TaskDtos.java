@@ -123,7 +123,8 @@ public final class TaskDtos {
             DismissalReason dismissalReason,
             Instant dueAt,
             Instant completedAt,
-            Integer pointsAwarded) {
+            Integer pointsAwarded,
+            String reversionReason) {
 
         public static TaskResponse from(Task task) {
             return new TaskResponse(
@@ -143,7 +144,8 @@ public final class TaskDtos {
                     task.dismissalReason,
                     task.dueAt,
                     task.completedAt,
-                    task.pointsAwarded);
+                    task.pointsAwarded,
+                    task.reversionReason);
         }
     }
 }

@@ -46,6 +46,7 @@ class ChoreTask {
     this.dueAt,
     this.completedAt,
     this.pointsAwarded,
+    this.reversionReason,
   });
 
   final String id;
@@ -61,6 +62,9 @@ class ChoreTask {
   final DateTime? dueAt;
   final DateTime? completedAt;
   final int? pointsAwarded;
+
+  /// Why an admin reverted the task the last time, shown to the assignee.
+  final String? reversionReason;
 }
 
 enum AssignmentMode { fixed, roundRobin }
@@ -539,6 +543,7 @@ class FakeTasksRepository implements TasksRepository {
         status: resulting,
         assigneeId: t.assigneeId,
         dueAt: t.dueAt,
+        reversionReason: reason.trim(),
       );
     });
     await ledger?.reverse(

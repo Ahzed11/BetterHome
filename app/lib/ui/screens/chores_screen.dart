@@ -62,6 +62,22 @@ class _ChoresScreenState extends State<ChoresScreen> {
     );
   }
 
+  Widget _subtitle(ChoreTask task, AppLocalizations l10n) {
+    final status = _isOverdue(task)
+        ? OverdueBadge(label: l10n.overdueStill(task.latePoints))
+        : Text(
+            '${task.status.name} · ${task.pointsAwarded ?? task.points} pts',
+          );
+    final reason = task.reversionReason;
+    if (reason == null || task.status == TaskStatus.done) {
+      return status;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [status, Text(l10n.revertedBecause(reason))],
+    );
+  }
+
   bool _isOverdue(ChoreTask task) {
     final due = task.dueAt;
     return task.status == TaskStatus.open &&
@@ -339,13 +355,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
                       ),
                       tileColor: Colors.white,
                       title: Text('${task.emoji ?? ''} ${task.title}'.trim()),
-                      subtitle: _isOverdue(task)
-                          ? OverdueBadge(
-                              label: l10n.overdueStill(task.latePoints),
-                            )
-                          : Text(
-                              '${task.status.name} · ${task.pointsAwarded ?? task.points} pts',
-                            ),
+                      subtitle: _subtitle(task, l10n),
                       trailing: task.status == TaskStatus.open
                           ? Wrap(
                               spacing: 4,

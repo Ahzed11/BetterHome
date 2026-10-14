@@ -78,6 +78,10 @@ public class Task extends PanacheEntityBase {
     @Column(name = "points_awarded")
     public Integer pointsAwarded;
 
+    /** The reason given by the admin at the latest reversion; kept when the task is reopened. */
+    @Column(name = "reversion_reason")
+    public String reversionReason;
+
     @Column(name = "created_at", nullable = false)
     public Instant createdAt;
 
