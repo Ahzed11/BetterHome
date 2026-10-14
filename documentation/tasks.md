@@ -246,11 +246,16 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0029 · Scoring in household time and automated month end
 
-* Status: todo
-* Issue / PR: #22
+* Status: in-progress
+* Issue / PR: #22 / PR pending (backend); the app part follows in a second PR
 * Depends on: T-0010
 * Spec: §3.4, §5
 * Acceptance criteria: Week/month/year windows computed in the household timezone; a scheduled job closes each month at the household's local boundary (SKIP LOCKED, one transaction per household) and records the winner. App shows the recap and confetti once per user. Clock-controlled tests across timezones and DST.
+* Summary (backend, first PR): `PeriodWindows` computes every window in the household timezone (Monday weeks, local midnights, DST-safe) and the scoreboard and the admin close use it; windows now include their end. `MembershipGateway.householdZone` reads the zone from households' internal settings (UTC when unknown or invalid, 503 when unreachable). `month_close_cursor` (migration V4) plus `MonthCloser` and a 5-minute scheduler close each household's ended months at its local boundary: one household per transaction, claimed with `FOR UPDATE SKIP LOCKED`, missed months caught up, empty months skipped, existing recaps left alone, a timezone change re-checked when the stored time passes, a households outage retried after a minute. The winners list returns `celebrated` (has the caller seen this month's confetti). ADR 0022; spec §3.4 now states the local-time cuts, the automatic close and the tie-break.
+* Decisions and deviations: Tie goes to the lowest user id (same order as the scoreboard ranks); the old admin close picked an arbitrary one. A month nobody scored in gets no recap (the old admin close created one without a winner). No jqwik dependency: the invariants (contiguous windows, every instant inside its own windows) run over every JDK zone in a plain test; property tests are T-0030. A timezone change that moves the boundary earlier takes effect only at the stored close time (ADR 0022).
+* Verification: JDK 21, Podman. `PeriodWindowsTest` (14: DST both ways, half-hour DST, +14/-11 offsets, a midnight that does not exist, boundaries, contiguity over every zone), `ScoreboardTimezoneTest` (7), `MonthCloseTest` (16 with a fixed clock: before and at the local boundary in Brussels, UTC and New York, spring-forward and fall-back, catch-up, idempotency, tie-break, negative sums, hand-closed recaps, timezone change, households outage, registration, limit, four replicas close 24 households once each), `HttpMembershipGatewayTest` zone cases, and the `celebrated` flag over HTTP; contract regenerated (`make openapi`). `make check` and `make e2e` results are in the PR.
+* Remaining: the app shows the recap and confetti once per user (second PR). Not covered: an e2e journey through a month end (needs the controllable clock, T-0076).
+* Follow-ups: T-0030 (property and concurrency tests), T-0076.
 
 ### T-0030 · Scheduler concurrency and invariant tests
 

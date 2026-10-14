@@ -16,6 +16,8 @@ import com.betterhome.scoring.membership.MembershipGateway.MemberView;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -35,6 +37,7 @@ class HttpMembershipGatewayTest {
     void reset() {
         FakeHouseholdsServer.AUTHORIZATIONS.clear();
         FakeHouseholdsServer.householdsStatus = 200;
+        FakeHouseholdsServer.timezone = "Europe/Brussels";
     }
 
     @Test
@@ -105,5 +108,36 @@ class HttpMembershipGatewayTest {
         assertThrows(
                 ScoringException.ServiceUnavailable.class,
                 () -> gateway.listActiveMembers(HOUSEHOLD_ID));
+    }
+
+    @Test
+    void theHouseholdZoneComesFromItsSettingsWithTheServiceToken() {
+        assertEquals(ZoneId.of("Europe/Brussels"), gateway.householdZone(HOUSEHOLD_ID));
+        assertEquals("Bearer " + TOKEN, FakeHouseholdsServer.AUTHORIZATIONS.getLast());
+    }
+
+    @Test
+    void aZoneThatIsNotValidFallsBackToUtc() {
+        FakeHouseholdsServer.timezone = "Mars/Olympus";
+
+        assertEquals(ZoneOffset.UTC, gateway.householdZone(HOUSEHOLD_ID));
+    }
+
+    @Test
+    void anUnknownHouseholdHasNoZoneSoUtcIsUsed() {
+        assertEquals(ZoneOffset.UTC, gateway.householdZone(UUID.randomUUID()));
+    }
+
+    @Test
+    void aFailingHouseholdsServiceMakesTheZoneLookupUnavailable() {
+        FakeHouseholdsServer.householdsStatus = 503;
+        assertThrows(
+                ScoringException.ServiceUnavailable.class,
+                () -> gateway.householdZone(HOUSEHOLD_ID));
+
+        FakeHouseholdsServer.householdsStatus = -1;
+        assertThrows(
+                ScoringException.ServiceUnavailable.class,
+                () -> gateway.householdZone(HOUSEHOLD_ID));
     }
 }

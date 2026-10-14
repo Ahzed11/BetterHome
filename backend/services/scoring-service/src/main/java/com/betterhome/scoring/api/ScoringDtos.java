@@ -109,15 +109,21 @@ public final class ScoringDtos {
         }
     }
 
+    /** {@code celebrated}: whether the caller has already seen the confetti of this month. */
     public record WinnerResponse(
-            String yearMonth, UUID winnerUserId, int winnerPoints, int totalPoints) {
+            String yearMonth,
+            UUID winnerUserId,
+            int winnerPoints,
+            int totalPoints,
+            boolean celebrated) {
 
         public static WinnerResponse from(ScoreboardService.Winner winner) {
             return new WinnerResponse(
                     winner.yearMonth(),
                     winner.winnerUserId(),
                     winner.winnerPoints(),
-                    winner.totalPoints());
+                    winner.totalPoints(),
+                    winner.celebrated());
         }
     }
 

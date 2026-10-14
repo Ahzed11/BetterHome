@@ -1,5 +1,6 @@
 package com.betterhome.scoring.membership;
 
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,4 +17,10 @@ public interface MembershipGateway {
     Optional<MemberView> findByAuthSubject(UUID householdId, UUID authSubject);
 
     List<MemberView> listActiveMembers(UUID householdId);
+
+    /**
+     * The household's timezone, in which scoreboard periods and months are cut. UTC when
+     * households-service does not know the household or holds no valid zone.
+     */
+    ZoneId householdZone(UUID householdId);
 }

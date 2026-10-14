@@ -88,8 +88,13 @@ class ScoringHttpTest {
                 .post(SCOREBOARD + "/close-month")
                 .then()
                 .statusCode(200);
-        json().get(SCOREBOARD + "/winners").then().statusCode(200).body("$", hasSize(1));
+        json().get(SCOREBOARD + "/winners")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(1))
+                .body("[0].celebrated", is(false));
         json().post(SCOREBOARD + "/recaps/2026-01/celebrate").then().statusCode(200);
+        json().get(SCOREBOARD + "/winners").then().statusCode(200).body("[0].celebrated", is(true));
     }
 
     @Test

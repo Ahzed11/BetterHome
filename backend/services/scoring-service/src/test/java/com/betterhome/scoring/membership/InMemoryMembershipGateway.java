@@ -4,6 +4,8 @@ import com.betterhome.scoring.domain.ScoringException;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -22,7 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class InMemoryMembershipGateway implements MembershipGateway {
 
     private final Map<UUID, List<MemberView>> byHousehold = new ConcurrentHashMap<>();
+    private final Map<UUID, ZoneId> zones = new ConcurrentHashMap<>();
     private volatile boolean unavailable;
+    private volatile long latencyMillis;
 
     public void replaceHouseholdMembers(UUID householdId, List<MemberView> members) {
         byHousehold.put(householdId, new ArrayList<>(members));
@@ -33,9 +37,21 @@ public class InMemoryMembershipGateway implements MembershipGateway {
         this.unavailable = unavailable;
     }
 
+    /** Sets the timezone of a household; the others are in UTC. */
+    public void putZone(UUID householdId, ZoneId zone) {
+        zones.put(householdId, zone);
+    }
+
+    /** Every zone lookup takes this long, so concurrent jobs overlap. */
+    public void setLatencyMillis(long millis) {
+        this.latencyMillis = millis;
+    }
+
     public void clear() {
         unavailable = false;
+        latencyMillis = 0;
         byHousehold.clear();
+        zones.clear();
     }
 
     @Override
@@ -52,6 +68,20 @@ public class InMemoryMembershipGateway implements MembershipGateway {
         return byHousehold.getOrDefault(householdId, List.of()).stream()
                 .sorted(Comparator.comparingLong(MemberView::membershipOrder))
                 .toList();
+    }
+
+    @Override
+    public ZoneId householdZone(UUID householdId) {
+        requireAvailable();
+        if (latencyMillis > 0) {
+            try {
+                Thread.sleep(latencyMillis);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while simulating latency", e);
+            }
+        }
+        return zones.getOrDefault(householdId, ZoneOffset.UTC);
     }
 
     private void requireAvailable() {

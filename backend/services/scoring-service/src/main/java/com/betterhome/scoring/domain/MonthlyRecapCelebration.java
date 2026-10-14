@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -26,6 +27,15 @@ public class MonthlyRecapCelebration extends PanacheEntityBase {
 
     @Column(name = "seen_at", nullable = false)
     public Instant seenAt;
+
+    /** The recaps this user has already seen the celebration of. */
+    public static Set<UUID> recapIdsSeenBy(UUID userId) {
+        return Set.copyOf(
+                MonthlyRecapCelebration.<MonthlyRecapCelebration>list("userId = ?1", userId)
+                        .stream()
+                        .map(c -> c.recapId)
+                        .toList());
+    }
 
     public static boolean hasSeen(UUID recapId, UUID userId) {
         return count("recapId = ?1 and userId = ?2", recapId, userId) > 0;
