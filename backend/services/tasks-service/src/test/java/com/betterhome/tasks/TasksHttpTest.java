@@ -94,6 +94,23 @@ class TasksHttpTest {
 
     @Test
     @TestSecurity(user = ADMIN_SUBJECT, roles = "admin")
+    void actionsWithoutABodyAcceptARequestWithoutContentType() {
+        String templateId = createTemplate("Dishes");
+        String completeId = createOpenTask(templateId);
+        String reassignId = createOpenTask(templateId);
+        String dismissId = createOpenTask(templateId);
+
+        given().post(TASKS + "/" + completeId + "/complete").then().statusCode(200);
+        given().post(TASKS + "/" + reassignId + "/reassign").then().statusCode(200);
+        given().post(TASKS + "/" + reassignId + "/dismiss").then().statusCode(200);
+        given().post(TASKS + "/" + dismissId + "/dismiss").then().statusCode(200);
+        given().post(TASKS + "/dismiss-away/" + MEMBER_USER).then().statusCode(200);
+        given().post(TASKS + "/reassign-away/" + MEMBER_USER).then().statusCode(200);
+        given().post(TEMPLATES + "/" + templateId + "/archive").then().statusCode(200);
+    }
+
+    @Test
+    @TestSecurity(user = ADMIN_SUBJECT, roles = "admin")
     void invalidAndUnknownRequestsAnswerDocumentedErrors() {
         json().body(Map.of("title", " ", "points", 1, "latePoints", 0))
                 .post(TEMPLATES)
