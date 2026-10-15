@@ -31,7 +31,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Path("/v1/households/{householdId}/scoreboard")
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "scoreboard")
 @APIResponse(responseCode = "401", description = "Not authenticated")
 @APIResponse(
@@ -102,6 +101,7 @@ public class ScoreboardResource {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
     @Path("/close-month")
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response closeMonth(
             @PathParam("householdId") UUID householdId, @Valid CloseMonthRequest request) {
         var recap = scoreboardService.closeMonth(householdId, request.yearMonth());

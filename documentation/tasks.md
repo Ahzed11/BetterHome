@@ -593,11 +593,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0062 · tasks-service: body-less POST actions answer 415 without a Content-Type
 
-* Status: todo
-* Issue / PR: #51
+* Status: in-review
+* Issue / PR: #51 / —
 * Depends on: —
 * Spec: AGENTS §3 (API style)
 * Acceptance criteria: `@Consumes` moves from class level to body-bearing methods in tasks-service (and any other service with the same pattern); a test posts an action without Content-Type and gets 2xx.
+* Summary: `@Consumes(JSON)` now sits only on body-bearing methods in tasks (`TaskResource`, `TemplateResource`), households (`MembershipResource`; `InvitationAcceptResource` has none left) and scoring (`ScoreboardResource`). Tests post `complete`, `dismiss`, `reassign`, `dismiss-away`, `reassign-away`, `archive`, invitation accept, `leave` and `celebrate` with no Content-Type and expect 2xx (the tasks test failed with 415 before the change).
+* Decisions and deviations: lists and notifications have no body-less POST; `RecurrenceResource`, `PreferenceResource` and the other resources only have body-bearing writes, so they keep the class-level annotation.
+* Verification: the three services' module tests against a local PostgreSQL 16 (no Docker in this environment): tasks 117 tests with one unrelated failure (below), `InvitationHttpTest` and `ScoringHttpTest` green, `spotless:apply` clean. Not run: `make check`, `make e2e`, the app launch (no container runtime, no emulator here), so this is not `done`.
+* Follow-ups: `RruleEnginePropertiesTest.aMonthlyRuleOnADayThatSomeMonthsLackSkipsThoseMonthsInsteadOfClamping` failed once (expected 29, was 30) in a random jqwik run, in code this change does not touch; to be reproduced and reported as its own issue.
 
 ### T-0063 · lists-service: anonymize user ids on account deletion
 

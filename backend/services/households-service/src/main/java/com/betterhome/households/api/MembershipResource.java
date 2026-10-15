@@ -29,7 +29,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Path("/v1/households/{householdId}/members")
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "memberships")
 @APIResponse(responseCode = "401", description = "Not authenticated")
 @APIResponse(
@@ -79,6 +78,7 @@ public class MembershipResource {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @PATCH
     @Path("/{userId}/role")
+    @Consumes(MediaType.APPLICATION_JSON)
     public MembershipResponse changeRole(
             @PathParam("householdId") UUID householdId,
             @PathParam("userId") UUID userId,
@@ -120,6 +120,7 @@ public class MembershipResource {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
     @Path("/{userId}/away")
+    @Consumes(MediaType.APPLICATION_JSON)
     public MembershipResponse setAway(
             @PathParam("householdId") UUID householdId,
             @PathParam("userId") UUID userId,

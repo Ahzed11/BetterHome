@@ -4,7 +4,6 @@ import com.betterhome.households.api.HouseholdDtos.MembershipResponse;
 import com.betterhome.households.service.InvitationService;
 import io.quarkus.security.Authenticated;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -23,7 +22,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Path("/v1/invitations/{token}/accept")
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "invitations")
 @APIResponse(responseCode = "401", description = "Not authenticated")
 @APIResponse(

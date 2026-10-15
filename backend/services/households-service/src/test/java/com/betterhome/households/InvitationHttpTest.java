@@ -50,7 +50,7 @@ class InvitationHttpTest {
                 .body("$", hasSize(1))
                 .body("[0].email", is("mo-http@example.com"));
 
-        as(invitee)
+        withoutContentType(invitee)
                 .post("/v1/invitations/" + token + "/accept")
                 .then()
                 .statusCode(200)
@@ -60,6 +60,10 @@ class InvitationHttpTest {
                 .then()
                 .statusCode(200)
                 .body("$", hasSize(2));
+        withoutContentType(invitee)
+                .post("/v1/households/" + householdId + "/members/me/leave")
+                .then()
+                .statusCode(204);
     }
 
     @Test
@@ -98,6 +102,10 @@ class InvitationHttpTest {
                 .put("/v1/me")
                 .then()
                 .statusCode(200);
+    }
+
+    private static RequestSpecification withoutContentType(String token) {
+        return given().auth().oauth2(token);
     }
 
     private static RequestSpecification as(String token) {

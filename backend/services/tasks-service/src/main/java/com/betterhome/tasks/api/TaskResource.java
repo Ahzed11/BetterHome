@@ -33,7 +33,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Path("/v1/households/{householdId}/tasks")
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "tasks")
 @APIResponse(responseCode = "401", description = "Not authenticated")
 @APIResponse(
@@ -89,6 +88,7 @@ public class TaskResource {
             description = "Conflicts with the current state",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response createOpen(
             @PathParam("householdId") UUID householdId, @Valid CreateOpenTaskRequest request) {
         TaskResponse body =
@@ -110,6 +110,7 @@ public class TaskResource {
             content = @Content(schema = @Schema(implementation = TaskResponse.class)))
     @POST
     @Path("/manual")
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response quickLog(
             @PathParam("householdId") UUID householdId, @Valid QuickLogRequest request) {
         TaskResponse body =
@@ -166,6 +167,7 @@ public class TaskResource {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
     @Path("/{taskId}/revert")
+    @Consumes(MediaType.APPLICATION_JSON)
     public TaskResponse revert(
             @PathParam("householdId") UUID householdId,
             @PathParam("taskId") UUID taskId,
