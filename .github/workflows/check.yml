@@ -111,7 +111,9 @@ jobs:
   # The real app against the real stack (Podman Compose: Postgres, Keycloak, five services) in headless Chrome:
   # browser sign-in through Keycloak, then the repository journey. `make e2e` boots the stack itself.
   e2e:
-    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
+    # The stack uses fixed ports, so on the fallback only the runner labelled `fallback-e2e` takes this job:
+    # concurrent e2e jobs queue there instead of colliding (ADR 0024).
+    runs-on: ${{ vars.CI_RUNNER && format('{0}-e2e', vars.CI_RUNNER) || 'ubuntu-24.04' }}
     timeout-minutes: 40
     env:
       # `make up` drives Podman; compose talks to its API socket (started below), not to Docker.
