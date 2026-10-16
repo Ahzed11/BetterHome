@@ -858,5 +858,5 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Spec: AGENTS §6.1
 * Summary: `make run-app` (`tooling/run-app.sh`) starts the stack (`make up` with the web port in CORS), creates the Keycloak users `alice` and `bob` (password `demo`, local only), and serves the release web build on http://localhost:8090 until Ctrl-C. `RUN_APP_SEED=1` also runs `make seed`; `RUN_APP_STACK=running` reuses a stack that is already up. README and the AGENTS §6.1 table document it.
 * Decisions and deviations: Same dart-defines and web build as `tooling/e2e.sh`, but without chromedriver or journeys. Push notifications are not delivered locally (stated in the README), as the owner accepted.
-* Verification: see the PR description.
+* Verification: `make run-app` from a clean machine: stack up and smoke-checked, app compiled and served on :8090, real browser sign-in as `alice` through Keycloak (`test_driver/web_sign_in.dart`: OK). Against the running services, with alice's token: create a household, create a template, edit it (emoji cleared), quick-log it; the logged task carried the edited title and 7 points. Not run: the templates screen in a real browser by hand (covered by widget tests), `make check`.
 * Follow-ups: none.
