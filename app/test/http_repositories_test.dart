@@ -166,6 +166,29 @@ void main() {
       expect(server.lastBody['createTemplate'], containsPair('points', 5));
     });
 
+    test('updates a template with the declared body', () async {
+      final updated = await tasks().updateTemplate(
+        householdId: _household,
+        templateId: _sampleId,
+        title: 'Bins out',
+        emoji: '',
+        description: 'Monday',
+        points: 7,
+        latePoints: 4,
+      );
+
+      expect(updated.title, 'text');
+      expect(
+        server.lastBody['updateTemplate'],
+        allOf(
+          containsPair('title', 'Bins out'),
+          containsPair('emoji', ''),
+          containsPair('points', 7),
+          containsPair('latePoints', 4),
+        ),
+      );
+    });
+
     test('lists tasks with the declared query parameters', () async {
       final list = await tasks().listTasks(
         _household,

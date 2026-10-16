@@ -835,6 +835,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logging {title}…'**
   String quickLogPending(String title);
+
+  /// No description provided for @templatesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore templates'**
+  String get templatesSection;
+
+  /// No description provided for @templatesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No templates yet. Add one to start logging chores.'**
+  String get templatesEmpty;
+
+  /// No description provided for @addTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a template'**
+  String get addTemplate;
+
+  /// No description provided for @editTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit template'**
+  String get editTemplate;
+
+  /// No description provided for @templateEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Emoji (optional)'**
+  String get templateEmoji;
+
+  /// No description provided for @templateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Description (optional)'**
+  String get templateDescription;
+
+  /// No description provided for @templatePoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get templatePoints;
+
+  /// No description provided for @templateLatePoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Points if late'**
+  String get templateLatePoints;
+
+  /// No description provided for @templatePointsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} pts · {latePoints} if late'**
+  String templatePointsSummary(int points, int latePoints);
+
+  /// No description provided for @templateTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a title'**
+  String get templateTitleRequired;
+
+  /// No description provided for @templateNumberInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number, 0 or more'**
+  String get templateNumberInvalid;
 }
 
 class _AppLocalizationsDelegate

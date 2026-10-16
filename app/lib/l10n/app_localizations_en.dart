@@ -410,4 +410,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String quickLogPending(String title) {
     return 'Logging $title…';
   }
+
+  @override
+  String get templatesSection => 'Chore templates';
+
+  @override
+  String get templatesEmpty =>
+      'No templates yet. Add one to start logging chores.';
+
+  @override
+  String get addTemplate => 'Add a template';
+
+  @override
+  String get editTemplate => 'Edit template';
+
+  @override
+  String get templateEmoji => 'Emoji (optional)';
+
+  @override
+  String get templateDescription => 'Description (optional)';
+
+  @override
+  String get templatePoints => 'Points';
+
+  @override
+  String get templateLatePoints => 'Points if late';
+
+  @override
+  String templatePointsSummary(int points, int latePoints) {
+    return '$points pts · $latePoints if late';
+  }
+
+  @override
+  String get templateTitleRequired => 'Enter a title';
+
+  @override
+  String get templateNumberInvalid => 'Enter a whole number, 0 or more';
 }

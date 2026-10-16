@@ -834,3 +834,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: Test configuration only; production ports are unchanged. No test hardcoded a service port.
 * Verification: see the PR description.
 * Follow-ups: once merged, enable the other fallback runners (`systemctl --user enable --now github-runner-2 github-runner-3`, ADR 0024) and check the `e2e` job beside backend jobs.
+
+### T-0094 · App: manage chore templates from the household screen
+
+* Status: in-review
+* Issue / PR: — (suggested: "Add and edit templates in the app") / this PR
+* Depends on: —
+* Spec: §3.1, §8.2
+* Summary: The household screen has a "Chore templates" section: cards with emoji, title and points, an "Add a template" button for admins, and an edit form opened by tapping a card (title, emoji, description, points, late points). `TasksRepository.updateTemplate` was added (HTTP through the generated client, and the fake); the backend already had `PATCH /templates/{id}`. Members see the list read-only. Failures show the generic snackbar.
+* Decisions and deviations: Product decision from the owner: templates live in the household management screen, not in the quick-log picker. Covers the template part of T-0075; creating open tasks and accepting an invitation without a household are still open there. Archiving a template from the app was not asked for and is not included. The quick-log stub that creates a "Chore" template when none exists is left as is.
+* Verification: `flutter analyze` clean, `flutter test` 394 passed (new: `household_templates_test.dart` for add, edit, clear emoji, cancel, validation, refused save, member view, French at 200% text, accessibility guidelines; fake and contract tests for `updateTemplate`; new golden `household_detail_templates` in EN and FR; two existing household goldens regenerated). Not run: `make check` as a whole, `make e2e`.
+* Follow-ups: an `integration_test` step for adding and editing a template; archive action; member names instead of ids on the same screen (T-0058). `app/test/failures/*.png` are tracked in git, which looks accidental.

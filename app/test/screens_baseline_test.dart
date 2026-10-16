@@ -215,6 +215,24 @@ final List<_Scenario> _scenarios = [
       householdId: _household,
     ),
   ),
+  _Scenario('household_detail_templates', () async {
+    final session = await _sessionWith();
+    final tasks = session.tasksRepository;
+    await tasks.createTemplate(
+      householdId: _household,
+      title: 'Vacuum',
+      emoji: '🧹',
+      points: 5,
+      latePoints: 2,
+    );
+    await tasks.createTemplate(
+      householdId: _household,
+      title: 'Dishes',
+      points: 3,
+      latePoints: 1,
+    );
+    return HouseholdDetailScreen(session: session, householdId: _household);
+  }),
   _Scenario('household_detail_member_away', () async {
     final session = await _sessionWith();
     await session.repository.setAway(_household, 'user-1');
