@@ -136,5 +136,17 @@
   "@revertedBecause": {"placeholders": {"reason": {"type": "String"}}},
   "undo": "Annuler",
   "quickLogPending": "Enregistrement de {title}…",
-  "@quickLogPending": {"placeholders": {"title": {"type": "String"}}}
+  "@quickLogPending": {"placeholders": {"title": {"type": "String"}}},
+  "templatesSection": "Modèles de tâches",
+  "templatesEmpty": "Aucun modèle pour l'instant. Ajoutez-en un pour enregistrer des tâches.",
+  "addTemplate": "Ajouter un modèle",
+  "editTemplate": "Modifier le modèle",
+  "templateEmoji": "Émoji (facultatif)",
+  "templateDescription": "Description (facultatif)",
+  "templatePoints": "Points",
+  "templateLatePoints": "Points si en retard",
+  "templatePointsSummary": "{points} pts · {latePoints} si en retard",
+  "@templatePointsSummary": {"placeholders": {"points": {"type": "int"}, "latePoints": {"type": "int"}}},
+  "templateTitleRequired": "Saisissez un titre",
+  "templateNumberInvalid": "Saisissez un nombre entier, 0 ou plus"
 }

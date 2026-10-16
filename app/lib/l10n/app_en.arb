@@ -179,5 +179,17 @@
   "@revertedBecause": {"placeholders": {"reason": {"type": "String"}}},
   "undo": "Undo",
   "quickLogPending": "Logging {title}…",
-  "@quickLogPending": {"placeholders": {"title": {"type": "String"}}}
+  "@quickLogPending": {"placeholders": {"title": {"type": "String"}}},
+  "templatesSection": "Chore templates",
+  "templatesEmpty": "No templates yet. Add one to start logging chores.",
+  "addTemplate": "Add a template",
+  "editTemplate": "Edit template",
+  "templateEmoji": "Emoji (optional)",
+  "templateDescription": "Description (optional)",
+  "templatePoints": "Points",
+  "templateLatePoints": "Points if late",
+  "templatePointsSummary": "{points} pts · {latePoints} if late",
+  "@templatePointsSummary": {"placeholders": {"points": {"type": "int"}, "latePoints": {"type": "int"}}},
+  "templateTitleRequired": "Enter a title",
+  "templateNumberInvalid": "Enter a whole number, 0 or more"
 }

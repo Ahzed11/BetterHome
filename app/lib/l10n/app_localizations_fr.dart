@@ -414,4 +414,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String quickLogPending(String title) {
     return 'Enregistrement de $title…';
   }
+
+  @override
+  String get templatesSection => 'Modèles de tâches';
+
+  @override
+  String get templatesEmpty =>
+      'Aucun modèle pour l\'instant. Ajoutez-en un pour enregistrer des tâches.';
+
+  @override
+  String get addTemplate => 'Ajouter un modèle';
+
+  @override
+  String get editTemplate => 'Modifier le modèle';
+
+  @override
+  String get templateEmoji => 'Émoji (facultatif)';
+
+  @override
+  String get templateDescription => 'Description (facultatif)';
+
+  @override
+  String get templatePoints => 'Points';
+
+  @override
+  String get templateLatePoints => 'Points si en retard';
+
+  @override
+  String templatePointsSummary(int points, int latePoints) {
+    return '$points pts · $latePoints si en retard';
+  }
+
+  @override
+  String get templateTitleRequired => 'Saisissez un titre';
+
+  @override
+  String get templateNumberInvalid => 'Saisissez un nombre entier, 0 ou plus';
 }

@@ -1,7 +1,11 @@
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/widgets/app_card.dart';
+import 'package:betterhome/ui/widgets/guarded.dart';
+import 'package:betterhome/ui/widgets/template_form_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -36,8 +40,48 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
       final members = await widget.session.repository.listMembers(
         widget.householdId,
       );
-      return _DetailData(household: household, members: members);
+      final templates = await widget.session.tasksRepository.listTemplates(
+        widget.householdId,
+      );
+      return _DetailData(
+        household: household,
+        members: members,
+        templates: templates,
+      );
     }();
+  }
+
+  Future<void> _saveTemplate({TaskTemplate? template}) async {
+    final draft = await showTemplateForm(context, template: template);
+    if (draft == null || !mounted) {
+      return;
+    }
+    final tasks = widget.session.tasksRepository;
+    await runGuarded(context, () async {
+      if (template == null) {
+        await tasks.createTemplate(
+          householdId: widget.householdId,
+          title: draft.title,
+          emoji: draft.emoji.isEmpty ? null : draft.emoji,
+          description: draft.description,
+          points: draft.points,
+          latePoints: draft.latePoints,
+        );
+      } else {
+        await tasks.updateTemplate(
+          householdId: widget.householdId,
+          templateId: template.id,
+          title: draft.title,
+          emoji: draft.emoji,
+          description: draft.description,
+          points: draft.points,
+          latePoints: draft.latePoints,
+        );
+      }
+    });
+    if (mounted) {
+      setState(_reload);
+    }
   }
 
   Future<void> _invite() async {
@@ -235,6 +279,55 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 );
               }),
               const SizedBox(height: AppTokens.spaceLg),
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    l10n.templatesSection,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  if (isAdmin)
+                    TextButton.icon(
+                      onPressed: _saveTemplate,
+                      icon: const Icon(Icons.add),
+                      label: Text(l10n.addTemplate),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppTokens.spaceSm),
+              if (data.templates.isEmpty)
+                Text(l10n.templatesEmpty)
+              else
+                ...data.templates.map(
+                  (template) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppTokens.spaceSm),
+                    child: AppCard(
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: ListTile(
+                          leading: template.emoji == null
+                              ? null
+                              : Text(
+                                  template.emoji ?? '',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                          title: Text(template.title),
+                          subtitle: Text(
+                            l10n.templatePointsSummary(
+                              template.points,
+                              template.latePoints,
+                            ),
+                          ),
+                          onTap: isAdmin
+                              ? () => _saveTemplate(template: template)
+                              : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: AppTokens.spaceLg),
               OutlinedButton(
                 onPressed: () async {
                   final navigator = Navigator.of(context);
@@ -255,8 +348,13 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
 }
 
 class _DetailData {
-  const _DetailData({required this.household, required this.members});
+  const _DetailData({
+    required this.household,
+    required this.members,
+    required this.templates,
+  });
 
   final Household household;
   final List<Membership> members;
+  final List<TaskTemplate> templates;
 }

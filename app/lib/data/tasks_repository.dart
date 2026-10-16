@@ -109,6 +109,17 @@ abstract class TasksRepository {
     required int latePoints,
   });
 
+  /// Replaces the editable fields of a template; tasks already created keep their snapshot.
+  Future<TaskTemplate> updateTemplate({
+    required String householdId,
+    required String templateId,
+    required String title,
+    required String emoji,
+    required String description,
+    required int points,
+    required int latePoints,
+  });
+
   Future<List<ChoreTask>> listTasks(
     String householdId, {
     TaskStatus? status,
@@ -190,6 +201,33 @@ class HttpTasksRepository implements TasksRepository {
         () => _templates.createTemplate(
           householdId,
           api.CreateTemplateRequest(
+            title: title,
+            emoji: emoji,
+            description: description,
+            points: points,
+            latePoints: latePoints,
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<TaskTemplate> updateTemplate({
+    required String householdId,
+    required String templateId,
+    required String title,
+    required String emoji,
+    required String description,
+    required int points,
+    required int latePoints,
+  }) async {
+    return taskTemplateFromApi(
+      await call(
+        () => _templates.updateTemplate(
+          householdId,
+          templateId,
+          api.UpdateTemplateRequest(
             title: title,
             emoji: emoji,
             description: description,
@@ -371,6 +409,35 @@ class FakeTasksRepository implements TasksRepository {
     );
     _templates.putIfAbsent(householdId, () => []).add(template);
     return template;
+  }
+
+  @override
+  Future<TaskTemplate> updateTemplate({
+    required String householdId,
+    required String templateId,
+    required String title,
+    required String emoji,
+    required String description,
+    required int points,
+    required int latePoints,
+  }) async {
+    final templates = _templates[householdId] ?? [];
+    final index = templates.indexWhere((t) => t.id == templateId);
+    if (index < 0) {
+      throw ApiException('Template not found', statusCode: 404);
+    }
+    final updated = TaskTemplate(
+      id: templateId,
+      householdId: householdId,
+      title: title,
+      emoji: emoji.isEmpty ? null : emoji,
+      description: description,
+      points: points,
+      latePoints: latePoints,
+      defaultDueOffsetMinutes: templates[index].defaultDueOffsetMinutes,
+    );
+    templates[index] = updated;
+    return updated;
   }
 
   @override
