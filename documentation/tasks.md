@@ -823,3 +823,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: Flyway's own retry (one try per second, up to a minute) rather than a separate wait loop: one flag, and the same behaviour an init container would want on OpenShift.
 * Verification: a throwaway Postgres (own network, no published port) started right before `migrate.sh`: before the change it exits 1 with `Connection to postgres:5432 refused`; after it, two runs end with `All databases migrated.` Not run: `make e2e`, `make check`.
 * Follow-ups: none.
+
+### T-0093 · Backend tests bind a random port so jobs can share a host
+
+* Status: in-review
+* Issue / PR: — (suggested: "Backend tests collide on port 8081 on a shared CI host") / this PR
+* Depends on: —
+* Spec: AGENTS §5.1
+* Summary: `quarkus.http.test-port=0` in the five services. Quarkus' default test port is 8081 for every service, so two backend jobs on one host (or a backend job beside the `e2e` stack, which publishes 8081-8085) failed with `Port already bound: 8081` (run 38908224906 on the self-hosted fallback runner). Hosted runners hid it because each job has its own VM.
+* Decisions and deviations: Test configuration only; production ports are unchanged. No test hardcoded a service port.
+* Verification: see the PR description.
+* Follow-ups: once merged, enable the other fallback runners (`systemctl --user enable --now github-runner-2 github-runner-3`, ADR 0024) and check the `e2e` job beside backend jobs.
