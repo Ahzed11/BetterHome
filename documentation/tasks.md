@@ -809,9 +809,9 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0070
 * Spec: AGENTS §6.2, ADR 0024
 * Summary: Installed a GitHub runner (label `fallback`) on the dev machine as a user systemd service with the Podman socket as Docker API. `check.yml` takes its runner from the repository variable `CI_RUNNER`, defaulting to `ubuntu-24.04`.
-* Decisions and deviations: Manual switch instead of an automatic fallback (ADR 0024). The workflow-level `DOCKER_HOST` was removed; the runner service provides it. `CI_RUNNER=fallback` is set from the start of this PR, so CI runs on the fallback runner; `gh variable unset CI_RUNNER` returns to hosted. Three runners (labels `fallback`; the first also `fallback-e2e`, which the `e2e` job requires because its stack uses fixed ports) so the jobs run in parallel. The `e2e` job now runs `make down` in an `always()` step: `make e2e` leaves the stack up and the second run on the same host failed on taken ports.
-* Verification: PR #90 checks (docs, app with goldens, five backend jobs, e2e, check) all passed on the fallback runner, with one runner, about 10 minutes in sequence; rerun with three runners to be confirmed in the PR. Not run: `make check` locally as a whole.
-* Follow-ups: watch memory (15 GB) when `e2e` runs beside `app` and backend jobs.
+* Decisions and deviations: Manual switch instead of an automatic fallback (ADR 0024). The workflow-level `DOCKER_HOST` was removed; the runner service provides it. `CI_RUNNER=fallback` is set from the start of this PR, so CI runs on the fallback runner; `gh variable unset CI_RUNNER` returns to hosted. One runner is enabled (label `fallback` plus `fallback-e2e`, which the `e2e` job requires because its stack uses fixed ports), so the jobs run one after another. Two more are installed but disabled: parallel jobs collided on port 8081 (T-0093). The `e2e` job now runs `make down` in an `always()` step: `make e2e` leaves the stack up and the second run on the same host failed on taken ports.
+* Verification: PR #90 checks (docs, app with goldens, five backend jobs, e2e, check) all passed on the fallback runner, with one runner, about 15 minutes in sequence. A run with three runners failed on the port collision above. Not run: `make check` locally as a whole.
+* Follow-ups: T-0093 (random test ports), then `systemctl --user enable --now github-runner-2 github-runner-3`.
 
 ### T-0096 · `deploy/migrate.sh` waits for Postgres
 
