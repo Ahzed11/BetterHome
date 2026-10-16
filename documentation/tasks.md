@@ -845,3 +845,18 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: Product decision from the owner: templates live in the household management screen, not in the quick-log picker. Covers the template part of T-0075; creating open tasks and accepting an invitation without a household are still open there. Archiving a template from the app was not asked for and is not included. The quick-log stub that creates a "Chore" template when none exists is left as is.
 * Verification: `flutter analyze` clean, `flutter test` 394 passed (new: `household_templates_test.dart` for add, edit, clear emoji, cancel, validation, refused save, member view, French at 200% text, accessibility guidelines; fake and contract tests for `updateTemplate`; new golden `household_detail_templates` in EN and FR; two existing household goldens regenerated). Not run: `make check` as a whole, `make e2e`.
 * Follow-ups: an `integration_test` step for adding and editing a template; archive action; member names instead of ids on the same screen (T-0058). `app/test/failures/*.png` are tracked in git, which looks accidental.
+
+* Decisions and deviations: Manual switch instead of an automatic fallback (ADR 0024). The workflow-level `DOCKER_HOST` was removed; the runner service provides it. `CI_RUNNER=fallback` is set from the start of this PR, so CI runs on the fallback runner; `gh variable unset CI_RUNNER` returns to hosted. Three runners (labels `fallback`; the first also `fallback-e2e`, which the `e2e` job requires because its stack uses fixed ports) so the jobs run in parallel. The `e2e` job now runs `make down` in an `always()` step: `make e2e` leaves the stack up and the second run on the same host failed on taken ports.
+* Verification: PR #90 checks (docs, app with goldens, five backend jobs, e2e, check) all passed on the fallback runner, with one runner, about 10 minutes in sequence; rerun with three runners to be confirmed in the PR. Not run: `make check` locally as a whole.
+* Follow-ups: watch memory (15 GB) when `e2e` runs beside `app` and backend jobs.
+
+### T-0095 · `make run-app`: try the app by hand against the local stack
+
+* Status: in-review
+* Issue / PR: — (suggested: "One command to run the app locally") / this PR
+* Depends on: —
+* Spec: AGENTS §6.1
+* Summary: `make run-app` (`tooling/run-app.sh`) starts the stack (`make up` with the web port in CORS), creates the Keycloak users `alice` and `bob` (password `demo`, local only), and serves the release web build on http://localhost:8090 until Ctrl-C. `RUN_APP_SEED=1` also runs `make seed`; `RUN_APP_STACK=running` reuses a stack that is already up. README and the AGENTS §6.1 table document it.
+* Decisions and deviations: Same dart-defines and web build as `tooling/e2e.sh`, but without chromedriver or journeys. Push notifications are not delivered locally (stated in the README), as the owner accepted.
+* Verification: see the PR description.
+* Follow-ups: none.
