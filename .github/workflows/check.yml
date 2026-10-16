@@ -187,6 +187,14 @@ jobs:
         env:
           SKIP_PACKAGE: "1"
 
+      # `make e2e` leaves the stack up. A hosted VM is thrown away; a self-hosted runner is not, and the
+      # next run would find the ports taken. pkill exits 1 when the service is already gone.
+      - name: Tear down the stack
+        if: ${{ always() }}
+        run: |
+          make down
+          pkill -f 'podman system service --time=0 unix:///tmp/podman.sock' || true
+
   # The one result to require on master (T-0053). It fails when any job above failed or was skipped.
   check:
     if: ${{ always() }}
