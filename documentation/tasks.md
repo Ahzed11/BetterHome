@@ -812,3 +812,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: Manual switch instead of an automatic fallback (ADR 0024). The workflow-level `DOCKER_HOST` was removed; the runner service provides it. `CI_RUNNER=fallback` is set from the start of this PR, so CI runs on the fallback runner; `gh variable unset CI_RUNNER` returns to hosted. Three runners (labels `fallback`; the first also `fallback-e2e`, which the `e2e` job requires because its stack uses fixed ports) so the jobs run in parallel. The `e2e` job now runs `make down` in an `always()` step: `make e2e` leaves the stack up and the second run on the same host failed on taken ports.
 * Verification: PR #90 checks (docs, app with goldens, five backend jobs, e2e, check) all passed on the fallback runner, with one runner, about 10 minutes in sequence; rerun with three runners to be confirmed in the PR. Not run: `make check` locally as a whole.
 * Follow-ups: watch memory (15 GB) when `e2e` runs beside `app` and backend jobs.
+
+### T-0096 · `deploy/migrate.sh` waits for Postgres
+
+* Status: in-review
+* Issue / PR: — (suggested: "e2e fails with 'Connection to postgres:5432 refused' in migrate") / this PR
+* Depends on: —
+* Spec: AGENTS §3 (migrations as a one-shot job)
+* Summary: `compose up -d postgres keycloak` returns before Postgres accepts connections and Flyway does not retry by default, so the migration step raced Postgres startup. It failed the `e2e` job on master (run 38911989381) and on #91 (run 38912473405) on the self-hosted runner, where warm images make the race easy to lose; hosted runners mostly won it. `migrate.sh` now passes `-connectRetries=60` to Flyway.
+* Decisions and deviations: Flyway's own retry (one try per second, up to a minute) rather than a separate wait loop: one flag, and the same behaviour an init container would want on OpenShift.
+* Verification: a throwaway Postgres (own network, no published port) started right before `migrate.sh`: before the change it exits 1 with `Connection to postgres:5432 refused`; after it, two runs end with `All databases migrated.` Not run: `make e2e`, `make check`.
+* Follow-ups: none.
