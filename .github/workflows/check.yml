@@ -1,5 +1,7 @@
 # The gates of `make check` (docs, backend, app) and the web end-to-end journeys (e2e), run as parallel jobs so the wait is the slowest
 # one, not their sum (T-0070, ADR 0019). The `check` job at the end is the single result to require.
+# Runs on GitHub-hosted runners. When the hosted minutes run out, set the repository variable CI_RUNNER
+# to `fallback` to use the self-hosted runner (ADR 0024); delete it to switch back.
 # Not yet here: image builds (T-0046) and the OWASP dependency audit (T-0038).
 name: check
 
@@ -16,13 +18,13 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Hosted runners have Docker, not Podman: Testcontainers / Dev Services use its socket.
-  DOCKER_HOST: unix:///var/run/docker.sock
+  # Testcontainers / Dev Services find the container socket themselves: Docker's on hosted runners,
+  # Podman's through DOCKER_HOST set by the fallback runner's service.
   TESTCONTAINERS_RYUK_DISABLED: "true"
 
 jobs:
   docs:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -30,7 +32,7 @@ jobs:
 
   # One backend job per directory under backend/services, so a new service is tested without editing this file.
   services:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 5
     outputs:
       list: ${{ steps.list.outputs.list }}
@@ -43,7 +45,7 @@ jobs:
 
   backend:
     needs: services
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -70,7 +72,7 @@ jobs:
       - run: make test-backend SERVICE=${{ matrix.service }}
 
   app:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -109,7 +111,7 @@ jobs:
   # The real app against the real stack (Podman Compose: Postgres, Keycloak, five services) in headless Chrome:
   # browser sign-in through Keycloak, then the repository journey. `make e2e` boots the stack itself.
   e2e:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 40
     env:
       # `make up` drives Podman; compose talks to its API socket (started below), not to Docker.
@@ -189,7 +191,7 @@ jobs:
   check:
     if: ${{ always() }}
     needs: [docs, services, backend, app, e2e]
-    runs-on: ubuntu-24.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 5
     steps:
       - name: Every job must have succeeded

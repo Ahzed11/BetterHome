@@ -801,3 +801,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Spec: §8.2
 * Acceptance criteria: The template picker opened by "+ I just did…" follows the design canvas' Quick log board (shared widgets and tokens, ADR 0021) instead of a stock `SimpleDialog`, with the same behavior (one tap on a template starts the 5-second cancel window). Update the widget tests, goldens and the e2e journeys that tap the dialog options.
 
+
+### T-0092 · Self-hosted fallback runner for CI
+
+* Status: in-review
+* Issue / PR: — (suggested: "CI minutes quota") / this PR
+* Depends on: T-0070
+* Spec: AGENTS §6.2, ADR 0024
+* Summary: Installed a GitHub runner (label `fallback`) on the dev machine as a user systemd service with the Podman socket as Docker API. `check.yml` takes its runner from the repository variable `CI_RUNNER`, defaulting to `ubuntu-24.04`.
+* Decisions and deviations: Manual switch instead of an automatic fallback (ADR 0024). The workflow-level `DOCKER_HOST` was removed; the runner service provides it. The `CI_RUNNER` variable is not set, so CI stays hosted.
+* Verification: runner shows `online` through the GitHub API. Not run: any job on the fallback runner (needs `CI_RUNNER=fallback`), including goldens on this host.
+* Follow-ups: run `check` once with `CI_RUNNER=fallback` and confirm goldens and Testcontainers pass.
