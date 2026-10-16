@@ -809,6 +809,6 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0070
 * Spec: AGENTS §6.2, ADR 0024
 * Summary: Installed a GitHub runner (label `fallback`) on the dev machine as a user systemd service with the Podman socket as Docker API. `check.yml` takes its runner from the repository variable `CI_RUNNER`, defaulting to `ubuntu-24.04`.
-* Decisions and deviations: Manual switch instead of an automatic fallback (ADR 0024). The workflow-level `DOCKER_HOST` was removed; the runner service provides it. The `CI_RUNNER` variable is not set, so CI stays hosted.
-* Verification: runner shows `online` through the GitHub API. Not run: any job on the fallback runner (needs `CI_RUNNER=fallback`), including goldens on this host.
-* Follow-ups: run `check` once with `CI_RUNNER=fallback` and confirm goldens and Testcontainers pass.
+* Decisions and deviations: Manual switch instead of an automatic fallback (ADR 0024). The workflow-level `DOCKER_HOST` was removed; the runner service provides it. `CI_RUNNER=fallback` is set from the start of this PR, so CI runs on the fallback runner; `gh variable unset CI_RUNNER` returns to hosted. One runner means the jobs run one after another.
+* Verification: PR #90 checks (docs, app with goldens, five backend jobs, e2e, check) all passed on the fallback runner, about 10 minutes in sequence. Not run: `make check` locally as a whole.
+* Follow-ups: add a second runner if the sequential wait matters.
