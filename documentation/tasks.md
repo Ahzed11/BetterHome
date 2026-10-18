@@ -593,11 +593,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0062 · tasks-service: body-less POST actions answer 415 without a Content-Type
 
-* Status: todo
-* Issue / PR: #51
+* Status: in-review
+* Issue / PR: #51 / —
 * Depends on: —
 * Spec: AGENTS §3 (API style)
 * Acceptance criteria: `@Consumes` moves from class level to body-bearing methods in tasks-service (and any other service with the same pattern); a test posts an action without Content-Type and gets 2xx.
+* Summary: `@Consumes(JSON)` now sits only on body-bearing methods in tasks (`TaskResource`, `TemplateResource`), households (`MembershipResource`; `InvitationAcceptResource` has none left) and scoring (`ScoreboardResource`). Tests post `complete`, `dismiss`, `reassign`, `dismiss-away`, `reassign-away`, `archive`, invitation accept, `leave` and `celebrate` with no Content-Type and expect 2xx (the tasks test failed with 415 before the change).
+* Decisions and deviations: lists and notifications have no body-less POST; `RecurrenceResource`, `PreferenceResource` and the other resources only have body-bearing writes, so they keep the class-level annotation.
+* Verification (local, GitHub Actions minutes exhausted; local PostgreSQL 16, no Docker): `make test-docs` OK; `spotless:check checkstyle:check` OK; `mvn verify` per service with coverage checks: households 57, scoring 86, lists 68, notifications 53 tests green; tasks 117 tests with 1 failure that also fails without this change (see Follow-ups). Not run: `make e2e`, `make test-app` (no Podman, Flutter or emulator here), so this is not `done`.
+* Follow-ups: `RruleEnginePropertiesTest.aMonthlyRuleOnADayThatSomeMonthsLackSkipsThoseMonthsInsteadOfClamping` fails deterministically on the parent commit too (expected 29, was 30), so `make check` is red on tasks-service independently of T-0062; needs its own task and fix.
 
 ### T-0063 · lists-service: anonymize user ids on account deletion
 

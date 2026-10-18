@@ -28,7 +28,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Path("/v1/households/{householdId}/templates")
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "templates")
 @APIResponse(responseCode = "401", description = "Not authenticated")
 @APIResponse(
@@ -73,6 +72,7 @@ public class TemplateResource {
             description = "Invalid input",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response create(
             @PathParam("householdId") UUID householdId, @Valid CreateTemplateRequest request) {
         TemplateResponse body =
@@ -101,6 +101,7 @@ public class TemplateResource {
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @PATCH
     @Path("/{templateId}")
+    @Consumes(MediaType.APPLICATION_JSON)
     public TemplateResponse update(
             @PathParam("householdId") UUID householdId,
             @PathParam("templateId") UUID templateId,
