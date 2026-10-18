@@ -1,0 +1,61 @@
+# Builds the five service images and publishes them to GitHub's container registry (GHCR) each time a pull
+# request is merged into master (T-0100, ADR 0026). Merging already required a green `check`, so this does not run the tests again.
+# Like check.yml it runs hosted unless the repository variable CI_RUNNER names the self-hosted runner (ADR 0024).
+name: publish-images
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One publication at a time, none cancelled: `latest` must end on the newest merge.
+concurrency:
+  group: publish-images
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Read pinned versions
+        run: |
+          set -euo pipefail
+          . tooling/versions.env
+          echo "JAVA_MAJOR=$JAVA_MAJOR" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_MAJOR }}
+          cache: maven
+          cache-dependency-path: backend/**/pom.xml
+
+      - name: Build the jars
+        run: cd backend && ./mvnw -B -q -DskipTests package
+
+      - name: Log in to GHCR
+        env:
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$REGISTRY_TOKEN" | podman login ghcr.io --username "$REGISTRY_USER" --password-stdin
+
+      # Image names must be lowercase; the owner may not be.
+      - name: Build and push the images
+        env:
+          PUSH: "1"
+        run: |
+          owner="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+          tooling/build-images.sh "ghcr.io/$owner/betterhome" "$GITHUB_SHA" latest
+
+      - name: Log out
+        if: always()
+        run: podman logout ghcr.io || true

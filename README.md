@@ -59,3 +59,7 @@ Without `API_BASE_URL` and `KEYCLOAK_ISSUER` the app runs in demo mode on in-mem
 `make seed` creates its demo users itself. Manual Keycloak user setup: [deploy/keycloak/README.md](deploy/keycloak/README.md).
 
 End-to-end journeys: `make e2e` runs them on the web build in headless Chrome. Choose the target with `E2E_TARGET=web|android` and reuse a running stack with `E2E_STACK=running` (after `make up`).
+
+## Container images
+
+Every merge into `master` builds the five service images and pushes them to GitHub's container registry as `ghcr.io/<owner>/betterhome-<service>`, tagged with the commit SHA and `latest` ([publish-images.yml](.github/workflows/publish-images.yml), [ADR 0026](documentation/decisions/0026-publish-images-to-ghcr.md)). The packages are private, like the repository; pulling needs `podman login ghcr.io` with a token that has `read:packages`. To build them locally: `cd backend && ./mvnw -DskipTests package`, then `tooling/build-images.sh localhost/betterhome dev`.

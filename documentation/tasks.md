@@ -891,3 +891,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0098
 * Spec: —
 * Acceptance criteria: `deploy/podman-compose.yml` uses `registry.access.redhat.com/hi/postgresql` (17 is the lowest tag found) instead of `postgres:16-alpine`; init script, healthcheck (`pg_isready`) and volume path work; Testcontainers keeps its own image.
+
+### T-0100 · Publish the service images to GHCR when a pull request is merged
+
+* Status: in-review
+* Issue / PR: — / (this PR; stacked on T-0098)
+* Depends on: T-0098
+* Spec: —
+* Summary: `publish-images.yml` builds the jars and the five images on each push to `master` and pushes `ghcr.io/<owner>/betterhome-<service>:<sha>` and `:latest` with `GITHUB_TOKEN`. `tooling/build-images.sh` does the build and push; README section "Container images"; [ADR 0026](decisions/0026-publish-images-to-ghcr.md).
+* Decisions and deviations: Podman instead of Docker Buildx/actions so the same script runs on hosted and self-hosted runners. No test re-run, no signing or scanning (follow-ups).
+* Verification: `tooling/build-images.sh` built all five images locally from the real jars; the workflow parses as YAML (no `actionlint` installed). Not verified: the login and push to GHCR, which only run on `master` after the merge; the run on `master` after this PR is the check.
+* Follow-ups: image signing and vulnerability scan before push; image pull secret and deployment (T-0004).
