@@ -872,3 +872,22 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0021
 * Spec: AGENTS §6.2
 * Acceptance criteria: `household_journey_test.dart` "sign in profile sync, create a household…" sometimes fails at `firstWhere` (line 192, `Bad state: No element`: the household created through the UI is not in `listHouseholds()` yet) or with `FocusManager used after being disposed`, and every later journey then fails because they depend on its `householdId`. Seen on the self-hosted runner in runs 38925223407, 38936281427 and 38946063647 (a re-run of the same commit passed), and once on master on 2026-10-14 on a hosted runner (run 38611183796, cause not examined). Measured on 2026-10-16 on a quiet machine with a fresh stack per run (`make down`/`make up`; reusing one stack makes the second run fail on the first run's leftover notification, which is not this flake): 1 failure in 5 runs, so it is not caused by CI load. The failing run reports the first test as failed by `A FocusManager was used after being disposed` thrown after the test had completed, `householdId` is then never assigned, and the later journeys fail in cascade; the log has no per-step progress. One suspect, not confirmed: `_createHousehold` ends by waiting for `find.textContaining(name)`, which already matches the text field holding the typed name, so it can continue before Save has finished (this fits the `firstWhere` variant, not the `FocusManager` one). Instrument the steps, find the real first error, and make the journey wait for the real condition.
+
+### T-0098 · Service images on the Red Hat hardened OpenJDK image
+
+* Status: in-review
+* Issue / PR: — / (this PR)
+* Depends on: T-0004
+* Spec: —
+* Summary: The five `Dockerfile.jvm` use `registry.access.redhat.com/hi/openjdk:21.0-runtime` (non-root 65532, no shell) and start the jar with `java -jar` ([ADR 0025](decisions/0025-red-hat-hardened-base-image.md)).
+* Decisions and deviations: Unused generated Dockerfile variants left alone. The catalog image needs no registry login.
+* Verification: see the pull request.
+* Follow-ups: T-0099 (hardened PostgreSQL for the local stack, suggested issue: "Use hi/postgresql in the local Compose stack").
+
+### T-0099 · Local stack Postgres on the Red Hat hardened image
+
+* Status: todo
+* Issue / PR: — (suggested: "Use hi/postgresql in the local Compose stack")
+* Depends on: T-0098
+* Spec: —
+* Acceptance criteria: `deploy/podman-compose.yml` uses `registry.access.redhat.com/hi/postgresql` (17 is the lowest tag found) instead of `postgres:16-alpine`; init script, healthcheck (`pg_isready`) and volume path work; Testcontainers keeps its own image.
