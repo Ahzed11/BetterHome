@@ -125,4 +125,19 @@ public class ChecklistItem extends PanacheEntityBase {
                 listId,
                 now);
     }
+
+    /** Hands every item created by {@code user} to {@code replacement}; returns how many. */
+    public static int replaceCreator(UUID user, UUID replacement) {
+        return update("creator = ?1 where creator = ?2", replacement, user);
+    }
+
+    /** Hands every check made by {@code user} to {@code replacement}; returns how many. */
+    public static int replaceCompleter(UUID user, UUID replacement) {
+        return update("completer = ?1 where completer = ?2", replacement, user);
+    }
+
+    /** Hands every deletion made by {@code user} to {@code replacement}; returns how many. */
+    public static int replaceDeletedBy(UUID user, UUID replacement) {
+        return update("deletedBy = ?1 where deletedBy = ?2", replacement, user);
+    }
 }

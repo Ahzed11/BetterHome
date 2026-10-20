@@ -931,3 +931,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: last second of the day chosen (not skipping the day, not the next day) so a rule never loses or duplicates an occurrence; the property oracle applies the same rule. No product behavior outside this edge changes.
 * Verification: new `RruleEngineTest.anHourMissingAtTheEndOfTheDayKeepsTheOccurrenceOnItsOwnDay` failed before the fix; `mvn verify -pl services/tasks-service -am` green locally (118 tests, coverage checks met), `spotless:apply` clean. After merging master, the `check` job of the pull request passed on the fallback runner (docs, app, five backend jobs, e2e). Not run: Android target.
 * Follow-ups: none.
+
+### T-0102 · lists-service: anonymize a deleted user's id (part of T-0032)
+
+* Status: in-review
+* Issue / PR: #52 / —
+* Depends on: T-0016
+* Spec: §9 Privacy, AGENTS §8
+* Summary: `POST /v1/internal/users/{userId}/anonymize` (role `service`, as the other internal endpoints, ADR 0014) replaces the user's id in `list.created_by`, `item.creator`, `item.completer` and `item.deleted_by` with the nil UUID and answers 200 with the rows changed per column. Repeating it, or naming a user with no history, answers 200 with zeroes. The nil UUID itself is refused with 400.
+* Decisions and deviations: no migration. The columns are NOT NULL or tied to a timestamp by a CHECK and there are no foreign keys on them, so a sentinel id keeps the history ("someone checked it at 10:00") without making columns nullable. `updated_at` is left alone (anonymizing is not an edit). The sentinel is a constant in `AnonymizationService`; the app will see the nil UUID as the creator and should render it as "former member" (not done here, no app change). Spec §9 already says history is anonymized across services, so the spec is unchanged.
+* Verification: `AnonymizeUserTest` (service and HTTP: success, only the named user's columns change, idempotent, unknown user, sentinel refused, household admin and role-less user 403, anonymous 401); `make openapi`; `./mvnw verify -pl services/lists-service -am`. Not verified: a call with a real Keycloak service token (the `betterhome-households-service` client already holds the `service` role, ADR 0014, but no real-token test hits this endpoint), e2e.
+* Follow-ups: T-0032 still needs the households-side trigger and Keycloak Admin deletion, the call from households to this endpoint (it needs a REST client with the service token, failure policy so deletion is retried when lists is down), the same endpoint in tasks and scoring, the last-admin rule and the e2e journey. App: show the nil UUID as a former member.
+
