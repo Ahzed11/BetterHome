@@ -81,6 +81,18 @@ Future<List<TaskTemplate>> _templates() =>
 
 Finder _field(String label) => find.widgetWithText(TextField, label);
 
+/// Scrolls the form down to its save button and returns it.
+Future<Finder> _saveButton(WidgetTester tester) async {
+  final save = find.widgetWithText(FilledButton, 'Save chore');
+  await tester.scrollUntilVisible(
+    save,
+    200,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tester.pumpAndSettle();
+  return save;
+}
+
 /// Taps the stepper button named [tooltip] [times] times.
 Future<void> _step(WidgetTester tester, String tooltip, int times) async {
   for (var i = 0; i < times; i++) {
@@ -89,25 +101,17 @@ Future<void> _step(WidgetTester tester, String tooltip, int times) async {
   }
 }
 
-/// Taps the icon button of the form until it shows [emoji] (an empty string is "none").
+/// Opens the emoji picker of the form and picks [emoji]; an empty string picks "No icon".
 Future<void> _pickEmoji(WidgetTester tester, String emoji) async {
-  final button = find
-      .descendant(
-        of: find.byType(ChoreDetailsCard),
-        matching: find.byType(InkWell),
-      )
-      .first;
-  for (var i = 0; i < 12; i++) {
-    final shown = emoji.isEmpty
-        ? find.byIcon(Icons.sentiment_satisfied_alt_outlined)
-        : find.descendant(of: button, matching: find.text(emoji));
-    if (shown.evaluate().isNotEmpty) {
-      return;
-    }
-    await tester.tap(button);
-    await tester.pump();
-  }
-  fail('icon $emoji is not offered');
+  await tester.tap(
+    find.descendant(
+      of: find.byType(ChoreDetailsCard),
+      matching: find.byType(InkWell),
+    ),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(emoji.isEmpty ? find.text('No icon') : find.text(emoji));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -139,9 +143,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(_field('Chore name'), 'Bins');
     await tester.enterText(_field('Notes — optional'), 'Every Monday');
+    await _pickEmoji(tester, '🗑️');
     await _step(tester, 'Fewer On time', 2);
     await _step(tester, 'Fewer If late, still', 2);
-    await tester.tap(find.text('Save template'));
+    await tester.tap(await _saveButton(tester));
     await tester.pumpAndSettle();
 
     final created = (await _templates()).single;
@@ -166,7 +171,7 @@ void main() {
     );
     await tester.enterText(_field('Chore name'), 'Dishes and pans');
     await _step(tester, 'More On time', 3);
-    await tester.tap(find.text('Save template'));
+    await tester.tap(await _saveButton(tester));
     await tester.pumpAndSettle();
 
     final edited = (await _templates()).single;
@@ -183,7 +188,7 @@ void main() {
     await tester.tap(find.text('Dishes'));
     await tester.pumpAndSettle();
     await _pickEmoji(tester, '');
-    await tester.tap(find.text('Save template'));
+    await tester.tap(await _saveButton(tester));
     await tester.pumpAndSettle();
 
     expect((await _templates()).single.emoji, isNull);
@@ -196,6 +201,7 @@ void main() {
     await tester.tap(find.text('Dishes'));
     await tester.pumpAndSettle();
     await tester.enterText(_field('Chore name'), 'Other');
+    await _saveButton(tester);
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
@@ -209,7 +215,7 @@ void main() {
     await tester.tap(find.text('Add a template'));
     await tester.pumpAndSettle();
 
-    final save = find.widgetWithText(FilledButton, 'Save template');
+    final save = await _saveButton(tester);
     expect(tester.widget<FilledButton>(save).onPressed, isNull);
     await tester.enterText(_field('Chore name'), 'Bins');
     await tester.pump();
@@ -243,13 +249,32 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(_field('Chore name'), 'Bins');
     await tester.pump();
-    await tester.tap(find.text('Save template'));
+    await tester.tap(await _saveButton(tester));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
 
     expect(find.text('Something went wrong'), findsOneWidget);
     expect(await _templates(), isEmpty);
+  });
+
+  testWidgets('an admin finds the recurring chores in the house rules', (
+    tester,
+  ) async {
+    await _setUp();
+    await _pump(tester);
+
+    expect(find.text('HOUSE RULES'), findsOneWidget);
+    await tester.tap(find.text('Chores & rotations'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('New chore template'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('WHEN'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('WHEN'), findsOneWidget);
   });
 
   testWidgets('a member sees the templates but cannot change them', (
@@ -260,6 +285,7 @@ void main() {
 
     expect(find.text('Dishes'), findsOneWidget);
     expect(find.text('Add a template'), findsNothing);
+    expect(find.text('HOUSE RULES'), findsNothing);
     await tester.tap(find.text('Dishes'));
     await tester.pumpAndSettle();
     expect(find.text('Edit template'), findsNothing);

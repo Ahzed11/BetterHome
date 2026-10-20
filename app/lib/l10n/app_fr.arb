@@ -213,5 +213,18 @@
   "dayEmpty": "Rien ce jour-là.",
   "noEmoji": "aucun",
   "templateFormSubtitle": "Les modèles alimentent « Je viens de… » et les tâches récurrentes.",
-  "saveTemplate": "Enregistrer le modèle"
+  "saveTemplate": "Enregistrer le modèle",
+  "pickEmojiTitle": "Choisir une icône",
+  "noIcon": "Aucune icône",
+  "emojiCleaning": "Ménage",
+  "emojiKitchen": "Cuisine",
+  "emojiHome": "Maison",
+  "emojiLaundry": "Linge",
+  "emojiOutdoors": "Jardin et animaux",
+  "emojiErrands": "Courses",
+  "recurringToggleTitle": "Se répète selon un calendrier",
+  "recurringToggleHint": "À activer pour une tâche qui revient toute seule.",
+  "houseRules": "Règles de la maison",
+  "choresAndRotations": "Tâches et rotations",
+  "choresAndRotationsHint": "Ajouter une tâche récurrente"
 }

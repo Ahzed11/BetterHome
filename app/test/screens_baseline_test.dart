@@ -10,7 +10,6 @@ import 'package:betterhome/ui/screens/home_shell.dart';
 import 'package:betterhome/ui/screens/household_detail_screen.dart';
 import 'package:betterhome/ui/screens/leaderboard_screen.dart';
 import 'package:betterhome/ui/screens/lists_screen.dart';
-import 'package:betterhome/ui/screens/new_recurring_screen.dart';
 import 'package:betterhome/ui/screens/notification_preferences_screen.dart';
 import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
@@ -192,12 +191,19 @@ final List<_Scenario> _scenarios = [
       mine: true,
     ),
   ),
-  _Scenario('template_form', () async => const TemplateFormScreen()),
   _Scenario(
-    'new_recurring',
-    () async => NewRecurringScreen(
+    'template_form',
+    () async => TemplateFormScreen(
       session: await _sessionWith(),
       householdId: _household,
+    ),
+  ),
+  _Scenario(
+    'recurring_form',
+    () async => TemplateFormScreen(
+      session: await _sessionWith(),
+      householdId: _household,
+      startRecurring: true,
     ),
   ),
   _Scenario(

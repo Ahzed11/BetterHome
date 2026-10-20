@@ -202,7 +202,13 @@ void main() {
         find.widgetWithText(TextField, 'Chore name'),
         'Dishes',
       );
-      await _tap(tester, find.widgetWithText(FilledButton, 'Save template'));
+      await tester.pump();
+      await tester.scrollUntilVisible(
+        find.widgetWithText(FilledButton, 'Save chore'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await _tap(tester, find.widgetWithText(FilledButton, 'Save chore'));
       await _tap(
         tester,
         find.descendant(

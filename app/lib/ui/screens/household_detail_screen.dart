@@ -8,7 +8,7 @@ import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/member_avatar.dart';
 import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
-import 'package:betterhome/ui/widgets/guarded.dart';
+import 'package:betterhome/ui/widgets/app_toast.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -55,39 +55,54 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
     }();
   }
 
-  Future<void> _saveTemplate({TaskTemplate? template}) async {
+  /// Opens the chore form (for a new chore, or to edit [template]) and saves what it returns.
+  Future<void> _saveTemplate({
+    TaskTemplate? template,
+    bool startRecurring = false,
+  }) async {
     final draft = await Navigator.of(context).push<TemplateDraft>(
-      MaterialPageRoute(builder: (_) => TemplateFormScreen(template: template)),
+      MaterialPageRoute(
+        builder: (_) => TemplateFormScreen(
+          session: widget.session,
+          householdId: widget.householdId,
+          template: template,
+          startRecurring: startRecurring,
+        ),
+      ),
     );
     if (draft == null || !mounted) {
       return;
     }
-    final tasks = widget.session.tasksRepository;
-    await runGuarded(context, () async {
-      if (template == null) {
-        await tasks.createTemplate(
-          householdId: widget.householdId,
-          title: draft.title,
-          emoji: draft.emoji.isEmpty ? null : draft.emoji,
-          description: draft.description,
-          points: draft.points,
-          latePoints: draft.latePoints,
-        );
-      } else {
-        await tasks.updateTemplate(
-          householdId: widget.householdId,
-          templateId: template.id,
-          title: draft.title,
-          emoji: draft.emoji,
-          description: draft.description,
-          points: draft.points,
-          latePoints: draft.latePoints,
-        );
-      }
-    });
-    if (mounted) {
-      setState(_reload);
+    final saved = await saveTemplateDraft(
+      context,
+      widget.session,
+      widget.householdId,
+      draft,
+      template: template,
+    );
+    if (!mounted) {
+      return;
     }
+    if (saved && draft.recurrence != null) {
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context).recurrenceSet,
+      );
+    }
+    setState(_reload);
+  }
+
+  Future<void> _runDueNow() async {
+    final count = await widget.session.tasksRepository.runDueRecurrences(
+      widget.householdId,
+    );
+    if (!mounted) {
+      return;
+    }
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context).spawnedCount(count),
+    );
   }
 
   Future<void> _invite() async {
@@ -242,6 +257,29 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 tooltip: l10n.invite,
                 onTap: _invite,
               ),
+              if (isAdmin) ...[
+                const SizedBox(height: AppTokens.spaceLg),
+                SectionLabel(l10n.houseRules),
+                const SizedBox(height: AppTokens.spaceSm),
+                AppCard(
+                  child: Column(
+                    children: [
+                      _RuleRow(
+                        icon: Icons.sync,
+                        title: l10n.choresAndRotations,
+                        hint: l10n.choresAndRotationsHint,
+                        onTap: () => _saveTemplate(startRecurring: true),
+                      ),
+                      const Divider(height: 1, color: AppTokens.divider),
+                      _RuleRow(
+                        icon: Icons.play_circle_outline,
+                        title: l10n.runDueNow,
+                        onTap: _runDueNow,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: AppTokens.spaceLg),
               Wrap(
                 alignment: WrapAlignment.spaceBetween,
@@ -331,24 +369,24 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
         horizontal: AppTokens.spaceSm + AppTokens.spaceXs,
         vertical: AppTokens.spaceSm,
       ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // At large text sizes the pill goes under the name instead of squeezing it.
+          final stacked = MediaQuery.textScalerOf(context).scale(16) > 22;
+          final who = Row(
             children: [
               MemberAvatar(
                 label: label,
                 color: memberColor(ordered.indexOf(member)),
               ),
               const SizedBox(width: AppTokens.spaceSm + AppTokens.spaceXs),
-              Flexible(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       label,
+                      overflow: TextOverflow.ellipsis,
                       style: AppTypography.body.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -364,29 +402,107 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 ),
               ),
             ],
+          );
+          final pill = AppPill(
+            label: member.isAway ? l10n.clearAway : l10n.setAway,
+            icon: Icons.dark_mode_outlined,
+            onPressed: () async {
+              if (member.isAway) {
+                await widget.session.repository.clearAway(
+                  widget.householdId,
+                  member.userId,
+                );
+              } else {
+                await widget.session.repository.setAway(
+                  widget.householdId,
+                  member.userId,
+                );
+              }
+              if (mounted) {
+                setState(_reload);
+              }
+            },
+          );
+          if (!isAdmin) {
+            return who;
+          }
+          return stacked
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [who, pill],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: who),
+                    const SizedBox(width: AppTokens.spaceSm),
+                    pill,
+                  ],
+                );
+        },
+      ),
+    );
+  }
+}
+
+/// One tappable row of the "House rules" card: an icon, a title, an optional hint and a chevron.
+class _RuleRow extends StatelessWidget {
+  const _RuleRow({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.hint,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? hint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 60),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTokens.spaceMd - 2,
+            vertical: AppTokens.spaceSm,
           ),
-          if (isAdmin)
-            AppPill(
-              label: member.isAway ? l10n.clearAway : l10n.setAway,
-              icon: Icons.dark_mode_outlined,
-              onPressed: () async {
-                if (member.isAway) {
-                  await widget.session.repository.clearAway(
-                    widget.householdId,
-                    member.userId,
-                  );
-                } else {
-                  await widget.session.repository.setAway(
-                    widget.householdId,
-                    member.userId,
-                  );
-                }
-                if (mounted) {
-                  setState(_reload);
-                }
-              },
-            ),
-        ],
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: AppTokens.brand),
+              const SizedBox(width: AppTokens.spaceSm + 4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.body.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (hint != null)
+                      Text(
+                        hint ?? '',
+                        style: AppTypography.eyebrow.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: AppTokens.inkMuted,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

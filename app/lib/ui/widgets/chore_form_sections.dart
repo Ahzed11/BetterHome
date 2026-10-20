@@ -5,19 +5,6 @@ import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/stepper_field.dart';
 import 'package:flutter/material.dart';
 
-/// The icons a chore can take, cycled by the icon button; the empty string is "no icon".
-const List<String> choreEmojis = [
-  '🗑️',
-  '🧹',
-  '🍽️',
-  '🧦',
-  '🪴',
-  '🛁',
-  '🧽',
-  '🛒',
-  '',
-];
-
 const int maxChorePoints = 99;
 
 /// The first card of the chore forms: the icon button, the name and the optional notes.
@@ -25,14 +12,14 @@ class ChoreDetailsCard extends StatelessWidget {
   const ChoreDetailsCard({
     super.key,
     required this.emoji,
-    required this.onNextEmoji,
+    required this.onPickEmoji,
     required this.title,
     required this.notes,
     required this.onTitleChanged,
   });
 
   final String emoji;
-  final VoidCallback onNextEmoji;
+  final VoidCallback onPickEmoji;
   final TextEditingController title;
   final TextEditingController notes;
   final ValueChanged<String> onTitleChanged;
@@ -60,13 +47,13 @@ class ChoreDetailsCard extends StatelessWidget {
                       label: l10n.chooseEmoji(
                         emoji.isEmpty ? l10n.noEmoji : emoji,
                       ),
-                      onTap: onNextEmoji,
+                      onTap: onPickEmoji,
                       child: ExcludeSemantics(
                         child: InkWell(
                           borderRadius: BorderRadius.circular(
                             AppTokens.radiusMd,
                           ),
-                          onTap: onNextEmoji,
+                          onTap: onPickEmoji,
                           child: Container(
                             width: 56,
                             height: 56,
@@ -107,7 +94,10 @@ class ChoreDetailsCard extends StatelessWidget {
               controller: notes,
               minLines: 2,
               maxLines: 4,
-              decoration: InputDecoration(labelText: l10n.choreNotes),
+              decoration: InputDecoration(
+                labelText: l10n.choreNotes,
+                alignLabelWithHint: true,
+              ),
             ),
           ],
         ),

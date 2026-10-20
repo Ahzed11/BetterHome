@@ -256,5 +256,18 @@
   "dayEmpty": "Nothing on this day.",
   "noEmoji": "none",
   "templateFormSubtitle": "Templates feed the quick log and the recurring chores.",
-  "saveTemplate": "Save template"
+  "saveTemplate": "Save template",
+  "pickEmojiTitle": "Choose an icon",
+  "noIcon": "No icon",
+  "emojiCleaning": "Cleaning",
+  "emojiKitchen": "Kitchen",
+  "emojiHome": "Home",
+  "emojiLaundry": "Laundry",
+  "emojiOutdoors": "Garden and pets",
+  "emojiErrands": "Errands",
+  "recurringToggleTitle": "Repeats on a schedule",
+  "recurringToggleHint": "Turn on for a chore that comes back by itself.",
+  "houseRules": "House rules",
+  "choresAndRotations": "Chores & rotations",
+  "choresAndRotationsHint": "Add a recurring chore"
 }

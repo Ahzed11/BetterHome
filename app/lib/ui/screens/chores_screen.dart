@@ -3,11 +3,9 @@ import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
-import 'package:betterhome/ui/screens/new_recurring_screen.dart';
 import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
-import 'package:betterhome/ui/widgets/app_toast.dart';
 import 'package:betterhome/ui/widgets/chore_card.dart';
 import 'package:betterhome/ui/widgets/overdue_badge.dart';
 import 'package:betterhome/ui/widgets/quick_log_sheet.dart';
@@ -164,19 +162,25 @@ class _ChoresScreenState extends State<ChoresScreen> {
     }
     if (templates.isEmpty) {
       final draft = await Navigator.of(context).push<TemplateDraft>(
-        MaterialPageRoute(builder: (_) => const TemplateFormScreen()),
+        MaterialPageRoute(
+          builder: (_) => TemplateFormScreen(
+            session: widget.session,
+            householdId: widget.householdId,
+          ),
+        ),
       );
       if (draft == null || !mounted) {
         return;
       }
-      await widget.session.tasksRepository.createTemplate(
-        householdId: widget.householdId,
-        title: draft.title,
-        emoji: draft.emoji.isEmpty ? null : draft.emoji,
-        description: draft.description,
-        points: draft.points,
-        latePoints: draft.latePoints,
+      final saved = await saveTemplateDraft(
+        context,
+        widget.session,
+        widget.householdId,
+        draft,
       );
+      if (!saved) {
+        return;
+      }
     }
     final latest = await widget.session.tasksRepository.listTemplates(
       widget.householdId,
@@ -201,21 +205,6 @@ class _ChoresScreenState extends State<ChoresScreen> {
     if (logged && mounted) {
       setState(_reload);
     }
-  }
-
-  Future<void> _makeRecurring() async {
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => NewRecurringScreen(
-          session: widget.session,
-          householdId: widget.householdId,
-        ),
-      ),
-    );
-    if (saved != true || !mounted) {
-      return;
-    }
-    showAppToast(context, message: AppLocalizations.of(context).recurrenceSet);
   }
 
   Future<void> _revert(ChoreTask task) async {
@@ -546,49 +535,19 @@ class _ChoresScreenState extends State<ChoresScreen> {
           return ListView(
             padding: const EdgeInsets.only(bottom: 96),
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppTokens.spaceMd,
-                  AppTokens.spaceSm,
-                  AppTokens.spaceMd,
-                  AppTokens.spaceSm,
+              if (widget.mine)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppTokens.spaceMd,
+                    AppTokens.spaceSm,
+                    AppTokens.spaceMd,
+                    AppTokens.spaceSm,
+                  ),
+                  child: ScreenHeader(
+                    eyebrow: _eyebrow(l10n),
+                    title: l10n.yourChores,
+                  ),
                 ),
-                child: ScreenHeader(
-                  eyebrow: widget.mine ? _eyebrow(l10n) : null,
-                  title: widget.mine ? l10n.yourChores : l10n.allChores,
-                  actions: [
-                    if (_isAdmin)
-                      PopupMenuButton<String>(
-                        onSelected: (value) async {
-                          if (value == 'recurring') {
-                            await _makeRecurring();
-                          } else if (value == 'spawn') {
-                            final count = await widget.session.tasksRepository
-                                .runDueRecurrences(widget.householdId);
-                            if (!mounted) {
-                              return;
-                            }
-                            showAppToast(
-                              this.context,
-                              message: l10n.spawnedCount(count),
-                            );
-                            setState(_reload);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem(
-                            value: 'recurring',
-                            child: Text(l10n.makeRecurring),
-                          ),
-                          PopupMenuItem(
-                            value: 'spawn',
-                            child: Text(l10n.runDueNow),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
               if (widget.mine) _summary(tasks, l10n),
               if (!widget.mine)
                 Padding(

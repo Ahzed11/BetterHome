@@ -26,9 +26,12 @@ class StepperField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          caption,
-          style: AppTypography.label.copyWith(color: AppTokens.inkMuted),
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: AppTokens.spaceMd),
+          child: Text(
+            caption,
+            style: AppTypography.label.copyWith(color: AppTokens.inkMuted),
+          ),
         ),
         Row(
           mainAxisSize: MainAxisSize.min,

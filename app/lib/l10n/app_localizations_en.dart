@@ -675,4 +675,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveTemplate => 'Save template';
+
+  @override
+  String get pickEmojiTitle => 'Choose an icon';
+
+  @override
+  String get noIcon => 'No icon';
+
+  @override
+  String get emojiCleaning => 'Cleaning';
+
+  @override
+  String get emojiKitchen => 'Kitchen';
+
+  @override
+  String get emojiHome => 'Home';
+
+  @override
+  String get emojiLaundry => 'Laundry';
+
+  @override
+  String get emojiOutdoors => 'Garden and pets';
+
+  @override
+  String get emojiErrands => 'Errands';
+
+  @override
+  String get recurringToggleTitle => 'Repeats on a schedule';
+
+  @override
+  String get recurringToggleHint =>
+      'Turn on for a chore that comes back by itself.';
+
+  @override
+  String get houseRules => 'House rules';
+
+  @override
+  String get choresAndRotations => 'Chores & rotations';
+
+  @override
+  String get choresAndRotationsHint => 'Add a recurring chore';
 }

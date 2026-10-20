@@ -85,6 +85,9 @@ void main() {
       await _pumpShell(tester, await _session());
       expect(find.byType(AppBar), findsOneWidget);
       expect(find.byTooltip('Notifications'), findsOneWidget);
+      // No title and no menu on the chores list: the design has neither.
+      expect(find.text('All chores'), findsOneWidget, reason: 'the tab only');
+      expect(find.byType(PopupMenuButton<String>), findsNothing);
 
       await _openTab(tester, 'My chores');
       expect(find.byType(AppBar), findsNothing);

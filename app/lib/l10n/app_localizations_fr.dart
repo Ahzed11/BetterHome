@@ -679,4 +679,44 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get saveTemplate => 'Enregistrer le modèle';
+
+  @override
+  String get pickEmojiTitle => 'Choisir une icône';
+
+  @override
+  String get noIcon => 'Aucune icône';
+
+  @override
+  String get emojiCleaning => 'Ménage';
+
+  @override
+  String get emojiKitchen => 'Cuisine';
+
+  @override
+  String get emojiHome => 'Maison';
+
+  @override
+  String get emojiLaundry => 'Linge';
+
+  @override
+  String get emojiOutdoors => 'Jardin et animaux';
+
+  @override
+  String get emojiErrands => 'Courses';
+
+  @override
+  String get recurringToggleTitle => 'Se répète selon un calendrier';
+
+  @override
+  String get recurringToggleHint =>
+      'À activer pour une tâche qui revient toute seule.';
+
+  @override
+  String get houseRules => 'Règles de la maison';
+
+  @override
+  String get choresAndRotations => 'Tâches et rotations';
+
+  @override
+  String get choresAndRotationsHint => 'Ajouter une tâche récurrente';
 }

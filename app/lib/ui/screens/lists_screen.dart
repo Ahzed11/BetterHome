@@ -245,9 +245,9 @@ class _ListsScreenState extends State<ListsScreen> {
           final selected = lists.where((l) => l.id == _selectedId).firstOrNull;
           return ListView(
             padding: const EdgeInsets.fromLTRB(
-              AppTokens.spaceLg - AppTokens.spaceXs,
-              0,
-              AppTokens.spaceLg - AppTokens.spaceXs,
+              AppTokens.spaceMd,
+              AppTokens.spaceMd,
+              AppTokens.spaceMd,
               AppTokens.spaceLg,
             ),
             children: [

@@ -92,7 +92,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Chore');
     await tester.pump();
-    await tester.tap(find.text('Save template'));
+    await tester.scrollUntilVisible(
+      find.text('Save chore'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Save chore'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Chore'));
     await tester.pump();
@@ -124,7 +129,7 @@ void main() {
     expect(tester.getSize(segment.first).height, 14);
   });
 
-  testWidgets('admin saves a daily recurring chore from the chores menu', (
+  testWidgets('admin saves a daily recurring chore from the house rules', (
     tester,
   ) async {
     final session = AppSession(repository: FakeHouseholdsRepository());
@@ -138,9 +143,11 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Flat');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.tap(find.bySemanticsLabel('Household Flat, switch household'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Make recurring'));
+    await tester.tap(find.text('Household details'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Chores & rotations'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'Bins');
     await tester.scrollUntilVisible(

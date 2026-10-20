@@ -1201,6 +1201,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save template'**
   String get saveTemplate;
+
+  /// No description provided for @pickEmojiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an icon'**
+  String get pickEmojiTitle;
+
+  /// No description provided for @noIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'No icon'**
+  String get noIcon;
+
+  /// No description provided for @emojiCleaning.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning'**
+  String get emojiCleaning;
+
+  /// No description provided for @emojiKitchen.
+  ///
+  /// In en, this message translates to:
+  /// **'Kitchen'**
+  String get emojiKitchen;
+
+  /// No description provided for @emojiHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get emojiHome;
+
+  /// No description provided for @emojiLaundry.
+  ///
+  /// In en, this message translates to:
+  /// **'Laundry'**
+  String get emojiLaundry;
+
+  /// No description provided for @emojiOutdoors.
+  ///
+  /// In en, this message translates to:
+  /// **'Garden and pets'**
+  String get emojiOutdoors;
+
+  /// No description provided for @emojiErrands.
+  ///
+  /// In en, this message translates to:
+  /// **'Errands'**
+  String get emojiErrands;
+
+  /// No description provided for @recurringToggleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats on a schedule'**
+  String get recurringToggleTitle;
+
+  /// No description provided for @recurringToggleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on for a chore that comes back by itself.'**
+  String get recurringToggleHint;
+
+  /// No description provided for @houseRules.
+  ///
+  /// In en, this message translates to:
+  /// **'House rules'**
+  String get houseRules;
+
+  /// No description provided for @choresAndRotations.
+  ///
+  /// In en, this message translates to:
+  /// **'Chores & rotations'**
+  String get choresAndRotations;
+
+  /// No description provided for @choresAndRotationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a recurring chore'**
+  String get choresAndRotationsHint;
 }
 
 class _AppLocalizationsDelegate
