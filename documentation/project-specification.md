@@ -173,6 +173,7 @@ A self-hosted test deployment (Docker Compose on a home server) sits behind the 
 - **0013** — Push notification gateway behind a `PushSender` seam
 - **0027** — Push notifications are delivered through Gotify
 - **0029** — The NAS's Caddy reverse proxy fronts the self-hosted stack, reached through Tailscale
+- **0030** — Two more images: Flyway migrations and Keycloak, so a server needs no checkout
 
 ### Repository layout (Monorepo)
 

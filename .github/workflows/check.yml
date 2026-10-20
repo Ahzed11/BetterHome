@@ -130,6 +130,7 @@ jobs:
           cache-dependency-path: backend/**/pom.xml
 
       - run: make test-images
+      - run: make test-nas
 
   # The real app against the real stack (Podman Compose: Postgres, Keycloak, five services) in headless Chrome:
   # browser sign-in through Keycloak, then the repository journey. `make e2e` boots the stack itself.

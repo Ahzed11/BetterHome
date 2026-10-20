@@ -1,0 +1,78 @@
+# BetterHome routes for the server's own Caddy (ADR 0029, T-0108).
+#
+# This is a snippet, not a site: it has no host name. Import it inside the site block of your tailnet host,
+# before any catch-all `handle` of yours (handle blocks are tried in order):
+#
+#   nas.example.ts.net {
+#       import /path/to/betterhome.Caddyfile
+#       ...your other apps...
+#   }
+#
+# It claims only /auth, /api/<service> and /gotify, so other apps on the host keep their own routes, and it
+# needs the Caddy container to be on the `edge` network that deploy/nas/compose.yml joins.
+
+# Keycloak runs under /auth itself (KC_HTTP_RELATIVE_PATH), so the prefix is kept.
+handle /auth/* {
+	reverse_proxy betterhome-keycloak:8180
+}
+
+# Each service API: only /v1 and /q/health are forwarded with the prefix removed, the rest of /api/<name>/ is 404.
+handle /api/households/* {
+	@exposed path /api/households/v1/* /api/households/q/health/*
+	handle @exposed {
+		uri strip_prefix /api/households
+		reverse_proxy betterhome-households:8081
+	}
+	handle {
+		respond 404
+	}
+}
+
+handle /api/tasks/* {
+	@exposed path /api/tasks/v1/* /api/tasks/q/health/*
+	handle @exposed {
+		uri strip_prefix /api/tasks
+		reverse_proxy betterhome-tasks:8082
+	}
+	handle {
+		respond 404
+	}
+}
+
+handle /api/scoring/* {
+	@exposed path /api/scoring/v1/* /api/scoring/q/health/*
+	handle @exposed {
+		uri strip_prefix /api/scoring
+		reverse_proxy betterhome-scoring:8083
+	}
+	handle {
+		respond 404
+	}
+}
+
+handle /api/lists/* {
+	@exposed path /api/lists/v1/* /api/lists/q/health/*
+	handle @exposed {
+		uri strip_prefix /api/lists
+		reverse_proxy betterhome-lists:8084
+	}
+	handle {
+		respond 404
+	}
+}
+
+handle /api/notifications/* {
+	@exposed path /api/notifications/v1/* /api/notifications/q/health/*
+	handle @exposed {
+		uri strip_prefix /api/notifications
+		reverse_proxy betterhome-notifications:8085
+	}
+	handle {
+		respond 404
+	}
+}
+
+# Gotify serves from / and supports a sub-path behind a proxy; its WebSocket (/gotify/stream) is proxied as is.
+handle_path /gotify/* {
+	reverse_proxy betterhome-gotify:80
+}
