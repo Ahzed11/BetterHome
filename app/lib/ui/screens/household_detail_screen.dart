@@ -3,6 +3,7 @@ import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/member_labels.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/member_avatar.dart';
@@ -410,7 +411,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
     final roleLabel = member.role == MembershipRole.admin
         ? l10n.roleAdmin
         : l10n.roleMember;
-    final label = member.userId == meId ? l10n.you : member.userId;
+    final label = memberLabel(l10n, member, meId);
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppTokens.spaceSm + AppTokens.spaceXs,

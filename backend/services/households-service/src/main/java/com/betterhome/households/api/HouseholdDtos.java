@@ -1,11 +1,13 @@
 package com.betterhome.households.api;
 
+import com.betterhome.households.domain.AppUser;
 import com.betterhome.households.domain.Household;
 import com.betterhome.households.domain.Membership;
 import com.betterhome.households.domain.MembershipRole;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.time.LocalTime;
+import java.util.Optional;
 import java.util.UUID;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -59,9 +61,15 @@ public final class HouseholdDtos {
             Instant joinedAt,
             Instant awayFrom,
             Instant awayUntil,
-            UUID awaySetBy) {
+            UUID awaySetBy,
+            String givenName,
+            String familyName) {
 
+        /**
+         * Names let household members tell each other apart; absent once the account is deleted.
+         */
         public static MembershipResponse from(Membership membership) {
+            Optional<AppUser> user = AppUser.findActiveById(membership.userId);
             return new MembershipResponse(
                     membership.id,
                     membership.userId,
@@ -70,7 +78,9 @@ public final class HouseholdDtos {
                     membership.joinedAt,
                     membership.awayFrom,
                     membership.awayUntil,
-                    membership.awaySetBy);
+                    membership.awaySetBy,
+                    user.map(u -> u.givenName).orElse(null),
+                    user.map(u -> u.familyName).orElse(null));
         }
     }
 

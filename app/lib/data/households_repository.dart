@@ -252,6 +252,28 @@ class FakeHouseholdsRepository implements HouseholdsRepository {
     return List.unmodifiable(_members[householdId] ?? const []);
   }
 
+  /// Adds another person to a household, as if they had joined by invitation.
+  void addMember(
+    String householdId, {
+    required String memberUserId,
+    required String givenName,
+    required String familyName,
+  }) {
+    _members
+        .putIfAbsent(householdId, () => [])
+        .add(
+          Membership(
+            id: 'm-$householdId-$memberUserId',
+            userId: memberUserId,
+            householdId: householdId,
+            role: MembershipRole.member,
+            joinedAt: DateTime.utc(2026, 1, 2),
+            givenName: givenName,
+            familyName: familyName,
+          ),
+        );
+  }
+
   @override
   Future<Invitation> createInvitation({
     required String householdId,
@@ -303,6 +325,8 @@ class FakeHouseholdsRepository implements HouseholdsRepository {
       joinedAt: current.joinedAt,
       awayFrom: DateTime.utc(2026, 3, 1),
       awaySetBy: userId,
+      givenName: current.givenName,
+      familyName: current.familyName,
     );
     list[index] = updated;
     return updated;
@@ -322,6 +346,8 @@ class FakeHouseholdsRepository implements HouseholdsRepository {
       householdId: current.householdId,
       role: current.role,
       joinedAt: current.joinedAt,
+      givenName: current.givenName,
+      familyName: current.familyName,
     );
     list[index] = updated;
     return updated;

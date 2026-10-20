@@ -19,6 +19,7 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 - A user has an account (email and password authenticated via Keycloak) and can belong to several households (for example, a student flat and the family home). The UI lets the user choose which household to view.
 - A membership links a user to a household with a role: `admin` or `member`. A household can have several admins.
 - Members join by invitation (email, token, expiry, role).
+- Screens name members by their given and family names, which every membership answer carries (never the email or the raw id). The signed-in person is shown as "You"; a member whose account was deleted has no name and is shown as a neutral "Household member".
 - Leaving sets `left_at`, so history and scores are kept. The last admin must promote someone else or delete the household before leaving.
 - **Away status:** an admin can mark a member away (`away_from`, optional `away_until`). Away members are skipped by assignment.
 

@@ -3,6 +3,7 @@ import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/member_labels.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
 import 'package:betterhome/ui/widgets/member_avatar.dart';
 import 'package:betterhome/ui/widgets/podium.dart';
@@ -135,15 +136,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     String userId,
     List<Membership> members,
   ) {
-    final match = members.where((m) => m.userId == userId);
-    if (match.isEmpty) {
-      return userId;
-    }
-    final member = match.first;
-    if (member.userId == widget.session.profile?.id) {
-      return l10n.you;
-    }
-    return userId;
+    return memberLabel(
+      l10n,
+      members.where((m) => m.userId == userId).firstOrNull,
+      widget.session.profile?.id,
+    );
   }
 
   Color _colorFor(String userId, List<Membership> members) {

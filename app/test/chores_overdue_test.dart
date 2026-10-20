@@ -145,6 +145,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('Complete'), findsNothing);
-    expect(find.text('done · 5 pts'), findsOneWidget);
+    expect(find.text('Done · 5 pts'), findsOneWidget);
   });
 }

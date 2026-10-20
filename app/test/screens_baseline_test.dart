@@ -117,6 +117,15 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+/// A second person in the household, named by the members API, besides the signed-in one.
+void _addBob(AppSession session) =>
+    (session.repository as FakeHouseholdsRepository).addMember(
+      _household,
+      memberUserId: 'user-2',
+      givenName: 'Bob',
+      familyName: 'Baker',
+    );
+
 /// Syncing the profile replaces the default tasks and scoring fakes, so the
 /// doubles are installed afterwards.
 Future<AppSession> _sessionWith({
@@ -309,13 +318,11 @@ final List<_Scenario> _scenarios = [
       householdId: _household,
     ),
   ),
-  _Scenario(
-    'household_detail_populated',
-    () async => HouseholdDetailScreen(
-      session: await _sessionWith(),
-      householdId: _household,
-    ),
-  ),
+  _Scenario('household_detail_populated', () async {
+    final session = await _sessionWith();
+    _addBob(session);
+    return HouseholdDetailScreen(session: session, householdId: _household);
+  }),
   _Scenario('household_detail_templates', () async {
     final session = await _sessionWith();
     final tasks = session.tasksRepository;
@@ -392,10 +399,9 @@ final List<_Scenario> _scenarios = [
     // The September recap was seen already, so the board itself is what the golden shows.
     final scoring = FakeScoringRepository();
     await scoring.markRecapCelebrated(_household, '2026-09');
-    return LeaderboardScreen(
-      session: await _sessionWith(scoring: scoring),
-      householdId: _household,
-    );
+    final session = await _sessionWith(scoring: scoring);
+    _addBob(session);
+    return LeaderboardScreen(session: session, householdId: _household);
   }),
   _Scenario(
     'leaderboard_recap',

@@ -88,7 +88,7 @@ void main() {
     final tasks = await _logged();
     expect(tasks.single.status, TaskStatus.done);
     expect(tasks.single.title, 'Dishes');
-    expect(find.text('done · 3 pts'), findsOneWidget);
+    expect(find.text('Done · 3 pts'), findsOneWidget);
   });
 
   testWidgets('undoing within the window logs nothing at all', (tester) async {

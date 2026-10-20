@@ -225,5 +225,11 @@
   "recurringToggleHint": "À activer pour une tâche qui revient toute seule.",
   "houseRules": "Règles de la maison",
   "choresAndRotations": "Tâches et rotations",
-  "choresAndRotationsHint": "Ajouter une tâche récurrente"
+  "choresAndRotationsHint": "Ajouter une tâche récurrente",
+  "taskStatusOpen": "Ouverte",
+  "taskStatusDone": "Terminée",
+  "taskStatusDismissed": "Ignorée",
+  "taskStatusReverted": "Annulée",
+  "taskStatusWithPoints": "{status} · {points}",
+  "unknownMember": "Membre du foyer"
 }

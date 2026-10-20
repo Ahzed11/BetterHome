@@ -102,6 +102,14 @@ class _ChoresScreenState extends State<ChoresScreen> {
     );
   }
 
+  String _statusLabel(TaskStatus status, AppLocalizations l10n) =>
+      switch (status) {
+        TaskStatus.open => l10n.taskStatusOpen,
+        TaskStatus.done => l10n.taskStatusDone,
+        TaskStatus.dismissed => l10n.taskStatusDismissed,
+        TaskStatus.reverted => l10n.taskStatusReverted,
+      };
+
   Widget _meta(ChoreTask task, AppLocalizations l10n) {
     final due = task.dueAt;
     final Widget status;
@@ -119,7 +127,10 @@ class _ChoresScreenState extends State<ChoresScreen> {
       status = Text(l10n.noDueDate, style: AppTypography.eyebrow);
     } else {
       status = Text(
-        '${task.status.name} · ${task.pointsAwarded ?? task.points} pts',
+        l10n.taskStatusWithPoints(
+          _statusLabel(task.status, l10n),
+          l10n.pointsLabel(task.pointsAwarded ?? task.points),
+        ),
         style: AppTypography.eyebrow,
       );
     }

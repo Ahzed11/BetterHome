@@ -712,4 +712,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get choresAndRotationsHint => 'Add a recurring chore';
+
+  @override
+  String get taskStatusOpen => 'Open';
+
+  @override
+  String get taskStatusDone => 'Done';
+
+  @override
+  String get taskStatusDismissed => 'Dismissed';
+
+  @override
+  String get taskStatusReverted => 'Reverted';
+
+  @override
+  String taskStatusWithPoints(String status, String points) {
+    return '$status · $points';
+  }
+
+  @override
+  String get unknownMember => 'Household member';
 }

@@ -37,6 +37,8 @@ Membership membershipFromApi(api.MembershipResponse r) => Membership(
   awayFrom: r.awayFrom,
   awayUntil: r.awayUntil,
   awaySetBy: r.awaySetBy,
+  givenName: r.givenName,
+  familyName: r.familyName,
 );
 
 Invitation invitationFromApi(api.InvitationResponse r) => Invitation(
