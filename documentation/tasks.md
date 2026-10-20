@@ -605,7 +605,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Summary: `@Consumes(JSON)` now sits only on body-bearing methods in tasks (`TaskResource`, `TemplateResource`), households (`MembershipResource`; `InvitationAcceptResource` has none left) and scoring (`ScoreboardResource`). Tests post `complete`, `dismiss`, `reassign`, `dismiss-away`, `reassign-away`, `archive`, invitation accept, `leave` and `celebrate` with no Content-Type and expect 2xx (the tasks test failed with 415 before the change).
 * Decisions and deviations: lists and notifications have no body-less POST; `RecurrenceResource`, `PreferenceResource` and the other resources only have body-bearing writes, so they keep the class-level annotation.
 * Verification (local, GitHub Actions minutes exhausted; local PostgreSQL 16, no Docker): `make test-docs` OK; `spotless:check checkstyle:check` OK; `mvn verify` per service with coverage checks: households 57, scoring 86, lists 68, notifications 53 tests green; tasks 117 tests with 1 failure that also fails without this change (see Follow-ups). Not run: `make e2e`, `make test-app` (no Podman, Flutter or emulator here), so this is not `done`.
-* Follow-ups: `RruleEnginePropertiesTest.aMonthlyRuleOnADayThatSomeMonthsLackSkipsThoseMonthsInsteadOfClamping` fails deterministically on the parent commit too (expected 29, was 30), so `make check` is red on tasks-service independently of T-0062; needs its own task and fix.
+* Follow-ups: `RruleEnginePropertiesTest.aMonthlyRuleOnADayThatSomeMonthsLackSkipsThoseMonthsInsteadOfClamping` fails deterministically on the parent commit too (expected 29, was 30), so `make check` was red on tasks-service independently of T-0062. Fixed in T-0101.
 
 ### T-0063 · lists-service: anonymize user ids on account deletion
 
@@ -908,3 +908,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: Podman instead of Docker Buildx/actions so the same script runs on hosted and self-hosted runners. No test re-run, no signing or scanning (follow-ups).
 * Verification: `tooling/build-images.sh` built all five images locally from the real jars; the workflow parses as YAML (no `actionlint` installed). Not verified: the login and push to GHCR, which only run on `master` after the merge; the run on `master` after this PR is the check.
 * Follow-ups: image signing and vulnerability scan before push; image pull secret and deployment (T-0004).
+
+### T-0101 · Recurrence: an occurrence in a daylight-saving gap at the end of the day moved to the next day
+
+* Status: in-review
+* Issue / PR: — / —
+* Depends on: T-0011
+* Spec: §3.1 (recurrence)
+* Summary: `RruleEnginePropertiesTest` failed deterministically (seed `-4427577617696266686`: daily/monthly at 23:00 in `America/Godthab`, 2025-03-29, where local 23:00 does not exist). `RruleEngine` resolved the time with `atZone`, which shifts it forward by the gap, onto the 30th, so a rule on the 29th fired on the 30th and a daily rule fired twice on one calendar day. `occurrenceOn` now keeps the occurrence on its own day, at the day's last second, when the shift would cross midnight; other gaps keep the old forward shift. Spec §3.1 gets one sentence.
+* Decisions and deviations: last second of the day chosen (not skipping the day, not the next day) so a rule never loses or duplicates an occurrence; the property oracle applies the same rule. No product behavior outside this edge changes.
+* Verification: new `RruleEngineTest.anHourMissingAtTheEndOfTheDayKeepsTheOccurrenceOnItsOwnDay` failed before the fix; `mvn verify -pl services/tasks-service -am` green locally (118 tests, coverage checks met), `spotless:apply` clean. After merging master, the `check` job of the pull request passed on the fallback runner (docs, app, five backend jobs, e2e). Not run: Android target.
+* Follow-ups: none.

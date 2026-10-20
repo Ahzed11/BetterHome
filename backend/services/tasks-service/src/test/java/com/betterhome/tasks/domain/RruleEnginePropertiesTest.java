@@ -246,6 +246,9 @@ class RruleEnginePropertiesTest {
             LocalDate day = start.toLocalDate().plusDays(offset);
             if (named(schedule, start.toLocalDate(), day)) {
                 Instant occurrence = at(day.atTime(start.toLocalTime()), zone);
+                if (!occurrence.atZone(zone).toLocalDate().equals(day)) {
+                    occurrence = at(day.plusDays(1).atStartOfDay(), zone).minusSeconds(1);
+                }
                 if (!occurrence.isBefore(startsAt)) {
                     expected.add(occurrence);
                 }
