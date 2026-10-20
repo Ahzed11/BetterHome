@@ -11,11 +11,13 @@ ThemeData buildAppTheme() {
   return ThemeData(
     colorScheme: colorScheme,
     useMaterial3: true,
+    fontFamily: AppTypography.textFont,
     scaffoldBackgroundColor: AppTokens.surface,
     appBarTheme: AppBarTheme(
       backgroundColor: AppTokens.surface,
       foregroundColor: colorScheme.onSurface,
       elevation: 0,
+      titleTextStyle: AppTypography.display.copyWith(fontSize: 20),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(

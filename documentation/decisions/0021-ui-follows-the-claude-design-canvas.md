@@ -12,7 +12,7 @@ The product owner designed the app in a Claude Design canvas ("Household app red
 
 ## Deviations from the canvas, on purpose
 
-- **Fonts:** the design uses Bricolage Grotesque (titles) and Figtree (text) from Google Fonts. They are not bundled yet; `AppTypography` is the one place to add them (T-0079).
+- **Fonts:** none any more. Bricolage Grotesque (titles) and Figtree (text) are bundled in `app/assets/fonts` (T-0079) and set in `AppTypography` and the theme.
 - **Navigation:** built in T-0031, see the addendum.
 - **Check box outline:** `#7F8F8A` instead of the design's `#B9C4BF`, which is below the 3:1 contrast of a control boundary.
 - **Tab name:** the design says "Lists" where the spec said "Groceries"; the spec is updated to "Lists".

@@ -34,10 +34,14 @@ abstract final class AppTokens {
   static const double checkBoxSize = 24;
 }
 
-/// Text styles of the design. The design uses Bricolage Grotesque for titles and Figtree for text;
-/// until those fonts are bundled, the platform font is used and only these styles change.
+/// Text styles of the design: Bricolage Grotesque for titles, Figtree for text (bundled in
+/// `assets/fonts`, SIL Open Font License).
 abstract final class AppTypography {
+  static const String titleFont = 'BricolageGrotesque';
+  static const String textFont = 'Figtree';
+
   static const TextStyle display = TextStyle(
+    fontFamily: titleFont,
     fontSize: 32,
     fontWeight: FontWeight.w800,
     height: 1.1,
@@ -45,25 +49,30 @@ abstract final class AppTypography {
     color: AppTokens.ink,
   );
   static const TextStyle eyebrow = TextStyle(
+    fontFamily: textFont,
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppTokens.inkMuted,
   );
   static const TextStyle body = TextStyle(
+    fontFamily: textFont,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     color: AppTokens.ink,
   );
   static const TextStyle bodyMuted = TextStyle(
+    fontFamily: textFont,
     fontSize: 16,
     color: AppTokens.inkMuted,
   );
   static const TextStyle label = TextStyle(
+    fontFamily: textFont,
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppTokens.ink,
   );
   static const TextStyle sectionLabel = TextStyle(
+    fontFamily: textFont,
     fontSize: 13,
     fontWeight: FontWeight.w700,
     letterSpacing: 0.5,
