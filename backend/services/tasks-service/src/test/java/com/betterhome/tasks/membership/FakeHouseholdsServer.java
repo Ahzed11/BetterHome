@@ -27,6 +27,12 @@ public class FakeHouseholdsServer implements QuarkusTestResourceLifecycleManager
     /** Authorization headers received on households calls, in order. */
     public static final List<String> AUTHORIZATIONS = new CopyOnWriteArrayList<>();
 
+    /** X-Request-ID headers received on households calls, in order (null when absent). */
+    public static final List<String> REQUEST_IDS = new CopyOnWriteArrayList<>();
+
+    /** W3C traceparent headers received on households calls, in order (null when absent). */
+    public static final List<String> TRACEPARENTS = new CopyOnWriteArrayList<>();
+
     public static final AtomicInteger TOKEN_REQUESTS = new AtomicInteger();
     public static volatile int householdsStatus = 200;
 
@@ -67,6 +73,8 @@ public class FakeHouseholdsServer implements QuarkusTestResourceLifecycleManager
 
     private void households(HttpExchange exchange) throws IOException {
         AUTHORIZATIONS.add(exchange.getRequestHeaders().getFirst("Authorization"));
+        REQUEST_IDS.add(exchange.getRequestHeaders().getFirst("X-Request-ID"));
+        TRACEPARENTS.add(exchange.getRequestHeaders().getFirst("traceparent"));
         if (householdsStatus != 200) {
             respond(exchange, householdsStatus, "{}");
             return;
