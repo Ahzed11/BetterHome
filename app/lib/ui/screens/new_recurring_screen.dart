@@ -4,6 +4,7 @@ import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
+import 'package:betterhome/ui/widgets/chore_form_sections.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/member_avatar.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
@@ -14,7 +15,6 @@ import 'package:intl/intl.dart';
 
 enum _Freq { daily, weekly, monthly }
 
-const _emojis = ['🗑️', '🧹', '🍽️', '🧦', '🪴', '🛁', '🧽', '🛒'];
 const _byDay = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
 
 /// The admin-only screen of the design's "New recurring chore" board: it creates a chore template
@@ -78,7 +78,7 @@ class _NewRecurringScreenState extends State<NewRecurringScreen> {
       final template = await tasks.createTemplate(
         householdId: widget.householdId,
         title: _title.text.trim(),
-        emoji: _emojis[_emoji],
+        emoji: choreEmojis[_emoji].isEmpty ? null : choreEmojis[_emoji],
         description: _notes.text.trim(),
         points: _points,
         latePoints: _late,
@@ -134,132 +134,22 @@ class _NewRecurringScreenState extends State<NewRecurringScreen> {
           const SizedBox(height: AppTokens.spaceXs),
           Text(l10n.newRecurringSubtitle, style: AppTypography.bodyMuted),
           const SizedBox(height: AppTokens.spaceMd),
-          AppCard(
-            child: Padding(
-              padding: const EdgeInsets.all(AppTokens.spaceMd),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(l10n.choreIcon, style: AppTypography.label),
-                          const SizedBox(height: AppTokens.spaceXs),
-                          Semantics(
-                            container: true,
-                            button: true,
-                            label: l10n.chooseEmoji(_emojis[_emoji]),
-                            onTap: () => setState(
-                              () => _emoji = (_emoji + 1) % _emojis.length,
-                            ),
-                            child: ExcludeSemantics(
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(
-                                  AppTokens.radiusMd,
-                                ),
-                                onTap: () => setState(
-                                  () => _emoji = (_emoji + 1) % _emojis.length,
-                                ),
-                                child: Container(
-                                  width: 56,
-                                  height: 56,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: AppTokens.surface,
-                                    borderRadius: BorderRadius.circular(
-                                      AppTokens.radiusMd,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    _emojis[_emoji],
-                                    style: const TextStyle(fontSize: 28),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: AppTokens.spaceSm + 4),
-                      Expanded(
-                        child: TextField(
-                          controller: _title,
-                          onChanged: (_) => setState(() {}),
-                          decoration: InputDecoration(
-                            labelText: l10n.choreName,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppTokens.spaceSm + 4),
-                  TextField(
-                    controller: _notes,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: InputDecoration(labelText: l10n.choreNotes),
-                  ),
-                ],
-              ),
-            ),
+          ChoreDetailsCard(
+            emoji: choreEmojis[_emoji],
+            onNextEmoji: () =>
+                setState(() => _emoji = (_emoji + 1) % choreEmojis.length),
+            title: _title,
+            notes: _notes,
+            onTitleChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: AppTokens.spaceMd),
-          SectionLabel(l10n.pointsSection),
-          const SizedBox(height: AppTokens.spaceSm),
-          AppCard(
-            child: Padding(
-              padding: const EdgeInsets.all(AppTokens.spaceMd),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: AppTokens.spaceLg,
-                    runSpacing: AppTokens.spaceSm,
-                    children: [
-                      StepperField(
-                        caption: l10n.onTimePoints,
-                        value: '$_points',
-                        decreaseLabel: l10n.fewerPoints(l10n.onTimePoints),
-                        increaseLabel: l10n.morePoints(l10n.onTimePoints),
-                        onDecrease: _points > 1
-                            ? () => setState(() {
-                                _points--;
-                                if (_late > _points) {
-                                  _late = _points;
-                                }
-                              })
-                            : null,
-                        onIncrease: _points < 99
-                            ? () => setState(() => _points++)
-                            : null,
-                      ),
-                      StepperField(
-                        caption: l10n.latePointsLabel,
-                        value: '$_late',
-                        decreaseLabel: l10n.fewerPoints(l10n.latePointsLabel),
-                        increaseLabel: l10n.morePoints(l10n.latePointsLabel),
-                        onDecrease: _late > 0
-                            ? () => setState(() => _late--)
-                            : null,
-                        onIncrease: _late < _points
-                            ? () => setState(() => _late++)
-                            : null,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppTokens.spaceSm),
-                  Text(
-                    l10n.pointsRule,
-                    style: AppTypography.eyebrow.copyWith(
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          PointsSection(
+            points: _points,
+            latePoints: _late,
+            onChanged: (points, late) => setState(() {
+              _points = points;
+              _late = late;
+            }),
           ),
           const SizedBox(height: AppTokens.spaceMd),
           SectionLabel(l10n.whenSection),

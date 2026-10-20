@@ -198,8 +198,11 @@ void main() {
       // Admin creates a template (the household has none) and quick-logs a manual task.
       await _tap(tester, find.text('I just did…'));
       await _see(tester, find.text('New chore template'));
-      await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Dishes');
-      await _tap(tester, find.widgetWithText(FilledButton, 'Save'));
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Chore name'),
+        'Dishes',
+      );
+      await _tap(tester, find.widgetWithText(FilledButton, 'Save template'));
       await _tap(
         tester,
         find.descendant(

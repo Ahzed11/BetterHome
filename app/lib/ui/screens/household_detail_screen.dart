@@ -6,9 +6,10 @@ import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/member_avatar.dart';
+import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
-import 'package:betterhome/ui/widgets/template_form_dialog.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -55,7 +56,9 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
   }
 
   Future<void> _saveTemplate({TaskTemplate? template}) async {
-    final draft = await showTemplateForm(context, template: template);
+    final draft = await Navigator.of(context).push<TemplateDraft>(
+      MaterialPageRoute(builder: (_) => TemplateFormScreen(template: template)),
+    );
     if (draft == null || !mounted) {
       return;
     }

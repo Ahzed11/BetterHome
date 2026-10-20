@@ -350,12 +350,6 @@ abstract class AppLocalizations {
   /// **'New chore template'**
   String get createTemplate;
 
-  /// No description provided for @templateTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Title'**
-  String get templateTitle;
-
   /// No description provided for @leaderboardTitle.
   ///
   /// In en, this message translates to:
@@ -854,47 +848,11 @@ abstract class AppLocalizations {
   /// **'Edit template'**
   String get editTemplate;
 
-  /// No description provided for @templateEmoji.
-  ///
-  /// In en, this message translates to:
-  /// **'Emoji (optional)'**
-  String get templateEmoji;
-
-  /// No description provided for @templateDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Description (optional)'**
-  String get templateDescription;
-
-  /// No description provided for @templatePoints.
-  ///
-  /// In en, this message translates to:
-  /// **'Points'**
-  String get templatePoints;
-
-  /// No description provided for @templateLatePoints.
-  ///
-  /// In en, this message translates to:
-  /// **'Points if late'**
-  String get templateLatePoints;
-
   /// No description provided for @templatePointsSummary.
   ///
   /// In en, this message translates to:
   /// **'{points} pts · {latePoints} if late'**
   String templatePointsSummary(int points, int latePoints);
-
-  /// No description provided for @templateTitleRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a title'**
-  String get templateTitleRequired;
-
-  /// No description provided for @templateNumberInvalid.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a whole number, 0 or more'**
-  String get templateNumberInvalid;
 
   /// No description provided for @catchUp.
   ///
@@ -1225,6 +1183,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing on this day.'**
   String get dayEmpty;
+
+  /// No description provided for @noEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'none'**
+  String get noEmoji;
+
+  /// No description provided for @templateFormSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates feed the quick log and the recurring chores.'**
+  String get templateFormSubtitle;
+
+  /// No description provided for @saveTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Save template'**
+  String get saveTemplate;
 }
 
 class _AppLocalizationsDelegate

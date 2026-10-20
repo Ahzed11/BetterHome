@@ -141,9 +141,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createTemplate => 'Nouveau modèle';
 
   @override
-  String get templateTitle => 'Titre';
-
-  @override
   String get leaderboardTitle => 'Classement';
 
   @override
@@ -426,27 +423,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editTemplate => 'Modifier le modèle';
 
   @override
-  String get templateEmoji => 'Émoji (facultatif)';
-
-  @override
-  String get templateDescription => 'Description (facultatif)';
-
-  @override
-  String get templatePoints => 'Points';
-
-  @override
-  String get templateLatePoints => 'Points si en retard';
-
-  @override
   String templatePointsSummary(int points, int latePoints) {
     return '$points pts · $latePoints si en retard';
   }
-
-  @override
-  String get templateTitleRequired => 'Saisissez un titre';
-
-  @override
-  String get templateNumberInvalid => 'Saisissez un nombre entier, 0 ou plus';
 
   @override
   String get catchUp => 'À rattraper';
@@ -690,4 +669,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dayEmpty => 'Rien ce jour-là.';
+
+  @override
+  String get noEmoji => 'aucun';
+
+  @override
+  String get templateFormSubtitle =>
+      'Les modèles alimentent « Je viens de… » et les tâches récurrentes.';
+
+  @override
+  String get saveTemplate => 'Enregistrer le modèle';
 }

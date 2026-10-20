@@ -3,6 +3,7 @@ import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/household_detail_screen.dart';
+import 'package:betterhome/ui/widgets/chore_form_sections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -78,7 +79,36 @@ Future<void> _pump(
 Future<List<TaskTemplate>> _templates() =>
     _session.tasksRepository.listTemplates(_household);
 
-Finder _field(String label) => find.widgetWithText(TextFormField, label);
+Finder _field(String label) => find.widgetWithText(TextField, label);
+
+/// Taps the stepper button named [tooltip] [times] times.
+Future<void> _step(WidgetTester tester, String tooltip, int times) async {
+  for (var i = 0; i < times; i++) {
+    await tester.tap(find.byTooltip(tooltip));
+    await tester.pump();
+  }
+}
+
+/// Taps the icon button of the form until it shows [emoji] (an empty string is "none").
+Future<void> _pickEmoji(WidgetTester tester, String emoji) async {
+  final button = find
+      .descendant(
+        of: find.byType(ChoreDetailsCard),
+        matching: find.byType(InkWell),
+      )
+      .first;
+  for (var i = 0; i < 12; i++) {
+    final shown = emoji.isEmpty
+        ? find.byIcon(Icons.sentiment_satisfied_alt_outlined)
+        : find.descendant(of: button, matching: find.text(emoji));
+    if (shown.evaluate().isNotEmpty) {
+      return;
+    }
+    await tester.tap(button);
+    await tester.pump();
+  }
+  fail('icon $emoji is not offered');
+}
 
 void main() {
   testWidgets('lists the templates with their points', (tester) async {
@@ -107,12 +137,11 @@ void main() {
 
     await tester.tap(find.text('Add a template'));
     await tester.pumpAndSettle();
-    await tester.enterText(_field('Title'), 'Bins');
-    await tester.enterText(_field('Emoji (optional)'), '🗑️');
-    await tester.enterText(_field('Description (optional)'), 'Every Monday');
-    await tester.enterText(_field('Points'), '8');
-    await tester.enterText(_field('Points if late'), '3');
-    await tester.tap(find.text('Save'));
+    await tester.enterText(_field('Chore name'), 'Bins');
+    await tester.enterText(_field('Notes — optional'), 'Every Monday');
+    await _step(tester, 'Fewer On time', 2);
+    await _step(tester, 'Fewer If late, still', 2);
+    await tester.tap(find.text('Save template'));
     await tester.pumpAndSettle();
 
     final created = (await _templates()).single;
@@ -132,12 +161,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Edit template'), findsOneWidget);
     expect(
-      tester.widget<TextFormField>(_field('Title')).controller?.text,
+      tester.widget<TextField>(_field('Chore name')).controller?.text,
       'Dishes',
     );
-    await tester.enterText(_field('Title'), 'Dishes and pans');
-    await tester.enterText(_field('Points'), '6');
-    await tester.tap(find.text('Save'));
+    await tester.enterText(_field('Chore name'), 'Dishes and pans');
+    await _step(tester, 'More On time', 3);
+    await tester.tap(find.text('Save template'));
     await tester.pumpAndSettle();
 
     final edited = (await _templates()).single;
@@ -153,8 +182,8 @@ void main() {
 
     await tester.tap(find.text('Dishes'));
     await tester.pumpAndSettle();
-    await tester.enterText(_field('Emoji (optional)'), '');
-    await tester.tap(find.text('Save'));
+    await _pickEmoji(tester, '');
+    await tester.tap(find.text('Save template'));
     await tester.pumpAndSettle();
 
     expect((await _templates()).single.emoji, isNull);
@@ -166,29 +195,42 @@ void main() {
 
     await tester.tap(find.text('Dishes'));
     await tester.pumpAndSettle();
-    await tester.enterText(_field('Title'), 'Other');
+    await tester.enterText(_field('Chore name'), 'Other');
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
     expect((await _templates()).single.title, 'Dishes');
   });
 
-  testWidgets('a blank title or a bad number keeps the form open', (
-    tester,
-  ) async {
+  testWidgets('a blank name keeps saving disabled', (tester) async {
     await _setUp(withTemplate: false);
     await _pump(tester);
 
     await tester.tap(find.text('Add a template'));
     await tester.pumpAndSettle();
-    await tester.enterText(_field('Points'), '-1');
-    await tester.enterText(_field('Points if late'), 'abc');
-    await tester.tap(find.text('Save'));
-    await tester.pumpAndSettle();
 
-    expect(find.text('Enter a title'), findsOneWidget);
-    expect(find.text('Enter a whole number, 0 or more'), findsNWidgets(2));
+    final save = find.widgetWithText(FilledButton, 'Save template');
+    expect(tester.widget<FilledButton>(save).onPressed, isNull);
+    await tester.enterText(_field('Chore name'), 'Bins');
+    await tester.pump();
+    expect(tester.widget<FilledButton>(save).onPressed, isNotNull);
     expect(await _templates(), isEmpty);
+  });
+
+  testWidgets('late points never go above the on-time points', (tester) async {
+    await _setUp(withTemplate: false);
+    await _pump(tester);
+
+    await tester.tap(find.text('Add a template'));
+    await tester.pumpAndSettle();
+    await _step(tester, 'Fewer On time', 7);
+
+    // 10 - 7 = 3 on time; the 5 late points came down with it.
+    final more = find.ancestor(
+      of: find.byTooltip('More If late, still'),
+      matching: find.byType(IconButton),
+    );
+    expect(tester.widget<IconButton>(more).onPressed, isNull);
   });
 
   testWidgets('a refused save is reported and nothing is added', (
@@ -199,10 +241,12 @@ void main() {
 
     await tester.tap(find.text('Add a template'));
     await tester.pumpAndSettle();
-    await tester.enterText(_field('Title'), 'Bins');
-    await tester.tap(find.text('Save'));
+    await tester.enterText(_field('Chore name'), 'Bins');
     await tester.pump();
-    await tester.pump();
+    await tester.tap(find.text('Save template'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
 
     expect(find.text('Something went wrong'), findsOneWidget);
     expect(await _templates(), isEmpty);

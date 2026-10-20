@@ -42,7 +42,6 @@
   "dismissConfirmTitle": "Ignorer cette tâche ?",
   "dismissConfirmBody": "L’action est définitive et n’attribue aucun point.",
   "createTemplate": "Nouveau modèle",
-  "templateTitle": "Titre",
   "leaderboardTitle": "Classement",
   "periodWeek": "Semaine",
   "periodMonth": "Mois",
@@ -140,14 +139,8 @@
   "templatesEmpty": "Aucun modèle pour l'instant. Ajoutez-en un pour enregistrer des tâches.",
   "addTemplate": "Ajouter un modèle",
   "editTemplate": "Modifier le modèle",
-  "templateEmoji": "Émoji (facultatif)",
-  "templateDescription": "Description (facultatif)",
-  "templatePoints": "Points",
-  "templateLatePoints": "Points si en retard",
   "templatePointsSummary": "{points} pts · {latePoints} si en retard",
   "@templatePointsSummary": {"placeholders": {"points": {"type": "int"}, "latePoints": {"type": "int"}}},
-  "templateTitleRequired": "Saisissez un titre",
-  "templateNumberInvalid": "Saisissez un nombre entier, 0 ou plus",
   "catchUp": "À rattraper",
   "catchUpHint": "En retard, rapporte encore des points",
   "dueInDays": "{days, plural, =0{aujourd’hui} =1{demain} other{dans {days} jours}}",
@@ -217,5 +210,8 @@
   "@stripDayLabel": {"placeholders": {"date": {"type": "String"}, "count": {"type": "int"}}},
   "stripToday": "Auj.",
   "thisWeekLabel": "Cette semaine",
-  "dayEmpty": "Rien ce jour-là."
+  "dayEmpty": "Rien ce jour-là.",
+  "noEmoji": "aucun",
+  "templateFormSubtitle": "Les modèles alimentent « Je viens de… » et les tâches récurrentes.",
+  "saveTemplate": "Enregistrer le modèle"
 }

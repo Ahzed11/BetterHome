@@ -4,6 +4,7 @@ import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/new_recurring_screen.dart';
+import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/app_toast.dart';
@@ -162,35 +163,19 @@ class _ChoresScreenState extends State<ChoresScreen> {
       return;
     }
     if (templates.isEmpty) {
-      final titleController = TextEditingController(text: 'Chore');
-      final created = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(l10n.createTemplate),
-          content: TextField(
-            controller: titleController,
-            decoration: InputDecoration(labelText: l10n.templateTitle),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(l10n.save),
-            ),
-          ],
-        ),
+      final draft = await Navigator.of(context).push<TemplateDraft>(
+        MaterialPageRoute(builder: (_) => const TemplateFormScreen()),
       );
-      if (created != true || !mounted) {
+      if (draft == null || !mounted) {
         return;
       }
       await widget.session.tasksRepository.createTemplate(
         householdId: widget.householdId,
-        title: titleController.text.trim(),
-        points: 5,
-        latePoints: 2,
+        title: draft.title,
+        emoji: draft.emoji.isEmpty ? null : draft.emoji,
+        description: draft.description,
+        points: draft.points,
+        latePoints: draft.latePoints,
       );
     }
     final latest = await widget.session.tasksRepository.listTemplates(

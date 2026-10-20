@@ -15,6 +15,7 @@ import 'package:betterhome/ui/screens/notification_preferences_screen.dart';
 import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
 import 'package:betterhome/ui/screens/sign_in_screen.dart';
+import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/ui/widgets/household_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -191,6 +192,7 @@ final List<_Scenario> _scenarios = [
       mine: true,
     ),
   ),
+  _Scenario('template_form', () async => const TemplateFormScreen()),
   _Scenario(
     'new_recurring',
     () async => NewRecurringScreen(

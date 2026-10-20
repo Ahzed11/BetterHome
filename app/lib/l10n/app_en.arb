@@ -47,7 +47,6 @@
   "dismissConfirmTitle": "Dismiss this chore?",
   "dismissConfirmBody": "Dismissal is permanent and awards no points.",
   "createTemplate": "New chore template",
-  "templateTitle": "Title",
   "leaderboardTitle": "Leaderboard",
   "periodWeek": "Week",
   "periodMonth": "Month",
@@ -183,14 +182,8 @@
   "templatesEmpty": "No templates yet. Add one to start logging chores.",
   "addTemplate": "Add a template",
   "editTemplate": "Edit template",
-  "templateEmoji": "Emoji (optional)",
-  "templateDescription": "Description (optional)",
-  "templatePoints": "Points",
-  "templateLatePoints": "Points if late",
   "templatePointsSummary": "{points} pts · {latePoints} if late",
   "@templatePointsSummary": {"placeholders": {"points": {"type": "int"}, "latePoints": {"type": "int"}}},
-  "templateTitleRequired": "Enter a title",
-  "templateNumberInvalid": "Enter a whole number, 0 or more",
   "catchUp": "Catch up",
   "catchUpHint": "Late, still worth points",
   "dueInDays": "{days, plural, =0{today} =1{tomorrow} other{in {days} days}}",
@@ -260,5 +253,8 @@
   "@stripDayLabel": {"placeholders": {"date": {"type": "String"}, "count": {"type": "int"}}},
   "stripToday": "Today",
   "thisWeekLabel": "This week",
-  "dayEmpty": "Nothing on this day."
+  "dayEmpty": "Nothing on this day.",
+  "noEmoji": "none",
+  "templateFormSubtitle": "Templates feed the quick log and the recurring chores.",
+  "saveTemplate": "Save template"
 }

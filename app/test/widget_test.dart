@@ -90,11 +90,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('I just did…'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Save'));
+    await tester.enterText(find.byType(TextField).first, 'Chore');
+    await tester.pump();
+    await tester.tap(find.text('Save template'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Chore'));
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(find.textContaining('Chore'), findsWidgets);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('leaderboard shows podium and effort bar', (tester) async {
