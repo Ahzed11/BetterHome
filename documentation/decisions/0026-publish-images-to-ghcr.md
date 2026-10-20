@@ -6,7 +6,7 @@ The images were only built locally by Compose. Deploying to OpenShift (T-0004, T
 
 ## Decision
 
-[publish-images.yml](../../.github/workflows/publish-images.yml) runs on every push to `master` (a merged pull request) and on demand. It builds the jars with the Maven wrapper, builds the five images with Podman through `tooling/build-images.sh` (the same script works locally and on the self-hosted runner, which has no Buildx) and pushes `ghcr.io/<owner>/betterhome-<service>` tagged with the commit SHA and `latest`. It authenticates with the job's `GITHUB_TOKEN` (`packages: write`, granted to this job only), so no secret is stored. It follows `CI_RUNNER` like [check.yml](../../.github/workflows/check.yml). Runs are queued, never cancelled, so `latest` ends on the newest merge. It does not re-run the tests: merging already required a green `check`.
+[publish-images.yml](../../.github/workflows/publish-images.yml) runs on every push to `master` (a merged pull request) and on demand (the job only runs on `master`, so a manual run from another branch cannot move `latest`). It builds the jars with the Maven wrapper, builds the five images with Podman through `tooling/build-images.sh` (the same script works locally and on the self-hosted runner, which has no Buildx) and pushes `ghcr.io/<owner>/betterhome-<service>` tagged with the commit SHA and `latest`. It authenticates with the job's `GITHUB_TOKEN` (`packages: write`, granted to this job only), so no secret is stored. It follows `CI_RUNNER` like [check.yml](../../.github/workflows/check.yml). Runs are queued, never cancelled, so `latest` ends on the newest merge. It does not re-run the tests: merging already required a green `check`.
 
 ## Consequences
 

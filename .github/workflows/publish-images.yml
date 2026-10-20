@@ -18,6 +18,8 @@ concurrency:
 
 jobs:
   publish:
+    # A manual run from another branch must not move `latest`.
+    if: github.ref == 'refs/heads/master'
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 30
     permissions:
