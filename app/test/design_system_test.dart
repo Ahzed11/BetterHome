@@ -97,18 +97,6 @@ class _Swatch extends StatelessWidget {
 }
 
 void main() {
-  testWidgets('golden: design system widgets', (tester) async {
-    await pumpScreen(
-      tester,
-      home: const _DesignSystemShowcase(),
-      locale: const Locale('en'),
-    );
-    await expectLater(
-      find.byType(MaterialApp),
-      matchesGoldenFile('goldens/design_system.png'),
-    );
-  });
-
   testWidgets('design system widgets meet the accessibility guidelines', (
     tester,
   ) async {
@@ -134,5 +122,18 @@ void main() {
 
   test('the minimum touch target token is 44 logical pixels', () {
     expect(AppTokens.minTouchTarget, 44);
+  });
+
+  testWidgets('golden: design system widgets', (tester) async {
+    await pumpScreen(
+      tester,
+      home: const _DesignSystemShowcase(),
+      locale: const Locale('en'),
+      realFonts: true,
+    );
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/design_system.png'),
+    );
   });
 }

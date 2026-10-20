@@ -414,16 +414,6 @@ void main() {
     for (final locale in baselineLocales) {
       final id = '${scenario.name} (${locale.languageCode})';
 
-      testWidgets('golden: $id', (tester) async {
-        await pumpScreen(tester, home: await scenario.build(), locale: locale);
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile(
-            'goldens/${scenario.name}_${locale.languageCode}.png',
-          ),
-        );
-      });
-
       testWidgets('accessibility: $id', (tester) async {
         await pumpScreen(tester, home: await scenario.build(), locale: locale);
         await expectAccessible(tester);
@@ -437,6 +427,27 @@ void main() {
           textScale: 2,
         );
         expect(tester.takeException(), isNull);
+      });
+    }
+  }
+
+  for (final scenario in _scenarios) {
+    for (final locale in baselineLocales) {
+      final id = '${scenario.name} (${locale.languageCode})';
+
+      testWidgets('golden: $id', (tester) async {
+        await pumpScreen(
+          tester,
+          home: await scenario.build(),
+          locale: locale,
+          realFonts: true,
+        );
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile(
+            'goldens/${scenario.name}_${locale.languageCode}.png',
+          ),
+        );
       });
     }
   }

@@ -565,11 +565,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0057 · Render readable text and icons in app golden images
 
-* Status: todo
-* Issue / PR: #44
+* Status: in-review
+* Issue / PR: #44 / (pull request to follow)
 * Depends on: T-0022
 * Spec: AGENTS §5.2
 * Acceptance criteria: Goldens show real text and icons by loading a bundled test font in `app/test/support/screen_harness.dart`; regenerated on Linux (ADR 0012).
+* Summary: `pumpScreen(realFonts: true)` loads every font in the app's `FontManifest.json` (Figtree, Bricolage Grotesque, Material and Cupertino icons) with `FontLoader`; the three golden tests (`screens_baseline_test`, `widgets_test`, `design_system_test`) set it. All goldens regenerated on Linux.
+* Decisions and deviations: No binary added and no Roboto: the theme uses Figtree and Bricolage Grotesque (OFL, licenses already in `app/assets/fonts`, T-0079) and Flutter bundles Material Icons through `uses-material-design`, so the goldens show the fonts the app really ships. Fonts cannot be unloaded and `textContrastGuideline` samples anti-aliased pixels, so it reports false failures (for example 1.06:1) on real glyphs; real fonts are therefore opt-in and each file declares its golden tests after its accessibility tests (a misordering fails loudly, never silently passes). Emoji in chore titles still render as empty boxes (no emoji font bundled).
+* Verification: `make client`, `make update-goldens`, then `flutter test` (441 pass), `flutter analyze` and `dart format --set-exit-if-changed .` clean, on Linux. Not run: the rest of `make check`, e2e.
+* Follow-ups: Optionally bundle an emoji font for the golden tests (large binary, product owner's call); a contrast check that does not depend on glyph pixels.
 
 ### T-0058 · Externalize remaining hard-coded strings and raw ids in app screens
 
