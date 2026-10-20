@@ -6,8 +6,12 @@ abstract final class AppTokens {
   static const Color overdue = Color(0xFFE07A5F);
 
   /// Soft background for overdue labels: dark text on it keeps the contrast the coral alone lacks.
-  static const Color overdueTint = Color(0xFFFBE7E1);
-  static const Color surface = Color(0xFFF7FAF9);
+  static const Color overdueTint = Color(0xFFFCEBE4);
+
+  /// Ring of the check circle of an overdue chore and the dark coral of its due date (4.5:1 on white).
+  static const Color overdueRing = Color(0xFFE08A70);
+  static const Color overdueText = Color(0xFFA9432A);
+  static const Color surface = Color(0xFFF3F5F1);
   static const Color onBrand = Color(0xFFFFFFFF);
   static const Color ink = Color(0xFF12201D);
   static const Color inkMuted = Color(0xFF5A6A66);
@@ -19,6 +23,7 @@ abstract final class AppTokens {
   /// Outline of an empty check box: dark enough for the 3:1 contrast of a control boundary.
   static const Color controlOutline = Color(0xFF7F8F8A);
   static const double radiusMd = 16;
+  static const double radiusCard = 20;
   static const double radiusLg = 20;
   static const double radiusPill = 999;
   static const double spaceXs = 4;
@@ -32,6 +37,7 @@ abstract final class AppTokens {
   static const double pillHeight = 40;
   static const double fieldHeight = 52;
   static const double checkBoxSize = 24;
+  static const double checkCircleSize = 44;
 }
 
 /// Text styles of the design: Bricolage Grotesque for titles, Figtree for text (bundled in

@@ -89,18 +89,20 @@ void main() {
     expect(AppTokens.overdue, isNot(const Color(0xFFFF0000)));
   });
 
-  testWidgets('a chore that is not yet due shows its points as before', (
-    tester,
-  ) async {
-    await _pump(
-      tester,
-      await _session(),
-      now: _due.subtract(const Duration(minutes: 1)),
-    );
+  testWidgets(
+    'a chore that is not yet due shows when it is due and its points',
+    (tester) async {
+      await _pump(
+        tester,
+        await _session(),
+        now: _due.subtract(const Duration(minutes: 1)),
+      );
 
-    expect(find.text('open · 5 pts'), findsOneWidget);
-    expect(find.byType(OverdueBadge), findsNothing);
-  });
+      expect(find.text('today'), findsWidgets);
+      expect(find.text('+5'), findsOneWidget);
+      expect(find.byType(OverdueBadge), findsNothing);
+    },
+  );
 
   testWidgets('a chore exactly at its due date is not overdue yet', (
     tester,

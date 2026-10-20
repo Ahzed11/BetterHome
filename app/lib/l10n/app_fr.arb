@@ -148,5 +148,17 @@
   "templatePointsSummary": "{points} pts · {latePoints} si en retard",
   "@templatePointsSummary": {"placeholders": {"points": {"type": "int"}, "latePoints": {"type": "int"}}},
   "templateTitleRequired": "Saisissez un titre",
-  "templateNumberInvalid": "Saisissez un nombre entier, 0 ou plus"
+  "templateNumberInvalid": "Saisissez un nombre entier, 0 ou plus",
+  "catchUp": "À rattraper",
+  "catchUpHint": "En retard, rapporte encore des points",
+  "dueInDays": "{days, plural, =0{aujourd’hui} =1{demain} other{dans {days} jours}}",
+  "@dueInDays": {"placeholders": {"days": {"type": "int"}}},
+  "noDueDate": "Sans échéance",
+  "choresDone": "Terminées",
+  "filterAll": "Toutes · {count}",
+  "@filterAll": {"placeholders": {"count": {"type": "int"}}},
+  "filterMine": "Mes tâches · {count}",
+  "@filterMine": {"placeholders": {"count": {"type": "int"}}},
+  "filterDone": "Terminées",
+  "householdEyebrow": "Foyer"
 }

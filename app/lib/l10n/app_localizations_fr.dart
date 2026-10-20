@@ -450,4 +450,44 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get templateNumberInvalid => 'Saisissez un nombre entier, 0 ou plus';
+
+  @override
+  String get catchUp => 'À rattraper';
+
+  @override
+  String get catchUpHint => 'En retard, rapporte encore des points';
+
+  @override
+  String dueInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'dans $days jours',
+      one: 'demain',
+      zero: 'aujourd’hui',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noDueDate => 'Sans échéance';
+
+  @override
+  String get choresDone => 'Terminées';
+
+  @override
+  String filterAll(int count) {
+    return 'Toutes · $count';
+  }
+
+  @override
+  String filterMine(int count) {
+    return 'Mes tâches · $count';
+  }
+
+  @override
+  String get filterDone => 'Terminées';
+
+  @override
+  String get householdEyebrow => 'Foyer';
 }

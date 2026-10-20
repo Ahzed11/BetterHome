@@ -3,10 +3,15 @@ import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/widgets/app_pill.dart';
+import 'package:betterhome/ui/widgets/chore_card.dart';
 import 'package:betterhome/ui/widgets/overdue_badge.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/undoable_action.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+enum _Filter { all, mine, done }
 
 class ChoresScreen extends StatefulWidget {
   const ChoresScreen({
@@ -33,6 +38,7 @@ class ChoresScreen extends StatefulWidget {
 class _ChoresScreenState extends State<ChoresScreen> {
   late Future<List<ChoreTask>> _future;
   bool _isAdmin = false;
+  _Filter _filter = _Filter.all;
 
   @override
   void initState() {
@@ -63,21 +69,41 @@ class _ChoresScreenState extends State<ChoresScreen> {
     );
   }
 
-  Widget _subtitle(ChoreTask task, AppLocalizations l10n) {
-    final status = _isOverdue(task)
-        ? OverdueBadge(label: l10n.overdueStill(task.latePoints))
-        : Text(
-            '${task.status.name} · ${task.pointsAwarded ?? task.points} pts',
-          );
+  Widget _meta(ChoreTask task, AppLocalizations l10n) {
+    final due = task.dueAt;
+    final Widget status;
+    if (_isOverdue(task)) {
+      status = OverdueBadge(label: l10n.overdueStill(task.latePoints));
+    } else if (task.status == TaskStatus.open && due != null) {
+      final days = _dayOf(
+        due.toLocal(),
+      ).difference(_dayOf(widget.now())).inDays;
+      status = Text(
+        l10n.dueInDays(days < 0 ? 0 : days),
+        style: AppTypography.eyebrow,
+      );
+    } else if (task.status == TaskStatus.open) {
+      status = Text(l10n.noDueDate, style: AppTypography.eyebrow);
+    } else {
+      status = Text(
+        '${task.status.name} · ${task.pointsAwarded ?? task.points} pts',
+        style: AppTypography.eyebrow,
+      );
+    }
     final reason = task.reversionReason;
     if (reason == null || task.status == TaskStatus.done) {
       return status;
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [status, Text(l10n.revertedBecause(reason))],
+      children: [
+        status,
+        Text(l10n.revertedBecause(reason), style: AppTypography.eyebrow),
+      ],
     );
   }
+
+  static DateTime _dayOf(DateTime t) => DateTime(t.year, t.month, t.day);
 
   bool _isOverdue(ChoreTask task) {
     final due = task.dueAt;
@@ -284,146 +310,282 @@ class _ChoresScreenState extends State<ChoresScreen> {
     setState(_reload);
   }
 
+  Future<void> _complete(ChoreTask task) async {
+    await widget.session.tasksRepository.complete(widget.householdId, task.id);
+    if (mounted) {
+      setState(_reload);
+    }
+  }
+
+  Future<void> _dismiss(ChoreTask task, AppLocalizations l10n) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.dismissConfirmTitle),
+        content: Text(l10n.dismissConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.dismissTask),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await widget.session.tasksRepository.dismiss(widget.householdId, task.id);
+      if (mounted) {
+        setState(_reload);
+      }
+    }
+  }
+
+  Widget _card(ChoreTask task, AppLocalizations l10n) {
+    final open = task.status == TaskStatus.open;
+    final done = task.status == TaskStatus.done;
+    return ChoreCard(
+      title: '${task.emoji ?? ''} ${task.title}'.trim(),
+      meta: _meta(task, l10n),
+      circle: done
+          ? ChoreCircle.done
+          : _isOverdue(task)
+          ? ChoreCircle.overdue
+          : ChoreCircle.open,
+      completeLabel: open ? l10n.completeTask : null,
+      onComplete: open ? () => _complete(task) : null,
+      trailing: open
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '+${task.points}',
+                  style: AppTypography.body.copyWith(
+                    color: AppTokens.brand,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.dismissTask,
+                  onPressed: () => _dismiss(task, l10n),
+                  icon: const Icon(Icons.close, size: 20),
+                ),
+              ],
+            )
+          : done && _isAdmin
+          ? IconButton(
+              tooltip: l10n.revertTask,
+              onPressed: () => _revert(task),
+              icon: const Icon(Icons.undo),
+            )
+          : null,
+    );
+  }
+
+  Widget _sectionHeader(String title, String? hint) {
+    return Padding(
+      padding: const EdgeInsets.only(top: AppTokens.spaceSm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Expanded(
+            child: Semantics(
+              container: true,
+              header: true,
+              child: Text(
+                title,
+                style: AppTypography.display.copyWith(
+                  fontSize: 18,
+                  height: 1.2,
+                ),
+              ),
+            ),
+          ),
+          if (hint != null) ...[
+            Flexible(
+              child: Text(
+                hint,
+                textAlign: TextAlign.end,
+                style: AppTypography.eyebrow.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _sections(List<ChoreTask> tasks, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).toString();
+    final open = tasks.where((t) => t.status == TaskStatus.open).toList();
+    final overdue = open.where(_isOverdue).toList()
+      ..sort((a, b) => a.dueAt!.compareTo(b.dueAt!));
+    final upcoming = open.where((t) => !_isOverdue(t)).toList()
+      ..sort(
+        (a, b) =>
+            (a.dueAt ?? DateTime(9999)).compareTo(b.dueAt ?? DateTime(9999)),
+      );
+    final finished = tasks.where((t) => t.status != TaskStatus.open).toList();
+    final byDay = <DateTime?, List<ChoreTask>>{};
+    for (final t in upcoming) {
+      final due = t.dueAt;
+      byDay
+          .putIfAbsent(due == null ? null : _dayOf(due.toLocal()), () => [])
+          .add(t);
+    }
+    final children = <Widget>[];
+    void section(String title, String? hint, List<ChoreTask> items) {
+      children.add(_sectionHeader(title, hint));
+      for (final t in items) {
+        children.add(_card(t, l10n));
+      }
+    }
+
+    if (overdue.isNotEmpty) {
+      section(l10n.catchUp, l10n.catchUpHint, overdue);
+    }
+    byDay.forEach((day, items) {
+      if (day == null) {
+        section(l10n.noDueDate, null, items);
+      } else {
+        final days = day.difference(_dayOf(widget.now())).inDays;
+        section(
+          DateFormat('EEEE d', locale).format(day),
+          l10n.dueInDays(days < 0 ? 0 : days),
+          items,
+        );
+      }
+    });
+    if (finished.isNotEmpty) {
+      section(l10n.choresDone, null, finished);
+    }
+    return children;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _quickLog,
-        icon: const Icon(Icons.bolt),
+        icon: const Icon(Icons.add),
         label: Text(l10n.quickLog),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppTokens.spaceMd,
-              AppTokens.spaceSm,
-              AppTokens.spaceMd,
-              AppTokens.spaceSm,
-            ),
-            child: ScreenHeader(
-              title: widget.mine ? l10n.myChores : l10n.allChores,
-              actions: [
-                if (_isAdmin)
-                  PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      if (value == 'recurring') {
-                        await _makeRecurring();
-                      } else if (value == 'spawn') {
-                        final messenger = ScaffoldMessenger.of(context);
-                        final count = await widget.session.tasksRepository
-                            .runDueRecurrences(widget.householdId);
-                        if (!mounted) {
-                          return;
-                        }
-                        messenger.showSnackBar(
-                          SnackBar(content: Text(l10n.spawnedCount(count))),
-                        );
-                        setState(_reload);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'recurring',
-                        child: Text(l10n.makeRecurring),
+      body: FutureBuilder<List<ChoreTask>>(
+        future: _future,
+        builder: (context, snapshot) {
+          final tasks = snapshot.data ?? const <ChoreTask>[];
+          final me = widget.session.profile?.id;
+          final mineTasks = tasks.where((t) => t.assigneeId == me).toList();
+          final shown = switch (_filter) {
+            _Filter.all => tasks,
+            _Filter.mine => mineTasks,
+            _Filter.done =>
+              tasks.where((t) => t.status == TaskStatus.done).toList(),
+          };
+          return ListView(
+            padding: const EdgeInsets.only(bottom: 96),
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppTokens.spaceMd,
+                  AppTokens.spaceSm,
+                  AppTokens.spaceMd,
+                  AppTokens.spaceSm,
+                ),
+                child: ScreenHeader(
+                  title: widget.mine ? l10n.myChores : l10n.allChores,
+                  actions: [
+                    if (_isAdmin)
+                      PopupMenuButton<String>(
+                        onSelected: (value) async {
+                          if (value == 'recurring') {
+                            await _makeRecurring();
+                          } else if (value == 'spawn') {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final count = await widget.session.tasksRepository
+                                .runDueRecurrences(widget.householdId);
+                            if (!mounted) {
+                              return;
+                            }
+                            messenger.showSnackBar(
+                              SnackBar(content: Text(l10n.spawnedCount(count))),
+                            );
+                            setState(_reload);
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'recurring',
+                            child: Text(l10n.makeRecurring),
+                          ),
+                          PopupMenuItem(
+                            value: 'spawn',
+                            child: Text(l10n.runDueNow),
+                          ),
+                        ],
                       ),
-                      PopupMenuItem(
-                        value: 'spawn',
-                        child: Text(l10n.runDueNow),
+                  ],
+                ),
+              ),
+              if (!widget.mine)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTokens.spaceMd,
+                  ),
+                  child: Wrap(
+                    spacing: AppTokens.spaceSm,
+                    children: [
+                      AppPill(
+                        label: l10n.filterAll(tasks.length),
+                        selected: _filter == _Filter.all,
+                        onPressed: () => setState(() => _filter = _Filter.all),
+                      ),
+                      AppPill(
+                        label: l10n.filterMine(mineTasks.length),
+                        selected: _filter == _Filter.mine,
+                        onPressed: () => setState(() => _filter = _Filter.mine),
+                      ),
+                      AppPill(
+                        label: l10n.filterDone,
+                        selected: _filter == _Filter.done,
+                        onPressed: () => setState(() => _filter = _Filter.done),
                       ),
                     ],
                   ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: FutureBuilder<List<ChoreTask>>(
-              future: _future,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return Center(child: Text(l10n.loading));
-                }
-                if (snapshot.hasError) {
-                  return Center(child: Text(l10n.errorGeneric));
-                }
-                final tasks = snapshot.data ?? const [];
-                if (tasks.isEmpty) {
-                  return Center(child: Text(l10n.choresEmpty));
-                }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(AppTokens.spaceMd),
-                  itemCount: tasks.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(height: AppTokens.spaceSm),
-                  itemBuilder: (context, index) {
-                    final task = tasks[index];
-                    return ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+                ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppTokens.spaceMd,
+                  AppTokens.spaceSm,
+                  AppTokens.spaceMd,
+                  0,
+                ),
+                child: snapshot.connectionState != ConnectionState.done
+                    ? Center(child: Text(l10n.loading))
+                    : snapshot.hasError
+                    ? Center(child: Text(l10n.errorGeneric))
+                    : shown.isEmpty
+                    ? Center(child: Text(l10n.choresEmpty))
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final w in _sections(shown, l10n)) ...[
+                            w,
+                            const SizedBox(height: AppTokens.spaceSm),
+                          ],
+                        ],
                       ),
-                      tileColor: Colors.white,
-                      title: Text('${task.emoji ?? ''} ${task.title}'.trim()),
-                      subtitle: _subtitle(task, l10n),
-                      trailing: task.status == TaskStatus.open
-                          ? Wrap(
-                              spacing: 4,
-                              children: [
-                                IconButton(
-                                  tooltip: l10n.completeTask,
-                                  onPressed: () async {
-                                    await widget.session.tasksRepository
-                                        .complete(widget.householdId, task.id);
-                                    setState(_reload);
-                                  },
-                                  icon: const Icon(Icons.check_circle_outline),
-                                ),
-                                IconButton(
-                                  tooltip: l10n.dismissTask,
-                                  onPressed: () async {
-                                    final ok = await showDialog<bool>(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: Text(l10n.dismissConfirmTitle),
-                                        content: Text(l10n.dismissConfirmBody),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, false),
-                                            child: Text(l10n.cancel),
-                                          ),
-                                          FilledButton(
-                                            onPressed: () =>
-                                                Navigator.pop(context, true),
-                                            child: Text(l10n.dismissTask),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                    if (ok == true) {
-                                      await widget.session.tasksRepository
-                                          .dismiss(widget.householdId, task.id);
-                                      setState(_reload);
-                                    }
-                                  },
-                                  icon: const Icon(Icons.cancel_outlined),
-                                ),
-                              ],
-                            )
-                          : task.status == TaskStatus.done && _isAdmin
-                          ? IconButton(
-                              tooltip: l10n.revertTask,
-                              onPressed: () => _revert(task),
-                              icon: const Icon(Icons.undo),
-                            )
-                          : null,
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }

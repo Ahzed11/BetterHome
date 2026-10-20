@@ -720,11 +720,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0080 · Restyle the existing screens with the shared widgets
 
-* Status: todo
+* Status: in-progress
 * Issue / PR: — (suggested: "Apply the Claude Design canvas to chores, leaderboard, households")
 * Depends on: T-0024
 * Spec: §8, ADR 0021
 * Acceptance criteria: Households, chores, quick log, leaderboard and household screens follow their boards in the design canvas, using the widgets and tokens of ADR 0021 (add new shared widgets where several screens need them). Goldens regenerated, accessibility baseline and e2e journeys still pass.
+* Progress (first slice): colors and radii of the canvas in `AppTokens`; `ChoreCard` (check circle: open, dashed coral when overdue, filled when done); the Chores and My chores screens follow the Chores board (header, All / Mine / Done filters on All chores, "Catch up" and per-day sections, "I just did…" button); the household switcher and the navigation bar are styled after the canvas. The design's tab labels (Chores, Mine, Scores) are not applied: tests and e2e journeys find the tabs by their current names. Left for the next slices: week strip, "Hey {name}" summary card of My chores, leaderboard, household, new recurring chore, sign-in, register, household setup, quick-log sheet (T-0091).
 
 ### T-0081 · Producers for the remaining notification types
 

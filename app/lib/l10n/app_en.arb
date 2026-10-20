@@ -191,5 +191,17 @@
   "templatePointsSummary": "{points} pts · {latePoints} if late",
   "@templatePointsSummary": {"placeholders": {"points": {"type": "int"}, "latePoints": {"type": "int"}}},
   "templateTitleRequired": "Enter a title",
-  "templateNumberInvalid": "Enter a whole number, 0 or more"
+  "templateNumberInvalid": "Enter a whole number, 0 or more",
+  "catchUp": "Catch up",
+  "catchUpHint": "Late, still worth points",
+  "dueInDays": "{days, plural, =0{today} =1{tomorrow} other{in {days} days}}",
+  "@dueInDays": {"placeholders": {"days": {"type": "int"}}},
+  "noDueDate": "No due date",
+  "choresDone": "Done",
+  "filterAll": "All · {count}",
+  "@filterAll": {"placeholders": {"count": {"type": "int"}}},
+  "filterMine": "Mine · {count}",
+  "@filterMine": {"placeholders": {"count": {"type": "int"}}},
+  "filterDone": "Done",
+  "householdEyebrow": "Household"
 }

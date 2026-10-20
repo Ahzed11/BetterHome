@@ -901,6 +901,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enter a whole number, 0 or more'**
   String get templateNumberInvalid;
+
+  /// No description provided for @catchUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Catch up'**
+  String get catchUp;
+
+  /// No description provided for @catchUpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Late, still worth points'**
+  String get catchUpHint;
+
+  /// No description provided for @dueInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =0{today} =1{tomorrow} other{in {days} days}}'**
+  String dueInDays(int days);
+
+  /// No description provided for @noDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date'**
+  String get noDueDate;
+
+  /// No description provided for @choresDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get choresDone;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All · {count}'**
+  String filterAll(int count);
+
+  /// No description provided for @filterMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine · {count}'**
+  String filterMine(int count);
+
+  /// No description provided for @filterDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get filterDone;
+
+  /// No description provided for @householdEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Household'**
+  String get householdEyebrow;
 }
 
 class _AppLocalizationsDelegate

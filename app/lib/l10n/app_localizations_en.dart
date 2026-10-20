@@ -446,4 +446,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get templateNumberInvalid => 'Enter a whole number, 0 or more';
+
+  @override
+  String get catchUp => 'Catch up';
+
+  @override
+  String get catchUpHint => 'Late, still worth points';
+
+  @override
+  String dueInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'in $days days',
+      one: 'tomorrow',
+      zero: 'today',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noDueDate => 'No due date';
+
+  @override
+  String get choresDone => 'Done';
+
+  @override
+  String filterAll(int count) {
+    return 'All · $count';
+  }
+
+  @override
+  String filterMine(int count) {
+    return 'Mine · $count';
+  }
+
+  @override
+  String get filterDone => 'Done';
+
+  @override
+  String get householdEyebrow => 'Household';
 }
