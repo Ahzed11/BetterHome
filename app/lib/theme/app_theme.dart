@@ -23,6 +23,10 @@ ThemeData buildAppTheme() {
       backgroundColor: AppTokens.brand,
       foregroundColor: AppTokens.onBrand,
       shape: StadiumBorder(),
+      elevation: 0,
+      focusElevation: 0,
+      hoverElevation: 0,
+      highlightElevation: 0,
       extendedTextStyle: TextStyle(
         fontFamily: AppTypography.textFont,
         fontSize: 16,

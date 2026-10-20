@@ -521,10 +521,22 @@ class _ChoresScreenState extends State<ChoresScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _quickLog,
-        icon: const Icon(Icons.add),
-        label: Text(l10n.quickLog),
+      floatingActionButton: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppTokens.radiusPill),
+          boxShadow: [
+            BoxShadow(
+              color: AppTokens.brand.withValues(alpha: 0.32),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: _quickLog,
+          icon: const Icon(Icons.add),
+          label: Text(l10n.quickLog),
+        ),
       ),
       body: FutureBuilder<List<ChoreTask>>(
         future: _future,
