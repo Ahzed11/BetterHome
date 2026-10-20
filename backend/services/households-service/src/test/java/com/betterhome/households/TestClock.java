@@ -4,6 +4,7 @@ import com.betterhome.common.Clock;
 import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Alternative;
+import java.time.Duration;
 import java.time.Instant;
 
 /**
@@ -23,6 +24,14 @@ public class TestClock implements Clock {
 
     public void useSystemTime() {
         this.fixed = null;
+    }
+
+    public void advance(Duration duration) {
+        this.fixed = now().plus(duration);
+    }
+
+    public void reset() {
+        useSystemTime();
     }
 
     @Override

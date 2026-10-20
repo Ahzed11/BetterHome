@@ -43,6 +43,10 @@ public class Membership extends PanacheEntityBase {
     @Column(name = "away_set_by")
     public UUID awaySetBy;
 
+    /** When the open tasks of the current away period were dismissed; null while still due. */
+    @Column(name = "away_tasks_dismissed_at")
+    public Instant awayTasksDismissedAt;
+
     public boolean isActive() {
         return leftAt == null;
     }
