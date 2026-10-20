@@ -2,7 +2,7 @@
 # one, not their sum (T-0070, ADR 0019). The `check` job at the end is the single result to require.
 # Runs on GitHub-hosted runners. When the hosted minutes run out, set the repository variable CI_RUNNER
 # to `fallback` to use the self-hosted runner (ADR 0024); delete it to switch back.
-# Not yet here: image builds (T-0046) and the OWASP dependency audit (T-0038).
+# Not yet here: the OWASP dependency audit (T-0038).
 name: check
 
 on:
@@ -108,6 +108,29 @@ jobs:
 
       - run: make test-app test-guard
 
+  # The five images build from the packaged jars and each Dockerfile EXPOSEs its service's port (T-0046).
+  # `make smoke` (readiness and an authenticated call on :8081-:8085) runs inside `make up`, i.e. in the e2e job.
+  images:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Read pinned versions
+        run: |
+          set -euo pipefail
+          . tooling/versions.env
+          echo "JAVA_MAJOR=$JAVA_MAJOR" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_MAJOR }}
+          cache: maven
+          cache-dependency-path: backend/**/pom.xml
+
+      - run: make test-images
+
   # The real app against the real stack (Podman Compose: Postgres, Keycloak, five services) in headless Chrome:
   # browser sign-in through Keycloak, then the repository journey. `make e2e` boots the stack itself.
   e2e:
@@ -200,7 +223,7 @@ jobs:
   # The one result to require on master (T-0053). It fails when any job above failed or was skipped.
   check:
     if: ${{ always() }}
-    needs: [docs, services, backend, app, e2e]
+    needs: [docs, services, backend, app, images, e2e]
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 5
     steps:
