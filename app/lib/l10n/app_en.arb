@@ -208,5 +208,14 @@
   "@effortTogether": {"placeholders": {"points": {"type": "int"}}},
   "inviteHousemate": "Invite a housemate",
   "householdSummary": "{count, plural, =1{1 member} other{{count} members}} · {timezone}",
-  "@householdSummary": {"placeholders": {"count": {"type": "int"}, "timezone": {"type": "String"}}}
+  "@householdSummary": {"placeholders": {"count": {"type": "int"}, "timezone": {"type": "String"}}},
+  "yourChores": "Your chores",
+  "heyHousehold": "Hey {name} · {household}",
+  "@heyHousehold": {"placeholders": {"name": {"type": "String"}, "household": {"type": "String"}}},
+  "thisWeek": "This week",
+  "rankBehind": "#{rank} · {behind} behind",
+  "@rankBehind": {"placeholders": {"rank": {"type": "int"}, "behind": {"type": "int"}}},
+  "rankFirst": "#1 · in front",
+  "withinReach": "{points} pts within reach this week — {count, plural, =0{nothing left} =1{one chore left} other{{count} chores left}}.",
+  "@withinReach": {"placeholders": {"points": {"type": "int"}, "count": {"type": "int"}}}
 }

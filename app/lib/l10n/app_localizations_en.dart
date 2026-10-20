@@ -505,4 +505,35 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0 · $timezone';
   }
+
+  @override
+  String get yourChores => 'Your chores';
+
+  @override
+  String heyHousehold(String name, String household) {
+    return 'Hey $name · $household';
+  }
+
+  @override
+  String get thisWeek => 'This week';
+
+  @override
+  String rankBehind(int rank, int behind) {
+    return '#$rank · $behind behind';
+  }
+
+  @override
+  String get rankFirst => '#1 · in front';
+
+  @override
+  String withinReach(int points, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chores left',
+      one: 'one chore left',
+      zero: 'nothing left',
+    );
+    return '$points pts within reach this week — $_temp0.';
+  }
 }

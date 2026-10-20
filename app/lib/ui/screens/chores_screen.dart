@@ -1,4 +1,5 @@
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
@@ -8,6 +9,7 @@ import 'package:betterhome/ui/widgets/chore_card.dart';
 import 'package:betterhome/ui/widgets/overdue_badge.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/undoable_action.dart';
+import 'package:betterhome/ui/widgets/week_summary_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -37,8 +39,10 @@ class ChoresScreen extends StatefulWidget {
 
 class _ChoresScreenState extends State<ChoresScreen> {
   late Future<List<ChoreTask>> _future;
+  Future<_Week>? _week;
   bool _isAdmin = false;
   _Filter _filter = _Filter.all;
+  String? _household;
 
   @override
   void initState() {
@@ -66,6 +70,31 @@ class _ChoresScreenState extends State<ChoresScreen> {
     _future = widget.session.tasksRepository.listTasks(
       widget.householdId,
       mine: widget.mine,
+    );
+    if (widget.mine) {
+      _week = _loadWeek();
+    }
+  }
+
+  Future<_Week> _loadWeek() async {
+    final household = await widget.session.repository.getHousehold(
+      widget.householdId,
+    );
+    if (mounted) {
+      setState(() => _household = household.name);
+    }
+    final board = await widget.session.scoringRepository.getScoreboard(
+      widget.householdId,
+      period: ScorePeriod.week,
+    );
+    final me = widget.session.profile?.id;
+    final mine = board.entries.where((e) => e.userId == me).firstOrNull;
+    final leader = board.entries.firstOrNull;
+    return _Week(
+      household: household.name,
+      points: mine?.points ?? 0,
+      rank: mine?.rank ?? board.entries.length + 1,
+      behind: leader == null ? 0 : leader.points - (mine?.points ?? 0),
     );
   }
 
@@ -384,6 +413,47 @@ class _ChoresScreenState extends State<ChoresScreen> {
     );
   }
 
+  String? _eyebrow(AppLocalizations l10n) {
+    final household = _household;
+    return household == null
+        ? null
+        : l10n.heyHousehold(widget.session.profile?.givenName ?? '', household);
+  }
+
+  Widget _summary(List<ChoreTask> tasks, AppLocalizations l10n) {
+    return FutureBuilder<_Week>(
+      future: _week,
+      builder: (context, snapshot) {
+        final week = snapshot.data;
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.all(AppTokens.spaceMd),
+            child: Text(l10n.errorGeneric),
+          );
+        }
+        if (week == null) {
+          return const SizedBox.shrink();
+        }
+        final open = tasks.where((t) => t.status == TaskStatus.open).toList();
+        final reach = open.fold<int>(0, (sum, t) => sum + t.points);
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceMd),
+          child: WeekSummaryCard(
+            heading: l10n.thisWeek,
+            points: l10n.pointsLabel(week.points),
+            rank: week.rank == 1
+                ? l10n.rankFirst
+                : l10n.rankBehind(week.rank, week.behind),
+            progress: week.points + reach == 0
+                ? 0
+                : week.points / (week.points + reach),
+            reach: l10n.withinReach(reach, open.length),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _sectionHeader(String title, String? hint) {
     return Padding(
       padding: const EdgeInsets.only(top: AppTokens.spaceSm),
@@ -500,7 +570,8 @@ class _ChoresScreenState extends State<ChoresScreen> {
                   AppTokens.spaceSm,
                 ),
                 child: ScreenHeader(
-                  title: widget.mine ? l10n.myChores : l10n.allChores,
+                  eyebrow: widget.mine ? _eyebrow(l10n) : null,
+                  title: widget.mine ? l10n.yourChores : l10n.allChores,
                   actions: [
                     if (_isAdmin)
                       PopupMenuButton<String>(
@@ -534,6 +605,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
                   ],
                 ),
               ),
+              if (widget.mine) _summary(tasks, l10n),
               if (!widget.mine)
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -589,4 +661,18 @@ class _ChoresScreenState extends State<ChoresScreen> {
       ),
     );
   }
+}
+
+class _Week {
+  const _Week({
+    required this.household,
+    required this.points,
+    required this.rank,
+    required this.behind,
+  });
+
+  final String household;
+  final int points;
+  final int rank;
+  final int behind;
 }

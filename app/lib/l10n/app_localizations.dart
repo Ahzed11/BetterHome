@@ -973,6 +973,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 member} other{{count} members}} · {timezone}'**
   String householdSummary(int count, String timezone);
+
+  /// No description provided for @yourChores.
+  ///
+  /// In en, this message translates to:
+  /// **'Your chores'**
+  String get yourChores;
+
+  /// No description provided for @heyHousehold.
+  ///
+  /// In en, this message translates to:
+  /// **'Hey {name} · {household}'**
+  String heyHousehold(String name, String household);
+
+  /// No description provided for @thisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get thisWeek;
+
+  /// No description provided for @rankBehind.
+  ///
+  /// In en, this message translates to:
+  /// **'#{rank} · {behind} behind'**
+  String rankBehind(int rank, int behind);
+
+  /// No description provided for @rankFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'#1 · in front'**
+  String get rankFirst;
+
+  /// No description provided for @withinReach.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} pts within reach this week — {count, plural, =0{nothing left} =1{one chore left} other{{count} chores left}}.'**
+  String withinReach(int points, int count);
 }
 
 class _AppLocalizationsDelegate
