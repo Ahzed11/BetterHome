@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -56,5 +57,18 @@ public class Invitation extends PanacheEntityBase {
                 "householdId = ?1 and acceptedAt is null and expiresAt > ?2 order by createdAt",
                 householdId,
                 now);
+    }
+
+    /** Drops the invitations to {@code email} that were never accepted; returns how many. */
+    public static long deletePendingFor(String email) {
+        return delete("lower(email) = ?1 and acceptedAt is null", email.toLowerCase(Locale.ROOT));
+    }
+
+    /** Blanks the address of the invitations to {@code email} that were accepted. */
+    public static int forgetAcceptedFor(String email) {
+        return update(
+                "email = ?1 where lower(email) = ?2 and acceptedAt is not null",
+                "deleted@deleted.invalid",
+                email.toLowerCase(Locale.ROOT));
     }
 }

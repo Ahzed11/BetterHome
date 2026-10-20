@@ -55,4 +55,25 @@ public class AppUser extends PanacheEntityBase {
     public static Optional<AppUser> findActiveById(UUID id) {
         return find("id = ?1 and deletedAt is null", id).firstResultOptional();
     }
+
+    /** The profile of a subject whose account was deleted, if there is one. */
+    public static Optional<AppUser> findDeletedByAuthSubject(UUID authSubject) {
+        return find("authSubject = ?1 and deletedAt is not null", authSubject)
+                .firstResultOptional();
+    }
+
+    /**
+     * Strips everything personal from the profile and marks it deleted. The row stays because
+     * memberships, households and invitations point at it; the subject stays so a token that
+     * outlives the deletion cannot register the same subject again.
+     */
+    public void anonymize(Instant now) {
+        email = "deleted-" + id + "@deleted.invalid";
+        givenName = "";
+        familyName = "";
+        language = "en";
+        timezone = "UTC";
+        updatedAt = now;
+        deletedAt = now;
+    }
 }

@@ -12,6 +12,10 @@ configMapGenerator:
     behavior: merge
     literals:
       - OIDC_AUTH_SERVER_URL=https://keycloak-betterhome.apps-crc.testing/realms/betterhome
+  - name: households-service-config
+    behavior: merge
+    literals:
+      - KEYCLOAK_ADMIN_URL=https://keycloak-betterhome.apps-crc.testing/admin/realms/betterhome
 patches:
   - target:
       kind: Deployment
