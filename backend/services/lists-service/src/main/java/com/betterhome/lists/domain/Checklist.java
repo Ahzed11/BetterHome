@@ -87,4 +87,9 @@ public class Checklist extends PanacheEntityBase {
         }
         return list("householdId = ?1 and archivedAt is null order by createdAt, id", householdId);
     }
+
+    /** Hands every list created by {@code user} to {@code replacement}; returns how many. */
+    public static int replaceCreator(UUID user, UUID replacement) {
+        return update("createdBy = ?1 where createdBy = ?2", replacement, user);
+    }
 }

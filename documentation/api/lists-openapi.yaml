@@ -1,11 +1,27 @@
 ---
 openapi: 3.1.0
 tags:
+- name: internal
 - name: items
 - name: lists
 - name: meta
 components:
   schemas:
+    AnonymizationResponse:
+      type: object
+      properties:
+        listsCreated:
+          type: integer
+          format: int32
+        itemsCreated:
+          type: integer
+          format: int32
+        itemsCompleted:
+          type: integer
+          format: int32
+        itemsDeleted:
+          type: integer
+          format: int32
     ErrorResponse:
       type: object
       properties:
@@ -684,6 +700,40 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       security:
       - bearerAuth: []
+  /v1/internal/users/{userId}/anonymize:
+    post:
+      summary: Replace a deleted user's id on every list and item with the anonymous
+        id; repeating it or naming an unknown user changes nothing (service role)
+      operationId: anonymizeUser
+      tags:
+      - internal
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+        "200":
+          description: "Rows changed per column, all zero when nothing was left to\
+            \ change"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnonymizationResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth:
+        - service
   /v1/meta:
     get:
       summary: "Service name, server time and caller subject"

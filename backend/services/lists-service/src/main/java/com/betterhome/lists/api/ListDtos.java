@@ -2,6 +2,7 @@ package com.betterhome.lists.api;
 
 import com.betterhome.lists.domain.Checklist;
 import com.betterhome.lists.domain.ChecklistItem;
+import com.betterhome.lists.service.AnonymizationService;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.util.UUID;
@@ -49,6 +50,19 @@ public final class ListDtos {
                     item.creator,
                     item.completer,
                     item.completedAt);
+        }
+    }
+
+    /** Rows changed per column by an account deletion; all zero when nothing was left. */
+    public record AnonymizationResponse(
+            int listsCreated, int itemsCreated, int itemsCompleted, int itemsDeleted) {
+
+        public static AnonymizationResponse from(AnonymizationService.Result result) {
+            return new AnonymizationResponse(
+                    result.listsCreated(),
+                    result.itemsCreated(),
+                    result.itemsCompleted(),
+                    result.itemsDeleted());
         }
     }
 }
