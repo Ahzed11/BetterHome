@@ -55,6 +55,10 @@ services:
       # pinned and back-channel endpoints (jwks_uri, token) follow the request host.
       KC_HOSTNAME: http://localhost:8180
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      # Read by the realm import (${NAME:default} in realm-betterhome.json), so one override changes the
+      # clients and the services together.
+      OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
+      API_CLIENT_SECRET: ${API_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
       - "8180:8180"
     volumes:

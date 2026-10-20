@@ -25,7 +25,7 @@
       "standardFlowEnabled": false,
       "protocol": "openid-connect",
       "fullScopeAllowed": true,
-      "secret": "local-dev-only-change-me"
+      "secret": "${API_CLIENT_SECRET:local-dev-only-change-me}"
     },
     {
       "clientId": "betterhome-app",
@@ -56,7 +56,7 @@
       "standardFlowEnabled": false,
       "protocol": "openid-connect",
       "fullScopeAllowed": true,
-      "secret": "local-dev-only-change-me"
+      "secret": "${OIDC_SERVICE_CLIENT_SECRET:local-dev-only-change-me}"
     },
     {
       "clientId": "betterhome-tasks-service",
@@ -68,7 +68,7 @@
       "standardFlowEnabled": false,
       "protocol": "openid-connect",
       "fullScopeAllowed": true,
-      "secret": "local-dev-only-change-me"
+      "secret": "${OIDC_SERVICE_CLIENT_SECRET:local-dev-only-change-me}"
     },
     {
       "clientId": "betterhome-scoring-service",
@@ -80,7 +80,7 @@
       "standardFlowEnabled": false,
       "protocol": "openid-connect",
       "fullScopeAllowed": true,
-      "secret": "local-dev-only-change-me"
+      "secret": "${OIDC_SERVICE_CLIENT_SECRET:local-dev-only-change-me}"
     },
     {
       "clientId": "betterhome-lists-service",
@@ -92,7 +92,7 @@
       "standardFlowEnabled": false,
       "protocol": "openid-connect",
       "fullScopeAllowed": true,
-      "secret": "local-dev-only-change-me"
+      "secret": "${OIDC_SERVICE_CLIENT_SECRET:local-dev-only-change-me}"
     },
     {
       "clientId": "betterhome-notifications-service",
@@ -104,7 +104,7 @@
       "standardFlowEnabled": false,
       "protocol": "openid-connect",
       "fullScopeAllowed": true,
-      "secret": "local-dev-only-change-me"
+      "secret": "${OIDC_SERVICE_CLIENT_SECRET:local-dev-only-change-me}"
     }
   ],
   "users": [

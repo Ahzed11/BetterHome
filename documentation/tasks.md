@@ -1032,11 +1032,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0109 · Keycloak production mode behind Caddy
 
-* Status: todo
-* Issue / PR: #119 / —
+* Status: in-review
+* Issue / PR: #119 / (pull request to follow; stacked on #131)
 * Depends on: T-0108
 * Spec: §7, §9
 * Acceptance criteria: Keycloak production mode itself (`start --optimized`, own database, `/auth` prefix, public hostname, proxy headers, dynamic back channel) is delivered by T-0108. This task replaces the development client secrets: the realm import takes the five service-client secrets from values set in the Compose file on the NAS (Keycloak `${ENV}` substitution; `CHANGE_ME` placeholders in the repository, development values kept for `make up`), the Compose services use the same values, and the admin console password is checked. Verified on the real NAS: a token fetched through the public URL is accepted by every service, and the development secret is refused.
+* Summary: the six client secrets of `realm-betterhome.json` are now `${NAME:local-dev-only-change-me}` placeholders (`OIDC_SERVICE_CLIENT_SECRET` for the five service clients, the variable the services already read; `API_CLIENT_SECRET` for `betterhome-api`, the one `deploy/lib.sh` already uses). Keycloak substitutes them from its environment at import, so the baked image and `make up` keep the development value. `deploy/nas/compose.yml` gives Keycloak both values and the services the first, all `CHANGE_ME` placeholders edited on the NAS; `deploy/podman-compose.yml` passes the two variables to Keycloak too, so one override changes clients and services together. `make test-nas` now requires every password and secret in the Compose file to be a placeholder and the realm to hold no literal secret.
+* Decisions and deviations: the five services keep sharing one secret (as before and as the services' configuration expects); one per service is a possible follow-up. The realm is imported once, on a first start: changing a secret later is done in the admin console and in the Compose file (README). The admin password was already a placeholder from T-0108. Not part of this task: the Keycloak production mode, delivered in T-0108.
+* Verification: `make test-nas` (and negative cases for a literal secret in the Compose file, a missing variable, and the old development value). On a scratch Keycloak and then on the NAS stack run locally (local images, throwaway Caddy, distinct secrets): a service client gets a token with the new secret and 401 with the development one (all five, and `betterhome-api`); the admin login works with the configured password and not with a wrong one; a user token from `betterhome-api` is accepted by the services; tasks awarded points through scoring, scoring and tasks called households with their own tokens; an internal endpoint answers 403 to a user token and 200 to a service token. `SKIP_PACKAGE=1 make up` (smoke on :8081-:8085 passed) and `make seed` still work with the changed realm. Not verified: the real NAS (the first start there decides, check README), `make e2e` (the realm and the dev compose changed, the journeys use the defaults).
+* Follow-ups: one client secret per service; rotation of the secrets without losing the realm.
 
 ### T-0110 · Tailscale and HTTPS certificates on the NAS
 

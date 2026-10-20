@@ -21,6 +21,7 @@ the server ([ADR 0029](../../documentation/decisions/0029-caddy-reverse-proxy-on
    - `CHANGE_ME_NAS_HOST`: the NAS's name on your tailnet (for example `nas.example.ts.net`). Three places.
    - `CHANGE_ME_POSTGRES_PASSWORD`: one strong password, the same value everywhere it appears.
    - `CHANGE_ME_KEYCLOAK_ADMIN_PASSWORD` and `CHANGE_ME_GOTIFY_ADMIN_PASSWORD`.
+   - `CHANGE_ME_SERVICE_CLIENT_SECRET` (the same value in the five services and in Keycloak) and `CHANGE_ME_API_CLIENT_SECRET`: long random strings, for example `openssl rand -hex 32`.
 3. In your Caddyfile, add the import inside the site block of your tailnet host, **before** any catch-all `handle` of yours, then reload Caddy:
 
    ```
@@ -56,6 +57,7 @@ Change the tag of the images (`:latest` moves with every merge; pin a commit SHA
 
 ## Known limits
 
-- **Secrets of the service clients** are still the development value in the realm baked into the image (`local-dev-only-change-me`), and the same value is in the Compose file. The stack is reachable only through the tailnet. Replacing them is T-0109.
+- **The realm is imported once**, on the first start with an empty Keycloak database, with the client secrets from the Compose file. Changing them later in the file does not change Keycloak: set the new value in the admin console (realm `betterhome`, Clients, each `betterhome-*-service` client, Credentials) and in the Compose file, then `docker compose up -d`. To start over, remove the `postgres-data` volume (this deletes every household too).
+- **One secret for the five service clients**, as in the local stack; a leak of it means regenerating it everywhere.
 - **No health checks on the services** (their image has no shell or curl): use the `/q/health/ready` URLs above.
 - **Push** needs the application token of each user in Gotify; see T-0114 and T-0086.

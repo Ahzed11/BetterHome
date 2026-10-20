@@ -32,9 +32,9 @@ x-service-env: &service-env
   JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=65
   # Request ids on every call, no spans recorded (no collector here).
   OTEL_TRACES_SAMPLER: parentbased_always_off
-  # Same value as the secret of the service clients in the realm baked into the Keycloak image until T-0109
-  # moves it here. Not a secret yet: the stack is only reachable through the tailnet.
-  OIDC_SERVICE_CLIENT_SECRET: local-dev-only-change-me
+  # CHANGE_ME: one long random secret (for example `openssl rand -hex 32`), the same value as
+  # OIDC_SERVICE_CLIENT_SECRET in the Keycloak service below. Anyone who has it can call the internal endpoints.
+  OIDC_SERVICE_CLIENT_SECRET: CHANGE_ME_SERVICE_CLIENT_SECRET
 
 services:
   postgres:
@@ -107,6 +107,11 @@ services:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       # CHANGE_ME: the password of the Keycloak admin console (`https://CHANGE_ME_NAS_HOST/auth`).
       KC_BOOTSTRAP_ADMIN_PASSWORD: CHANGE_ME_KEYCLOAK_ADMIN_PASSWORD
+      # Secrets of the clients in the realm, read when the realm is imported, which happens on the first start only
+      # (see README to change them later). The first is the value of OIDC_SERVICE_CLIENT_SECRET above, the
+      # second is the secret of the `betterhome-api` client that checks and scripts use for password grants.
+      OIDC_SERVICE_CLIENT_SECRET: CHANGE_ME_SERVICE_CLIENT_SECRET
+      API_CLIENT_SECRET: CHANGE_ME_API_CLIENT_SECRET
     mem_limit: 1g
     depends_on:
       init-databases:
