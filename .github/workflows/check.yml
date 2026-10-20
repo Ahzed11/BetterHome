@@ -111,13 +111,10 @@ jobs:
   # The real app against the real stack (Podman Compose: Postgres, Keycloak, five services) in headless Chrome:
   # browser sign-in through Keycloak, then the repository journey. `make e2e` boots the stack itself.
   e2e:
-    # The stack uses fixed ports, so on the fallback only the runner labelled `fallback-e2e` takes this job:
-    # concurrent e2e jobs queue there instead of colliding (ADR 0024).
-    runs-on: ${{ vars.CI_RUNNER && format('{0}-e2e', vars.CI_RUNNER) || 'ubuntu-24.04' }}
+    # Any runner can take this job: the stack's project name and ports come from the runner's slot
+    # (tooling/stack-env.sh, ADR 0026), and the files below live in the runner's own temp directory.
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 40
-    env:
-      # `make up` drives Podman; compose talks to its API socket (started below), not to Docker.
-      DOCKER_HOST: unix:///tmp/podman.sock
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -127,6 +124,8 @@ jobs:
           . tooling/versions.env
           echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> "$GITHUB_ENV"
           echo "JAVA_MAJOR=$JAVA_MAJOR" >> "$GITHUB_ENV"
+          # `make up` drives Podman; compose talks to this runner's own API socket (started below), not to Docker.
+          echo "DOCKER_HOST=unix://$RUNNER_TEMP/podman.sock" >> "$GITHUB_ENV"
 
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
@@ -140,13 +139,13 @@ jobs:
       - name: Prepare the stack in the background
         run: |
           podman --version
-          setsid nohup podman system service --time=0 unix:///tmp/podman.sock >/tmp/podman-service.log 2>&1 &
+          setsid nohup podman system service --time=0 "unix://$RUNNER_TEMP/podman.sock" >"$RUNNER_TEMP/podman-service.log" 2>&1 &
           images="$(grep -h '^\s*image:' deploy/podman-compose.yml | awk '{print $2}') \
             $(grep -oP 'FLYWAY_IMAGE:-\K[^}]+' deploy/migrate.sh) \
             $(grep -h '^FROM' backend/services/*/src/main/docker/Dockerfile.jvm | awk '{print $2}' | sort -u)"
-          setsid nohup sh -c 'for i in '"$images"'; do podman pull -q "$i" & done; wait' >/tmp/pull.log 2>&1 &
-          echo $! > /tmp/pull.pid
-          (cd backend && setsid nohup ./mvnw -B -q -DskipTests package >/tmp/mvn.log 2>&1 & echo $! > /tmp/mvn.pid)
+          setsid nohup sh -c 'for i in '"$images"'; do podman pull -q "$i" & done; wait' >"$RUNNER_TEMP/pull.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/pull.pid"
+          (cd backend && setsid nohup ./mvnw -B -q -DskipTests package >"$RUNNER_TEMP/mvn.log" 2>&1 & echo $! > "$RUNNER_TEMP/mvn.pid")
 
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
@@ -160,11 +159,12 @@ jobs:
       # Flutter web draws with WebGL. A runner has no GPU and Chrome 155 no longer falls back to software
       # WebGL by itself (blank page); every launch of the browser (WebDriver script and flutter drive
       # both use CHROME_EXECUTABLE) must pass --enable-unsafe-swiftshader, which is fine for trusted test content.
+      # The wrapper is written in the runner's temp directory: the Chrome install is shared by the runners.
       - name: Make Chrome use software WebGL
         run: |
           set -euo pipefail
           . tooling/dev-env.sh
-          wrapper="$DEV_TOOLS_DIR/chrome/chrome-swiftshader"
+          wrapper="$RUNNER_TEMP/chrome-swiftshader"
           printf '#!/bin/sh\nexec "%s" --enable-unsafe-swiftshader "$@"\n' "$CHROME_EXECUTABLE" > "$wrapper"
           chmod +x "$wrapper"
           echo "CHROME_EXECUTABLE=$wrapper" >> "$GITHUB_ENV"
@@ -179,10 +179,15 @@ jobs:
       # Everything started in the background above must have finished before the stack is built.
       - name: Wait for the background preparation
         run: |
-          while kill -0 "$(cat /tmp/mvn.pid)" 2>/dev/null; do sleep 2; done
-          while kill -0 "$(cat /tmp/pull.pid)" 2>/dev/null; do sleep 2; done
-          cat /tmp/pull.log
-          [ -S /tmp/podman.sock ]
+          while kill -0 "$(cat "$RUNNER_TEMP/mvn.pid")" 2>/dev/null; do sleep 2; done
+          while kill -0 "$(cat "$RUNNER_TEMP/pull.pid")" 2>/dev/null; do sleep 2; done
+          cat "$RUNNER_TEMP/pull.log"
+          [ -S "$RUNNER_TEMP/podman.sock" ]
+
+      # A self-hosted runner is not thrown away: a run that was killed leaves its stack, and above all its
+      # Postgres volume, behind. This only touches this runner's own stack (project name from its slot).
+      - name: Remove what an earlier run left on this slot
+        run: make down
 
       # The jars were built in the background above, so `make up` does not build them again.
       - run: make e2e
@@ -190,12 +195,13 @@ jobs:
           SKIP_PACKAGE: "1"
 
       # `make e2e` leaves the stack up. A hosted VM is thrown away; a self-hosted runner is not, and the
-      # next run would find the ports taken. pkill exits 1 when the service is already gone.
+      # next run would find the ports taken. pkill exits 1 when the service is already gone; its pattern
+      # names this runner's socket, so another runner's Podman service is left alone.
       - name: Tear down the stack
         if: ${{ always() }}
         run: |
           make down
-          pkill -f 'podman system service --time=0 unix:///tmp/podman.sock' || true
+          pkill -f "podman system service --time=0 unix://$RUNNER_TEMP/podman.sock" || true
 
   # The one result to require on master (T-0053). It fails when any job above failed or was skipped.
   check:

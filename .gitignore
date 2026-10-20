@@ -49,3 +49,6 @@ tmp/
 
 # jqwik
 .jqwik-database
+
+# Per-stack generated files (tooling/stack-env.sh)
+deploy/.stack/

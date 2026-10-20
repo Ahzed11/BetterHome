@@ -40,6 +40,8 @@ CI: [.github/workflows/check.yml](.github/workflows/check.yml) runs the gates of
 
 Service HTTP ports: households `8081`, tasks `8082`, scoring `8083`, lists `8084`, notifications `8085`.
 
+Several stacks can run on one machine: `E2E_SLOT=1 make up` (or `make e2e`, `make run-app`, `make down`) starts a separate stack, named `betterhome-s1`, with every port shifted by 1000 (services `9081`-`9085`, Keycloak `9180`, web app `9090`). The slot is a digit 0-9 and defaults to 0, the ports above; a self-hosted CI runner named `<name>-<n>` takes slot `n-1` unless `E2E_SLOT` is set in its `.env`. `tooling/stack-env.sh` holds the names and ports ([ADR 0026](documentation/decisions/0026-one-stack-per-runner-slot.md)).
+
 Real API from the app, signing in through Keycloak (the app uses a Dart client generated from `documentation/api/openapi.yaml`: run `make client` once, and again after the API changes). Keycloak accepts the web redirect only from port 8090:
 
 ```bash

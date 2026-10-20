@@ -1,5 +1,7 @@
 # 0024 — A self-hosted fallback runner for when hosted minutes run out
 
+> The `fallback-e2e` label and the rule that only the first runner takes `e2e` are replaced by [ADR 0026](0026-one-stack-per-runner-slot.md): every runner has its own stack.
+
 ## Context
 
 CI runs on GitHub-hosted runners, which are billed in minutes on this private repository. When the quota is exhausted, jobs fail without starting a step. GitHub has no built-in "try hosted, then self-hosted", and an automatic fallback after any failure would run real test failures twice.

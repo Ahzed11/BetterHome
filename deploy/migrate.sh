@@ -5,10 +5,12 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=tooling/stack-env.sh
+source "$ROOT/tooling/stack-env.sh"
 SERVICES=(households tasks scoring lists notifications)
 
 FLYWAY_IMAGE="${FLYWAY_IMAGE:-docker.io/flyway/flyway:11-alpine}"
-NETWORK="${COMPOSE_NETWORK:-betterhome_default}"
+NETWORK="${COMPOSE_NETWORK:-${COMPOSE_PROJECT_NAME}_default}"
 DB_USER="${DB_USER:-betterhome}"
 DB_PASSWORD="${DB_PASSWORD:-betterhome}"
 

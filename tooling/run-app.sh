@@ -10,7 +10,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dev-env.sh"
 # shellcheck source=../deploy/lib.sh
 source "$TOOLING_DIR/../deploy/lib.sh"
 
-RUN_APP_PORT="${RUN_APP_PORT:-8090}"
+# The web port is part of the stack (CORS, Keycloak redirect URIs): RUN_APP_PORT overrides the slot's.
+export WEB_PORT="${RUN_APP_PORT:-$WEB_PORT}"
+RUN_APP_PORT="$WEB_PORT"
 RUN_APP_STACK="${RUN_APP_STACK:-start}"
 RUN_APP_USER="${RUN_APP_USER:-alice}"
 RUN_APP_PASSWORD="${RUN_APP_PASSWORD:-demo}"
@@ -39,9 +41,9 @@ echo
 echo "run-app: open http://localhost:${RUN_APP_PORT} once it has compiled (about a minute)"
 echo "run-app: sign in as ${RUN_APP_USER} / ${RUN_APP_PASSWORD}. Ctrl-C stops the app; 'make down' stops the stack."
 exec flutter run -d web-server --release --no-pub --web-port="$RUN_APP_PORT" \
-  --dart-define=API_BASE_URL=http://localhost:8081 \
-  --dart-define=TASKS_API_BASE_URL=http://localhost:8082 \
-  --dart-define=SCORING_API_BASE_URL=http://localhost:8083 \
-  --dart-define=LISTS_API_BASE_URL=http://localhost:8084 \
-  --dart-define=NOTIFICATIONS_API_BASE_URL=http://localhost:8085 \
-  --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome
+  --dart-define=API_BASE_URL=http://localhost:${HOUSEHOLDS_PORT} \
+  --dart-define=TASKS_API_BASE_URL=http://localhost:${TASKS_PORT} \
+  --dart-define=SCORING_API_BASE_URL=http://localhost:${SCORING_PORT} \
+  --dart-define=LISTS_API_BASE_URL=http://localhost:${LISTS_PORT} \
+  --dart-define=NOTIFICATIONS_API_BASE_URL=http://localhost:${NOTIFICATIONS_PORT} \
+  --dart-define=KEYCLOAK_ISSUER=http://localhost:${KEYCLOAK_PORT}/realms/betterhome

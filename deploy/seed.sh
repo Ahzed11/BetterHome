@@ -8,8 +8,8 @@ set -euo pipefail
 # shellcheck source=deploy/lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-HOUSEHOLDS_URL="${HOUSEHOLDS_URL:-http://localhost:8081}"
-TASKS_URL="${TASKS_URL:-http://localhost:8082}"
+HOUSEHOLDS_URL="${HOUSEHOLDS_URL:-http://localhost:${HOUSEHOLDS_PORT}}"
+TASKS_URL="${TASKS_URL:-http://localhost:${TASKS_PORT}}"
 DEMO_PASSWORD="${DEMO_PASSWORD:-demo}"
 HOUSEHOLD_NAME="Demo Home"
 TIMEZONE="Europe/Paris"

@@ -3,7 +3,10 @@
 # Local development only: the Keycloak admin credentials and the betterhome-api client
 # secret are the placeholders already used by podman-compose.yml and realm-betterhome.json.
 
-KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:8180}"
+# shellcheck source=tooling/stack-env.sh
+source "$(dirname "${BASH_SOURCE[0]}")/../tooling/stack-env.sh"
+
+KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost:${KEYCLOAK_PORT}}"
 KEYCLOAK_REALM="${KEYCLOAK_REALM:-betterhome}"
 KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
 KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-admin}"
@@ -12,7 +15,7 @@ API_CLIENT_SECRET="${API_CLIENT_SECRET:-local-dev-only-change-me}"
 
 # Compose providers name containers differently (_ or -); the service label is stable.
 keycloak_container() {
-  podman ps -q --filter label=com.docker.compose.project=betterhome \
+  podman ps -q --filter label=com.docker.compose.project=${COMPOSE_PROJECT_NAME} \
     --filter label=com.docker.compose.service=keycloak | head -n 1
 }
 
@@ -21,7 +24,7 @@ kcadm() {
 }
 
 kcadm_login() {
-  kcadm config credentials --server http://localhost:8180 --realm master \
+  kcadm config credentials --server http://localhost:${KEYCLOAK_PORT} --realm master \
     --user "$KEYCLOAK_ADMIN_USER" --password "$KEYCLOAK_ADMIN_PASSWORD" >/dev/null
 }
 

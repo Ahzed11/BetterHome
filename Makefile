@@ -2,7 +2,10 @@
 SHELL := /bin/bash
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 BACKEND := $(ROOT)/backend
-COMPOSE := podman compose -f $(ROOT)/deploy/podman-compose.yml
+# The stack's identity (project name, host ports) comes from the slot in tooling/stack-env.sh, so several
+# stacks can run side by side (E2E_SLOT=1 make up); exported here for Compose and the deploy scripts.
+$(foreach kv,$(shell bash -c '. $(ROOT)/tooling/stack-env.sh && for v in $$STACK_VARS; do echo "$$v:=$${!v}"; done'),$(eval export $(kv)))
+COMPOSE := podman compose -p $(COMPOSE_PROJECT_NAME) -f $(ROOT)/deploy/podman-compose.yml
 # Tool locations match tooling/dev-env.sh (installed by tooling/install-dev-tools.sh)
 DEV_TOOLS_DIR ?= $(HOME)/dev-tools
 export ANDROID_SDK_ROOT ?= $(HOME)/Android/Sdk
@@ -19,16 +22,18 @@ export TESTCONTAINERS_RYUK_DISABLED ?= true
 doctor: ## Check the pinned toolchain (JDK, Podman, Flutter, Android) is installed
 	@bash $(ROOT)/tooling/doctor.sh
 
-up: ## Build the services and start Postgres, Keycloak, migrations and the five services (SKIP_PACKAGE=1: jars already built)
+up: ## (E2E_SLOT=n: another stack beside this one) Build the services and start Postgres, Keycloak, migrations and the five services (SKIP_PACKAGE=1: jars already built)
 	$(if $(SKIP_PACKAGE),@echo "up: using the jars already built",cd $(BACKEND) && ./mvnw -B -q -DskipTests package)
+	@bash $(ROOT)/deploy/render-realm.sh
 	$(COMPOSE) up -d postgres keycloak
 	@$(MAKE) --no-print-directory migrate
 	$(COMPOSE) up -d --build
 	@bash $(ROOT)/deploy/smoke.sh
-	@echo "Postgres :5432  Keycloak :8180 (admin/admin)  services :8081-:8085"
+	@echo "Stack $(COMPOSE_PROJECT_NAME): Postgres :$(POSTGRES_PORT)  Keycloak :$(KEYCLOAK_PORT) (admin/admin)  services :$(HOUSEHOLDS_PORT) $(TASKS_PORT) $(SCORING_PORT) $(LISTS_PORT) $(NOTIFICATIONS_PORT)"
 
 down: ## Stop and remove the local Compose stack, its volumes and built images
 	$(COMPOSE) down -v --rmi local
+	rm -rf $(STACK_DIR)
 
 migrate: ## Apply Flyway migrations to every service database (one-shot containers)
 	@bash $(ROOT)/deploy/migrate.sh

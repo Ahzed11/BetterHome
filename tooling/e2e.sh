@@ -13,7 +13,9 @@ source "$TOOLING_DIR/../deploy/lib.sh"
 
 E2E_TARGET="${E2E_TARGET:-web}"
 E2E_STACK="${E2E_STACK:-start}"
-E2E_WEB_PORT="${E2E_WEB_PORT:-8090}"
+# The web port is part of the stack (CORS, Keycloak redirect URIs): E2E_WEB_PORT overrides the slot's.
+export WEB_PORT="${E2E_WEB_PORT:-$WEB_PORT}"
+E2E_WEB_PORT="$WEB_PORT"
 E2E_USER="${E2E_USER:-alice}"
 E2E_PASSWORD="${E2E_PASSWORD:-demo}"
 ROOT="$(cd "$TOOLING_DIR/.." && pwd)"
@@ -35,12 +37,12 @@ trap 'kill "${driver_pid:-}" "${server_pid:-}" 2>/dev/null || true' EXIT
 # and compiles while the stack boots.
 if [[ "$E2E_TARGET" == web ]]; then
   flutter run -d web-server --release --no-pub --web-port="$E2E_WEB_PORT" \
-    --dart-define=API_BASE_URL=http://localhost:8081 \
-    --dart-define=TASKS_API_BASE_URL=http://localhost:8082 \
-    --dart-define=SCORING_API_BASE_URL=http://localhost:8083 \
-    --dart-define=LISTS_API_BASE_URL=http://localhost:8084 \
-    --dart-define=NOTIFICATIONS_API_BASE_URL=http://localhost:8085 \
-    --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome >"$(mktemp)" 2>&1 &
+    --dart-define=API_BASE_URL=http://localhost:${HOUSEHOLDS_PORT} \
+    --dart-define=TASKS_API_BASE_URL=http://localhost:${TASKS_PORT} \
+    --dart-define=SCORING_API_BASE_URL=http://localhost:${SCORING_PORT} \
+    --dart-define=LISTS_API_BASE_URL=http://localhost:${LISTS_PORT} \
+    --dart-define=NOTIFICATIONS_API_BASE_URL=http://localhost:${NOTIFICATIONS_PORT} \
+    --dart-define=KEYCLOAK_ISSUER=http://localhost:${KEYCLOAK_PORT}/realms/betterhome >"$(mktemp)" 2>&1 &
   server_pid=$!
 fi
 
@@ -57,18 +59,18 @@ host=localhost
 # right before the journey that uses them.
 set_defines() {
   defines=(
-    "--dart-define=E2E_HOUSEHOLDS_URL=http://${host}:8081"
-    "--dart-define=E2E_TASKS_URL=http://${host}:8082"
-    "--dart-define=E2E_SCORING_URL=http://${host}:8083"
-    "--dart-define=E2E_LISTS_URL=http://${host}:8084"
-    "--dart-define=E2E_NOTIFICATIONS_URL=http://${host}:8085"
+    "--dart-define=E2E_HOUSEHOLDS_URL=http://${host}:${HOUSEHOLDS_PORT}"
+    "--dart-define=E2E_TASKS_URL=http://${host}:${TASKS_PORT}"
+    "--dart-define=E2E_SCORING_URL=http://${host}:${SCORING_PORT}"
+    "--dart-define=E2E_LISTS_URL=http://${host}:${LISTS_PORT}"
+    "--dart-define=E2E_NOTIFICATIONS_URL=http://${host}:${NOTIFICATIONS_PORT}"
     "--dart-define=E2E_ACCESS_TOKEN=$(get_token "$E2E_USER" "$E2E_PASSWORD")"
     "--dart-define=E2E_ACCESS_TOKEN_BOB=$(get_token bob "$E2E_PASSWORD")"
   )
 }
 
 if [[ "$E2E_TARGET" == web ]]; then
-  chromedriver --port=4444 >/dev/null 2>&1 &
+  chromedriver --port="$CHROMEDRIVER_PORT" >/dev/null 2>&1 &
   driver_pid=$!
 
   # Journey 1, real sign-in: a browser signs in through Keycloak's own login page (integration_test
@@ -83,7 +85,7 @@ if [[ "$E2E_TARGET" == web ]]; then
     sleep 2
   done
   app_is_served || { echo "e2e: the app was not served" >&2; exit 1; }
-  dart run test_driver/web_sign_in.dart "http://localhost:${E2E_WEB_PORT}" "$E2E_USER" "$E2E_PASSWORD"
+  CHROMEDRIVER_PORT="$CHROMEDRIVER_PORT" dart run test_driver/web_sign_in.dart "http://localhost:${E2E_WEB_PORT}" "$E2E_USER" "$E2E_PASSWORD"
   kill "$server_pid"; wait "$server_pid" 2>/dev/null || true
   server_pid=
 
@@ -91,7 +93,7 @@ if [[ "$E2E_TARGET" == web ]]; then
   set_defines
   flutter drive --driver=test_driver/integration_test.dart \
     --target=integration_test/household_journey_test.dart \
-    -d web-server --browser-name=chrome --chrome-binary="$CHROME_EXECUTABLE" --headless --web-port="$E2E_WEB_PORT" "${defines[@]}"
+    --driver-port="$CHROMEDRIVER_PORT" -d web-server --browser-name=chrome --chrome-binary="$CHROME_EXECUTABLE" --headless --web-port="$E2E_WEB_PORT" "${defines[@]}"
 else
   set_defines
   flutter drive --driver=test_driver/integration_test.dart \

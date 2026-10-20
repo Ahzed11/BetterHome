@@ -1,7 +1,7 @@
 // Real sign-in through Keycloak, in headless Chrome. integration_test cannot do this: the login form
 // lives on another origin, so the browser is driven with WebDriver instead.
 // Usage: dart run test_driver/web_sign_in.dart <app-url> <username> <password>
-// Needs chromedriver on port 4444 and CHROME_EXECUTABLE (see tooling/e2e.sh).
+// Needs chromedriver on port CHROMEDRIVER_PORT (default 4444) and CHROME_EXECUTABLE (see tooling/e2e.sh).
 import 'dart:io';
 
 import 'package:webdriver/async_io.dart';
@@ -12,7 +12,9 @@ Future<void> main(List<String> args) async {
     exit(2);
   }
   final driver = await createDriver(
-    uri: Uri.parse('http://localhost:4444/'),
+    uri: Uri.parse(
+      'http://localhost:${Platform.environment['CHROMEDRIVER_PORT'] ?? '4444'}/',
+    ),
     desired: {
       'browserName': 'chrome',
       'goog:chromeOptions': {

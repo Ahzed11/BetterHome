@@ -152,7 +152,7 @@ Agents must not claim something works without having run it.
 
 | Command | Purpose |
 |---|---|
-| `make up` | Start local OpenShift cluster (CRC / OpenShift Local) or Podman Compose stack (Postgres, Keycloak instance, microservices) |
+| `make up` | Start local OpenShift cluster (CRC / OpenShift Local) or Podman Compose stack (Postgres, Keycloak instance, microservices). `E2E_SLOT=n` (0-9) starts a separate stack beside the others, with its own project name and ports (ADR 0026) |
 | `make migrate` | Apply Flyway migrations across all microservice databases |
 | `make seed` | Load a demo household with two members and sample data |
 | `make test-backend` | Format, dependency audit, lint, Quarkus unit and integration tests |
@@ -290,7 +290,7 @@ When an agent finishes a task (merged, ledger updated, `master` checked), it doe
 2. Skip `blocked` and `dismissed` entries, entries that say a product decision is needed first, and tasks another agent has `in-progress`.
 3. Mark it `in-progress` in the ledger, state the plan (section 4) and proceed with the same rules as any task.
 
-It stops and asks only when the next step needs a product decision, the spec is ambiguous or wrong (section 11), something needs a permission or a secret it does not have, or nothing eligible is left. Parallel agents each pick different tasks and respect the single local stack (only one agent runs `make up` or `make e2e` at a time).
+It stops and asks only when the next step needs a product decision, the spec is ambiguous or wrong (section 11), something needs a permission or a secret it does not have, or nothing eligible is left. Parallel agents each pick different tasks and respect the local stack: agents that run `make up` or `make e2e` on the same machine each use their own `E2E_SLOT` (section 6.1, ADR 0026); two agents on the same slot must not run at once.
 
 
 ## 11. When unsure

@@ -891,3 +891,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0098
 * Spec: —
 * Acceptance criteria: `deploy/podman-compose.yml` uses `registry.access.redhat.com/hi/postgresql` (17 is the lowest tag found) instead of `postgres:16-alpine`; init script, healthcheck (`pg_isready`) and volume path work; Testcontainers keeps its own image.
+
+### T-0100 · One local stack per runner slot
+
+* Status: in-review
+* Issue / PR: — (suggested: "Concurrent e2e jobs share containers and ports on the fallback runners") / this PR
+* Depends on: T-0096
+* Spec: AGENTS §6.1, §6.2
+* Summary: `tooling/stack-env.sh` derives a stack identity from `E2E_SLOT` (0-9; a runner named `<name>-<n>` defaults to slot `n-1`): Compose project name and every host port (+1000 per slot; slot 0 is unchanged). `podman-compose.yml`, `Makefile`, `deploy/*.sh`, `e2e.sh`, `run-app.sh` and `web_sign_in.dart` read it; `make up` renders the Keycloak realm with the slot's web origin (`deploy/render-realm.sh`). In `check.yml` the `e2e` job runs on any runner (no `fallback-e2e`), keeps its Podman socket, pid and log files and Chrome wrapper in `$RUNNER_TEMP`, only kills its own Podman service, and runs `make down` for its own slot before starting ([ADR 0026](decisions/0026-one-stack-per-runner-slot.md)).
+* Decisions and deviations: Slots rather than random ports, because the app's dart-defines and the Keycloak issuer need the ports before the stack starts, and a slot is easy to read in a failing log. ADR 0024's `fallback-e2e` rule is superseded; its advice on the number of runners stands, since isolation does not add CPU or memory. Backend jobs needed no change (Testcontainers on random ports, T-0093).
+* Verification: `docker compose config` for slot 0 is identical to the old file except the realm mount path; slot 1 and 2 give the expected project name, ports, issuer and CORS origin; `make -n up/down` per slot; `render-realm.sh` moves all three `:8090` entries; `bash -n` on every script; workflow YAML parses. NOT run: `make up`, `make e2e`, two stacks side by side and the workflow itself (no Podman, Flutter or runner in the authoring environment); `flutter drive --driver-port` is used from memory of the Flutter CLI. The first run on the runners must confirm it, ideally `E2E_SLOT=0` and `E2E_SLOT=1` at once.
+* Follow-ups: the Chrome install in `~/dev-tools` is shared and not locked (ADR 0026); enabling `fallback-2` and `fallback-3` is a separate decision to take after measuring (ADR 0024).

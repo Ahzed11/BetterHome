@@ -1,7 +1,9 @@
 # Local stack: Postgres, Keycloak and the five Quarkus services (prod profile).
 # Use `make up`: it builds the jars (the Dockerfile.jvm files copy target/quarkus-app),
 # starts Postgres and Keycloak, runs the Flyway one-shot jobs, then starts the services.
-name: betterhome
+# The project name and every published host port come from tooling/stack-env.sh (the stack slot), so
+# several stacks can run side by side; the defaults here are slot 0. Container ports stay fixed.
+name: ${COMPOSE_PROJECT_NAME:-betterhome}
 
 # Shared by the five services. Migrations never run at startup (the prod profile keeps
 # quarkus.flyway.migrate-at-start=false); `make migrate` runs Flyway as one-shot containers.
@@ -13,7 +15,7 @@ x-service: &service
 x-service-env: &service-env
   DB_USER: betterhome
   DB_PASSWORD: betterhome
-  OIDC_AUTH_SERVER_URL: http://keycloak:8180/realms/betterhome
+  OIDC_AUTH_SERVER_URL: http://keycloak:${KEYCLOAK_PORT:-8180}/realms/betterhome
   # Browsers on the web e2e target call the services cross-origin (E2E_WEB_PORT, tooling/e2e.sh)
   QUARKUS_HTTP_CORS_ENABLED: "true"
   QUARKUS_HTTP_CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8090}
@@ -26,7 +28,7 @@ services:
       POSTGRES_PASSWORD: betterhome
       POSTGRES_DB: postgres
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       # :Z relabels for rootless Podman/SELinux so the entrypoint can read the script
@@ -43,17 +45,17 @@ services:
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      KC_HTTP_PORT: 8180
+      KC_HTTP_PORT: ${KEYCLOAK_PORT:-8180}
       KC_HEALTH_ENABLED: "true"
-      # One issuer for everyone: tokens fetched from the host (localhost:8180) and
-      # services reaching Keycloak as keycloak:8180 must agree on `iss`. The frontend URL is
+      # One issuer for everyone: tokens fetched from the host (localhost:<port>) and
+      # services reaching Keycloak as keycloak:<port> must agree on `iss`. The frontend URL is
       # pinned and back-channel endpoints (jwks_uri, token) follow the request host.
-      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME: http://localhost:${KEYCLOAK_PORT:-8180}
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
     ports:
-      - "8180:8180"
+      - "${KEYCLOAK_PORT:-8180}:${KEYCLOAK_PORT:-8180}"
     volumes:
-      - ./keycloak/realm-betterhome.json:/opt/keycloak/data/import/realm-betterhome.json:ro,Z
+      - ${REALM_FILE:-./keycloak/realm-betterhome.json}:/opt/keycloak/data/import/realm-betterhome.json:ro,Z
     healthcheck:
       # The image has no curl; probe the management port (9000) with bash
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
@@ -79,7 +81,7 @@ services:
       # Local-dev placeholder, same value as the secret in realm-betterhome.json
       OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
-      - "8081:8081"
+      - "${HOUSEHOLDS_PORT:-8081}:8081"
 
   tasks-service:
     <<: *service
@@ -96,7 +98,7 @@ services:
       # Local-dev placeholder, same value as the secret in realm-betterhome.json
       OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
-      - "8082:8082"
+      - "${TASKS_PORT:-8082}:8082"
 
   scoring-service:
     <<: *service
@@ -111,7 +113,7 @@ services:
       # Local-dev placeholder, same value as the secret in realm-betterhome.json
       OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
-      - "8083:8083"
+      - "${SCORING_PORT:-8083}:8083"
 
   lists-service:
     <<: *service
@@ -126,7 +128,7 @@ services:
       # Local-dev placeholder, same value as the secret in realm-betterhome.json
       OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
-      - "8084:8084"
+      - "${LISTS_PORT:-8084}:8084"
 
   notifications-service:
     <<: *service
@@ -141,7 +143,7 @@ services:
       # Local-dev placeholder, same value as the secret in realm-betterhome.json
       OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
-      - "8085:8085"
+      - "${NOTIFICATIONS_PORT:-8085}:8085"
 
 volumes:
   postgres-data:

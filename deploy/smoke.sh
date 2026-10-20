@@ -6,7 +6,10 @@ set -euo pipefail
 TIMEOUT_SECONDS="${SMOKE_TIMEOUT_SECONDS:-180}"
 SMOKE_USER="${SMOKE_USER:-smoke}"
 SMOKE_PASSWORD="${SMOKE_PASSWORD:-smoke}"
-ports=(8081 8082 8083 8084 8085)
+
+# shellcheck source=deploy/lib.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+ports=("$HOUSEHOLDS_PORT" "$TASKS_PORT" "$SCORING_PORT" "$LISTS_PORT" "$NOTIFICATIONS_PORT")
 
 deadline=$((SECONDS + TIMEOUT_SECONDS))
 for port in "${ports[@]}"; do
@@ -20,8 +23,6 @@ for port in "${ports[@]}"; do
   echo "smoke: :${port} ready"
 done
 
-# shellcheck source=deploy/lib.sh
-source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 ensure_user "$SMOKE_USER" "$SMOKE_PASSWORD" "$SMOKE_USER@betterhome.local"
 token="$(get_token "$SMOKE_USER" "$SMOKE_PASSWORD")"
 
@@ -31,5 +32,5 @@ for port in "${ports[@]}"; do
   echo "smoke: :${port} accepted the Keycloak token"
 done
 curl -fsS -X PUT -H "Authorization: Bearer ${token}" -H 'Content-Type: application/json' \
-  -d "{\"email\":\"${SMOKE_USER}@betterhome.local\"}" "http://localhost:8081/v1/me" >/dev/null
+  -d "{\"email\":\"${SMOKE_USER}@betterhome.local\"}" "http://localhost:${HOUSEHOLDS_PORT}/v1/me" >/dev/null
 echo "smoke: OK"
