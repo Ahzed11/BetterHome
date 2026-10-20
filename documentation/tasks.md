@@ -917,7 +917,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Verification: `tooling/build-images.sh` built all five images locally from the real jars; the workflow parses as YAML (no `actionlint` installed). Not verified: the login and push to GHCR, which only run on `master` after the merge; the run on `master` after this PR is the check.
 * Follow-ups: image signing and vulnerability scan before push; image pull secret and deployment (T-0004).
 
-### T-0101 · App: contrast of the dialog buttons in lists and the text prompt
+### T-0103 · App: contrast of the dialog buttons in lists and the text prompt
 
 * Status: todo
 * Issue / PR: — (suggested: "App: AlertDialog buttons below 4.5:1 contrast")
