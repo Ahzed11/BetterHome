@@ -545,11 +545,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0042 · HTTP tests for endpoints without one
 
-* Status: todo
-* Issue / PR: #41
+* Status: in-review
+* Issue / PR: #41 / none yet
 * Depends on: T-0039
 * Spec: AGENTS §5.1 (API contract)
 * Acceptance criteria: Every endpoint of every service has at least one REST-assured call (success and error) so its answers are checked against the contract.
+* Summary: Audit of every resource: lists, notifications and scoring already had HTTP calls for all endpoints, success and error. The gaps were in households (`GET /v1/me`, `PATCH`/`DELETE /v1/households/{id}`, member role, away set/clear, leave errors, `/v1/me` validation) and tasks (`dismiss-away` and `reassign-away` errors and counts, state conflicts, 404s, 400s, 403s). Added `MembershipHttpTest` (households, real tokens, 12 tests) and 10 tests in `TasksHttpTest`. The contract filter checks every answer.
+* Decisions and deviations: The tests found `POST .../tasks/manual` answering 400 with an error body the contract did not document; `TaskResource.quickLog` now documents it and the OpenAPI files are regenerated (`make openapi`). `TasksHttpTest` now deletes the household's tasks before each test, because its list assertions share the database. The issue mentions a membership "remove" endpoint: none exists (members leave through `members/me/leave`), so nothing to test.
+* Verification: `./mvnw verify` for `households-service` and `tasks-service` (JDK 21, Testcontainers through `podman system service`). `make e2e` and the app launch were not run.
+* Follow-ups: `GET /v1/households/{id}/tasks?status=nonsense` answers 404 with no body instead of a 400 with the error body (suggested issue: "Reject an unknown task status filter with 400"); the test for it was left out until it is fixed.
 
 ### T-0053 · Require the CI `check` job on master
 
