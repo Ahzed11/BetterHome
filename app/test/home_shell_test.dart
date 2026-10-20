@@ -106,6 +106,8 @@ void main() {
       await _openTab(tester, 'Leaderboard');
       expect(find.text('Shared effort'), findsOneWidget);
       await _tapText(tester, 'Nice!'); // the unseen month recap
+      // The household name is the small line above the title, as on the other tabs.
+      expect(find.text('Flat'), findsOneWidget);
 
       await _openTab(tester, 'Lists');
       expect(

@@ -118,7 +118,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       final members = await widget.session.repository.listMembers(
         widget.householdId,
       );
-      return _BoardData(board: board, winners: winners, members: members);
+      final household = await widget.session.repository.getHousehold(
+        widget.householdId,
+      );
+      return _BoardData(
+        board: board,
+        winners: winners,
+        members: members,
+        household: household.name,
+      );
     }();
   }
 
@@ -161,7 +169,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppTokens.spaceMd),
         children: [
-          ScreenHeader(title: l10n.leaderboardTitle),
+          FutureBuilder<_BoardData>(
+            future: _future,
+            builder: (context, snapshot) => ScreenHeader(
+              eyebrow: snapshot.data?.household,
+              title: l10n.leaderboardTitle,
+            ),
+          ),
           const SizedBox(height: AppTokens.spaceMd),
           SegmentedTabs<ScorePeriod>(
             labels: {
@@ -352,8 +366,10 @@ class _BoardData {
     required this.board,
     required this.winners,
     required this.members,
+    required this.household,
   });
 
+  final String household;
   final Scoreboard board;
   final List<MonthlyWinner> winners;
   final List<Membership> members;

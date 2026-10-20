@@ -98,7 +98,6 @@
   "addItemHint": "Ajouter un élément…",
   "addItemButton": "Ajouter",
   "basketTitle": "Dans le panier",
-  "listOptions": "Options de la liste",
   "checkItem": "Cocher {title}",
   "uncheckItem": "Décocher {title}",
   "notificationsTitle": "Notifications",

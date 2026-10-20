@@ -626,12 +626,6 @@ abstract class AppLocalizations {
   /// **'In the basket'**
   String get basketTitle;
 
-  /// No description provided for @listOptions.
-  ///
-  /// In en, this message translates to:
-  /// **'List options'**
-  String get listOptions;
-
   /// No description provided for @checkItem.
   ///
   /// In en, this message translates to:

@@ -20,8 +20,7 @@ class ScreenHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Expanded(
-          flex: 2,
+        Flexible(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -35,8 +34,7 @@ class ScreenHeader extends StatelessWidget {
           ),
         ),
         if (actions.isNotEmpty)
-          Flexible(
-            flex: 3,
+          Expanded(
             // The Wrap is as wide as its content; the Align sends it to the far right.
             child: Align(
               alignment: AlignmentDirectional.centerEnd,

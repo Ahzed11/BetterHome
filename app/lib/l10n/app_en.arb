@@ -103,7 +103,6 @@
   "addItemHint": "Add an item…",
   "addItemButton": "Add",
   "basketTitle": "In the basket",
-  "listOptions": "List options",
   "checkItem": "Check {title}",
   "@checkItem": {
     "placeholders": {

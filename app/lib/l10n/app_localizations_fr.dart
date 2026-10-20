@@ -289,9 +289,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get basketTitle => 'Dans le panier';
 
   @override
-  String get listOptions => 'Options de la liste';
-
-  @override
   String checkItem(String title) {
     return 'Cocher $title';
   }
