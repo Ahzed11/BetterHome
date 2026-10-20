@@ -159,7 +159,7 @@ Flutter app ──► OpenShift Route / Ingress ──► Quarkus Microservices 
 | **Packaging** | Container images built via Quarkus container extensions / Jib, deployed via Helm / Kustomize on OpenShift |
 | **API style** | REST with OpenAPI (SmallRye) and a generated Dart client |
 
-A self-hosted test deployment (Docker Compose on a home server) puts one Caddy reverse proxy in front of Keycloak, the five services and Gotify, on a single host name reached through Tailscale: `/auth` is Keycloak, `/api/<service>` each service, `/gotify` Gotify (ADR 0029).
+A self-hosted test deployment (Docker Compose on a home server) sits behind the server's existing Caddy reverse proxy, which fronts Keycloak, the five services and Gotify, on a single host name reached through Tailscale: `/auth` is Keycloak, `/api/<service>` each service, `/gotify` Gotify (ADR 0029).
 
 ### Architecture Decision Records (ADRs)
 - **0001** — Token values that can carry text
@@ -172,7 +172,7 @@ A self-hosted test deployment (Docker Compose on a home server) puts one Caddy r
 - **0011** — Recurrence computation in Quarkus services
 - **0013** — Push notification gateway behind a `PushSender` seam
 - **0027** — Push notifications are delivered through Gotify
-- **0029** — One Caddy reverse proxy in front of the self-hosted stack, reached through Tailscale
+- **0029** — The NAS's Caddy reverse proxy fronts the self-hosted stack, reached through Tailscale
 
 ### Repository layout (Monorepo)
 
