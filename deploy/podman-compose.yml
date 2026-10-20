@@ -17,6 +17,11 @@ x-service-env: &service-env
   # Browsers on the web e2e target call the services cross-origin (E2E_WEB_PORT, tooling/e2e.sh)
   QUARKUS_HTTP_CORS_ENABLED: "true"
   QUARKUS_HTTP_CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8090}
+  # Every request has a trace id, but no span is recorded or exported by default. To see them locally:
+  #   OTEL_TRACES_SAMPLER=parentbased_always_on podman compose -f deploy/podman-compose.yml --profile tracing up -d
+  # then open Jaeger on http://localhost:16686 (services ship OTLP/gRPC to jaeger:4317).
+  OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-parentbased_always_off}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
 
 services:
   postgres:
@@ -142,6 +147,13 @@ services:
       OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
       - "8085:8085"
+
+  # Optional local trace collector and viewer; only started with --profile tracing
+  jaeger:
+    profiles: ["tracing"]
+    image: docker.io/jaegertracing/all-in-one:1.62.0
+    ports:
+      - "16686:16686"
 
 volumes:
   postgres-data:

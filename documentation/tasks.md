@@ -335,11 +335,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0034 · Observability: tracing and request IDs
 
-* Status: todo
+* Status: in-review
 * Issue / PR: #27
 * Depends on: T-0016
 * Spec: §7, AGENTS §8
 * Acceptance criteria: OpenTelemetry tracing across services and outgoing REST calls, request IDs in MDC and JSON logs, no tokens, emails or message content in logs. Verified on the local stack.
+* Summary: `quarkus-opentelemetry` in the five services (inbound REST and REST client calls are traced, `traceId`/`spanId` appear in the JSON log MDC). `common-domain` adds `RequestIdServerFilter` (accepts a well-formed `X-Request-ID` or generates a UUID, puts `requestId` in the MDC, echoes it in the answer) and `RequestIdClientFilter` (forwards it on every REST client call). `deploy/podman-compose.yml` gets an optional Jaeger under `--profile tracing`.
+* Decisions and deviations: `quarkus.otel.traces.exporter` is build-time, so the off switch is the runtime sampler: default `parentbased_always_off` (trace ids exist, no span recorded or exported). Set `OTEL_TRACES_SAMPLER=parentbased_always_on` and `OTEL_EXPORTER_OTLP_ENDPOINT` to export (compose passes both). Caller ids that are not 8-64 chars of `[A-Za-z0-9_-]` are replaced. Existing code already logs no tokens, emails or message content; the test guards it. Background jobs (outbox relay, scheduler) have a trace id but no request id.
+* Verification: `./mvnw verify` in `backend/` (all modules, JDK 21, Podman socket) passed. New tests: `RequestIdFiltersTest` (common-domain), `ObservabilityTest` (tasks-service: requestId and traceId in the JSON log file, request id and `traceparent` on the outgoing households call, caller `Authorization`/email absent from logs). On the Podman stack (`make up`, Jaeger via `--profile tracing`, `make seed`): `X-Request-ID` echoed, Jaeger shows tasks-service and households-service spans in the same trace, no token or email in the five containers' logs. Not run: `make check` (e2e, app launch).
+* Follow-ups: other services have no tracing/log-leak test of their own (the filters and config are shared); a production OTLP collector belongs to the OpenShift deployment (T-0004).
 
 ### T-0035 · Release pipeline and store listings
 
