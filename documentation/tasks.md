@@ -529,11 +529,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0041 · Validate test requests against the contract
 
-* Status: todo
-* Issue / PR: #40
+* Status: in-review
+* Issue / PR: #40 / not opened yet
 * Depends on: T-0039
 * Spec: AGENTS §5.1 (API contract)
 * Acceptance criteria: Requests that tests send as valid are validated against the request schemas of the contract, while tests that send invalid requests on purpose are not rejected by the filter.
+* Summary: `ContractValidation.validRequests(service)` (common-domain test-jar, next to the response filter) validates a request against the committed contract before it is sent and fails on an undocumented path or method, a wrong parameter, content type or body. It is opt-in: the happy-path helpers `createList`/`addItem` in lists `ListsApiTest` and `validAs` in households `InvitationHttpTest` add it; the response filter stays installed for every call and is unchanged.
+* Decisions and deviations: opt-in rather than global because tests send invalid requests on purpose and the validator cannot tell them apart. Credentials (`validation.request.security`) are ignored, tests authenticate through `@TestSecurity` without a header. The same closed in-memory contract copy is used, so an unknown field in a valid request fails. Proofs in lists `ContractValidationTest` (missing required field and unknown path fail the filter). Only lists and households helpers adopt it; tasks, scoring and notifications helpers are not converted.
+* Verification: `./mvnw verify -pl common-domain,services/lists-service,services/households-service -am` (Spotless, Checkstyle, tests on real PostgreSQL, JaCoCo) passed. Not run: other services, Flutter, `make check`, e2e.
+* Follow-ups: adopt `validRequests` in the happy-path helpers of tasks, scoring, notifications (suggested issue).
 
 ### T-0042 · HTTP tests for endpoints without one
 

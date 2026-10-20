@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 
 import com.betterhome.common.oidc.RealOidcTestResource;
+import com.betterhome.common.openapi.ContractValidation;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
@@ -26,7 +27,7 @@ class InvitationHttpTest {
         sync(admin, "ada-http@example.com");
         sync(invitee, "mo-http@example.com");
         String householdId =
-                as(admin)
+                validAs(admin)
                         .body(Map.of("name", "Flatshare", "timezone", "Europe/Paris"))
                         .post("/v1/households")
                         .then()
@@ -35,7 +36,7 @@ class InvitationHttpTest {
                         .path("id");
 
         String token =
-                as(admin)
+                validAs(admin)
                         .body(Map.of("email", "mo-http@example.com", "role", "member"))
                         .post("/v1/households/" + householdId + "/invitations")
                         .then()
@@ -43,7 +44,7 @@ class InvitationHttpTest {
                         .body("token", notNullValue())
                         .extract()
                         .path("token");
-        as(admin)
+        validAs(admin)
                 .get("/v1/households/" + householdId + "/invitations")
                 .then()
                 .statusCode(200)
@@ -55,7 +56,7 @@ class InvitationHttpTest {
                 .then()
                 .statusCode(200)
                 .body("role", is("member"));
-        as(admin)
+        validAs(admin)
                 .get("/v1/households/" + householdId + "/members")
                 .then()
                 .statusCode(200)
@@ -91,7 +92,7 @@ class InvitationHttpTest {
     }
 
     private static void sync(String token, String email) {
-        as(token)
+        validAs(token)
                 .body(
                         Map.of(
                                 "email", email,
@@ -106,6 +107,11 @@ class InvitationHttpTest {
 
     private static RequestSpecification withoutContentType(String token) {
         return given().auth().oauth2(token);
+    }
+
+    /** Authenticated JSON request the test means to be valid: checked against the contract. */
+    private static RequestSpecification validAs(String token) {
+        return as(token).filter(ContractValidation.validRequests("households"));
     }
 
     private static RequestSpecification as(String token) {
