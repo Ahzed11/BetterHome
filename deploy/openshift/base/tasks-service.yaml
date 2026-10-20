@@ -1,0 +1,175 @@
+# tasks-service: Deployment, Service, Route and the Flyway migration Job (AGENTS section 3: migrations are a
+# one-shot Job, never run at startup). Port and health paths are the service's own (application.properties,
+# quarkus-smallrye-health).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tasks-service
+  labels:
+    app.kubernetes.io/name: tasks-service
+    app.kubernetes.io/component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tasks-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tasks-service
+        app.kubernetes.io/component: api
+        app.kubernetes.io/part-of: betterhome
+    spec:
+      containers:
+        - name: tasks-service
+          image: ghcr.io/ahzed11/betterhome-tasks-service:latest
+          ports:
+            - name: http
+              containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: betterhome-config
+            - configMapRef:
+                name: tasks-service-config
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: betterhome-db
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: betterhome-db
+                  key: DB_PASSWORD
+            - name: OIDC_SERVICE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: betterhome-oidc
+                  key: tasks-service-client-secret
+          startupProbe:
+            httpGet:
+              path: /q/health/live
+              port: http
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /q/health/ready
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tasks-service
+  labels:
+    app.kubernetes.io/name: tasks-service
+spec:
+  selector:
+    app.kubernetes.io/name: tasks-service
+  ports:
+    - name: http
+      port: 8082
+      targetPort: http
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: tasks-service
+  labels:
+    app.kubernetes.io/name: tasks-service
+spec:
+  to:
+    kind: Service
+    name: tasks-service
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tasks-service-migrate
+  labels:
+    app.kubernetes.io/name: tasks-service-migrate
+    app.kubernetes.io/component: migration
+spec:
+  backoffLimit: 4
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tasks-service-migrate
+        app.kubernetes.io/component: migration
+        app.kubernetes.io/part-of: betterhome
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: flyway
+          image: docker.io/flyway/flyway:11-alpine
+          args: ["migrate"]
+          env:
+            - name: DB_JDBC_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: tasks-service-config
+                  key: DB_JDBC_URL
+            - name: FLYWAY_URL
+              value: $(DB_JDBC_URL)
+            - name: FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: betterhome-db
+                  key: DB_USER
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: betterhome-db
+                  key: DB_PASSWORD
+            - name: FLYWAY_LOCATIONS
+              value: filesystem:/flyway/sql
+            - name: FLYWAY_CONNECT_RETRIES
+              value: "60"
+          volumeMounts:
+            - name: migrations
+              mountPath: /flyway/sql
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: migrations
+          configMap:
+            name: tasks-service-migrations

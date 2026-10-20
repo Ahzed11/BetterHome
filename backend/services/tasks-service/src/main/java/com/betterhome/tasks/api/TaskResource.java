@@ -108,6 +108,10 @@ public class TaskResource {
             responseCode = "201",
             description = "Created",
             content = @Content(schema = @Schema(implementation = TaskResponse.class)))
+    @APIResponse(
+            responseCode = "400",
+            description = "Invalid input",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
     @Path("/manual")
     @Consumes(MediaType.APPLICATION_JSON)

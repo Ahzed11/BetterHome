@@ -365,11 +365,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0004 · OpenShift / CRC deploy manifests for microservices
 
-* Status: blocked (no OpenShift cluster available; blocker is environmental, decided by the product owner on 2026-10-13. Local runs use Podman Compose: ADR 0003, AGENTS §6.1)
+* Status: in-review (manifests written and rendered offline; never applied to a cluster, because none is available: product owner, 2026-10-13. Local runs stay on Podman Compose: ADR 0003, AGENTS §6.1)
 * Issue / PR: #1
 * Depends on: T-0001
 * Spec: §7, ADR 0003
 * Acceptance criteria: Deployments, Routes, ConfigMaps/Secrets, health probes, and migration Jobs for each service on OpenShift Local or a cluster.
+* Summary: Kustomize base `deploy/openshift/base` with, per service, a Deployment (2 replicas, startup/liveness `/q/health/live`, readiness `/q/health/ready`, restricted-SCC security context), Service, edge-TLS Route and a Flyway migration Job, plus ConfigMaps (shared and per service; the Flyway SQL is generated from `backend/**/db/migration`). Overlay `deploy/openshift/crc` sets the namespace, one replica, the Keycloak issuer URL. Secrets are not committed: `crc/secrets.example.yaml` is a placeholder template outside the kustomization. Images are the GHCR ones of T-0100. Usage in `deploy/openshift/README.md`.
+* Decisions and deviations: Health paths are `/q/health/*` (Quarkus default root), not `/health/*` as AGENTS §3 says in short. Migrations use the `flyway/flyway:11-alpine` image of the Compose stack with the SQL mounted from a ConfigMap, so the app images stay migration-free. The ConfigMap sources sit outside the kustomization root, so rendering needs `--load-restrictor=LoadRestrictionsNone`. PostgreSQL and Keycloak are prerequisites, not part of the overlay (T-0104). Every service gets a Route as the acceptance criteria say; internal endpoints stay protected by the `service` role. `make test-openshift-ports` (no tooling, in `make check`) checks ports, probe paths and images against `application.properties`; `make test-openshift` (kustomize/oc/kubectl, optional) renders and schema-checks, and is not in `make check` because CI has none of those tools.
+* Verification: `kustomize build` v5.8.3 renders `deploy/openshift/crc` (31 resources) and `kubeconform` v0.8.0 `-strict` finds 26 valid, 0 invalid, 5 skipped (the Routes, no schema). `make test-openshift-ports` passes. NOT verified: any `oc apply`, pod start, probe success, Flyway under an arbitrary UID, Route reachability, Keycloak/Postgres wiring, `oc kustomize` itself.
+* Follow-ups: T-0104.
 
 ### T-0005 · Generate OpenAPI from code and guard it against drift
 
@@ -545,11 +549,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0042 · HTTP tests for endpoints without one
 
-* Status: todo
-* Issue / PR: #41
+* Status: in-review
+* Issue / PR: #41 / none yet
 * Depends on: T-0039
 * Spec: AGENTS §5.1 (API contract)
 * Acceptance criteria: Every endpoint of every service has at least one REST-assured call (success and error) so its answers are checked against the contract.
+* Summary: Audit of every resource: lists, notifications and scoring already had HTTP calls for all endpoints, success and error. The gaps were in households (`GET /v1/me`, `PATCH`/`DELETE /v1/households/{id}`, member role, away set/clear, leave errors, `/v1/me` validation) and tasks (`dismiss-away` and `reassign-away` errors and counts, state conflicts, 404s, 400s, 403s). Added `MembershipHttpTest` (households, real tokens, 12 tests) and 10 tests in `TasksHttpTest`. The contract filter checks every answer.
+* Decisions and deviations: The tests found `POST .../tasks/manual` answering 400 with an error body the contract did not document; `TaskResource.quickLog` now documents it and the OpenAPI files are regenerated (`make openapi`). `TasksHttpTest` now deletes the household's tasks before each test, because its list assertions share the database. The issue mentions a membership "remove" endpoint: none exists (members leave through `members/me/leave`), so nothing to test.
+* Verification: `./mvnw verify` for `households-service` and `tasks-service` (JDK 21, Testcontainers through `podman system service`). `make e2e` and the app launch were not run.
+* Follow-ups: `GET /v1/households/{id}/tasks?status=nonsense` answers 404 with no body instead of a 400 with the error body (suggested issue: "Reject an unknown task status filter with 400"); the test for it was left out until it is fixed.
 
 ### T-0053 · Require the CI `check` job on master
 
@@ -943,3 +951,10 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Verification: `AnonymizeUserTest` (service and HTTP: success, only the named user's columns change, idempotent, unknown user, sentinel refused, household admin and role-less user 403, anonymous 401); `make openapi`; `./mvnw verify -pl services/lists-service -am`. Not verified: a call with a real Keycloak service token (the `betterhome-households-service` client already holds the `service` role, ADR 0014, but no real-token test hits this endpoint), e2e.
 * Follow-ups: T-0032 still needs the households-side trigger and Keycloak Admin deletion, the call from households to this endpoint (it needs a REST client with the service token, failure policy so deletion is retried when lists is down), the same endpoint in tasks and scoring, the last-admin rule and the e2e journey. App: show the nil UUID as a former member.
 
+### T-0104 · CRC: PostgreSQL and Keycloak for the OpenShift Local overlay
+
+* Status: todo
+* Issue / PR: — (suggested: "Run PostgreSQL and Keycloak on OpenShift Local")
+* Depends on: T-0004
+* Spec: §7
+* Acceptance criteria: The CRC overlay (or a sibling) provides a `postgres` Service with the five databases and the Keycloak realm (Keycloak Operator, AGENTS §3), so `oc apply -k` gives a working stack. Needs a running cluster to verify.
