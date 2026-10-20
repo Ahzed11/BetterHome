@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:betterhome/data/households_repository.dart';
+import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
+import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/chores_screen.dart';
 import 'package:betterhome/ui/screens/create_household_screen.dart';
@@ -15,6 +19,7 @@ import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
 import 'package:betterhome/ui/screens/sign_in_screen.dart';
 import 'package:betterhome/ui/screens/template_form_screen.dart';
+import 'package:betterhome/ui/widgets/app_toast.dart';
 import 'package:betterhome/ui/widgets/household_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,10 +31,90 @@ const String _household = 'hh-1';
 
 /// A screen in one of its states, ready to be pumped.
 class _Scenario {
-  const _Scenario(this.name, this.build);
+  const _Scenario(this.name, this.build, {this.act});
 
   final String name;
   final Future<Widget> Function() build;
+
+  /// Drives the pumped screen into the state to check (a dialog open, a toast showing).
+  final Future<void> Function(WidgetTester tester, AppLocalizations l10n)? act;
+}
+
+/// Pumps [scenario] and runs its [_Scenario.act], if any.
+Future<void> _pumpScenario(
+  WidgetTester tester,
+  _Scenario scenario,
+  Locale locale, {
+  double textScale = 1,
+  bool realFonts = false,
+}) async {
+  await pumpScreen(
+    tester,
+    home: await scenario.build(),
+    locale: locale,
+    textScale: textScale,
+    realFonts: realFonts,
+  );
+  final act = scenario.act;
+  if (act != null) {
+    await act(
+      tester,
+      AppLocalizations.of(tester.element(find.byType(Scaffold).first)),
+    );
+  }
+}
+
+/// A household of two members seen by the second one, who is a plain member: the fake
+/// repository only knows its own user, so the admin who created the household is added here.
+class _MemberViewHouseholdsRepository extends FakeHouseholdsRepository {
+  _MemberViewHouseholdsRepository() : super(userId: 'user-2');
+
+  @override
+  Future<List<Membership>> listMembers(String householdId) async => [
+    Membership(
+      id: 'm-admin',
+      userId: 'user-1',
+      householdId: householdId,
+      role: MembershipRole.admin,
+      joinedAt: DateTime.utc(2025, 12, 1),
+    ),
+    Membership(
+      id: 'm-member',
+      userId: 'user-2',
+      householdId: householdId,
+      role: MembershipRole.member,
+      joinedAt: DateTime.utc(2026, 1, 1),
+    ),
+  ];
+}
+
+Future<AppSession> _memberSession() =>
+    _sessionWith(households: _MemberViewHouseholdsRepository());
+
+/// Shows a toast from the screen under test and lets it slide in, leaving its timer running.
+Future<void> _toast(
+  WidgetTester tester, {
+  required String message,
+  String? actionLabel,
+  bool error = false,
+}) async {
+  unawaited(
+    showAppToast(
+      tester.element(find.byType(Scaffold).first),
+      message: message,
+      actionLabel: actionLabel,
+      error: error,
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
+Future<void> _tap(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+  await tester.tap(finder);
+  await tester.pumpAndSettle();
 }
 
 /// Syncing the profile replaces the default tasks and scoring fakes, so the
@@ -407,6 +492,141 @@ final List<_Scenario> _scenarios = [
       session: await _sessionWith(notifications: repo),
     );
   }),
+  _Scenario(
+    'household_detail_member',
+    () async => HouseholdDetailScreen(
+      session: await _memberSession(),
+      householdId: _household,
+    ),
+  ),
+  _Scenario('household_detail_member_templates', () async {
+    final session = await _memberSession();
+    await session.tasksRepository.createTemplate(
+      householdId: _household,
+      title: 'Vacuum',
+      points: 5,
+      latePoints: 2,
+    );
+    return HouseholdDetailScreen(session: session, householdId: _household);
+  }),
+  _Scenario('chores_member', () async {
+    final session = await _memberSession();
+    final tasks = session.tasksRepository;
+    final vacuum = await tasks.createTemplate(
+      householdId: _household,
+      title: 'Vacuum',
+      points: 5,
+      latePoints: 2,
+    );
+    final dishes = await tasks.createTemplate(
+      householdId: _household,
+      title: 'Dishes',
+      points: 3,
+      latePoints: 1,
+    );
+    await tasks.createOpen(householdId: _household, templateId: vacuum.id);
+    await tasks.quickLog(householdId: _household, templateId: dishes.id);
+    return ChoresScreen(session: session, householdId: _household);
+  }),
+  _Scenario(
+    'invite_dialog',
+    () async => HouseholdDetailScreen(
+      session: await _sessionWith(),
+      householdId: _household,
+    ),
+    act: (tester, l10n) async {
+      await _tap(tester, find.text(l10n.inviteHousemate));
+      await tester.enterText(find.byType(TextField), 'bob@example.com');
+      await tester.pumpAndSettle();
+    },
+  ),
+  _Scenario(
+    'invite_created_dialog',
+    () async => HouseholdDetailScreen(
+      session: await _sessionWith(),
+      householdId: _household,
+    ),
+    act: (tester, l10n) async {
+      await _tap(tester, find.text(l10n.inviteHousemate));
+      await tester.enterText(find.byType(TextField), 'bob@example.com');
+      await _tap(tester, find.text(l10n.sendInvite));
+    },
+  ),
+  _Scenario(
+    'accept_invite_dialog',
+    () async => HouseholdDetailScreen(
+      session: await _sessionWith(),
+      householdId: _household,
+    ),
+    act: (tester, l10n) async {
+      await _tap(tester, find.byTooltip(l10n.acceptInvite));
+      await tester.enterText(find.byType(TextField), 'token-1');
+      await tester.pumpAndSettle();
+    },
+  ),
+  _Scenario(
+    'dismiss_confirm_dialog',
+    () async => ChoresScreen(
+      session: await _choresSession(populated: true),
+      householdId: _household,
+    ),
+    act: (tester, l10n) async {
+      await _tap(tester, find.byTooltip(l10n.dismissTask).first);
+    },
+  ),
+  _Scenario(
+    'revert_dialog',
+    () async => ChoresScreen(
+      session: await _choresSession(populated: true),
+      householdId: _household,
+    ),
+    act: (tester, l10n) async {
+      await _tap(tester, find.byTooltip(l10n.revertTask).first);
+      await tester.enterText(find.byType(TextField), 'Not clean');
+      await tester.pumpAndSettle();
+    },
+  ),
+  _Scenario(
+    'toast_spawned',
+    () async => HouseholdDetailScreen(
+      session: await _sessionWith(),
+      householdId: _household,
+    ),
+    act: (tester, l10n) async {
+      await tester.tap(find.text(l10n.runDueNow));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    },
+  ),
+  _Scenario(
+    'toast_recurrence_set',
+    () async => HouseholdDetailScreen(
+      session: await _sessionWith(),
+      householdId: _household,
+    ),
+    act: (tester, l10n) => _toast(tester, message: l10n.recurrenceSet),
+  ),
+  _Scenario(
+    'toast_undo',
+    () async => ChoresScreen(
+      session: await _choresSession(populated: true),
+      householdId: _household,
+    ),
+    act: (tester, l10n) => _toast(
+      tester,
+      message: l10n.quickLogPending('Dishes'),
+      actionLabel: l10n.undo,
+    ),
+  ),
+  _Scenario(
+    'toast_error',
+    () async => ChoresScreen(
+      session: await _choresSession(populated: true),
+      householdId: _household,
+    ),
+    act: (tester, l10n) =>
+        _toast(tester, message: l10n.errorGeneric, error: true),
+  ),
 ];
 
 void main() {
@@ -415,17 +635,12 @@ void main() {
       final id = '${scenario.name} (${locale.languageCode})';
 
       testWidgets('accessibility: $id', (tester) async {
-        await pumpScreen(tester, home: await scenario.build(), locale: locale);
+        await _pumpScenario(tester, scenario, locale);
         await expectAccessible(tester);
       });
 
       testWidgets('200% text scale does not overflow: $id', (tester) async {
-        await pumpScreen(
-          tester,
-          home: await scenario.build(),
-          locale: locale,
-          textScale: 2,
-        );
+        await _pumpScenario(tester, scenario, locale, textScale: 2);
         expect(tester.takeException(), isNull);
       });
     }
@@ -436,12 +651,7 @@ void main() {
       final id = '${scenario.name} (${locale.languageCode})';
 
       testWidgets('golden: $id', (tester) async {
-        await pumpScreen(
-          tester,
-          home: await scenario.build(),
-          locale: locale,
-          realFonts: true,
-        );
+        await _pumpScenario(tester, scenario, locale, realFonts: true);
         await expectLater(
           find.byType(MaterialApp),
           matchesGoldenFile(

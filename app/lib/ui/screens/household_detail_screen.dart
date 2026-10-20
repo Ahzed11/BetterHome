@@ -123,6 +123,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
     final email = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppTokens.card,
         title: Text(l10n.invite),
         content: TextField(
           controller: emailController,
@@ -155,6 +156,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppTokens.card,
         title: Text(l10n.inviteCreated),
         content: Text(l10n.copyToken(invitation.token)),
         actions: [
@@ -176,6 +178,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
     final token = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppTokens.card,
         title: Text(l10n.acceptInvite),
         content: TextField(
           controller: tokenController,

@@ -213,17 +213,20 @@ class _ChoresScreenState extends State<ChoresScreen> {
     final reason = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppTokens.card,
         title: Text(l10n.revertConfirmTitle),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(l10n.revertConfirmBody),
-            const SizedBox(height: AppTokens.spaceMd),
-            TextField(
-              controller: reasonController,
-              decoration: InputDecoration(labelText: l10n.revertReason),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l10n.revertConfirmBody),
+              const SizedBox(height: AppTokens.spaceMd),
+              TextField(
+                controller: reasonController,
+                decoration: InputDecoration(labelText: l10n.revertReason),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -260,6 +263,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppTokens.card,
         title: Text(l10n.dismissConfirmTitle),
         content: Text(l10n.dismissConfirmBody),
         actions: [
