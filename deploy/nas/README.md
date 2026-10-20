@@ -51,6 +51,37 @@ curl -s $H/gotify/health
 
 Install the APK from `make apk` ([README](../../README.md)), open it and enter the address `https://<host>` (the same host as above). The phone must be on the tailnet.
 
+## Push notifications (Gotify)
+
+Gotify runs in the stack and the phone reaches it at `https://<host>/gotify/` (the trailing slash matters; `/gotify` redirects to it). Push works like this ([ADR 0027](../../documentation/decisions/0027-push-through-gotify.md)): each BetterHome user registers the token of **their own Gotify application**, and notifications-service posts to it. So every person who wants pushes needs a Gotify user, an application, and the Gotify app on their phone.
+
+1. **Create the application.** Open `https://<host>/gotify/`, sign in as `admin` with `CHANGE_ME_GOTIFY_ADMIN_PASSWORD`, go to Apps, Create Application (name it `BetterHome`) and copy its token. For other people, create a Gotify user for each under Users and let them do this with their own login.
+2. **Install the Gotify app** on the phone (F-Droid or Play Store), enter the server address `https://<host>/gotify`, and sign in with the Gotify user. In Android's settings for the app, allow it to run in the background without battery restrictions, or messages are delayed. The Tailscale app must be connected for the phone to reach the server (Tailscale's always-on VPN setting keeps it so).
+3. **Register the token in BetterHome.** The app has no screen for it yet (T-0086), so call the API once as the BetterHome user (the same `jq` and `curl` work from any machine on the tailnet; `API_CLIENT_SECRET` is the value from your Compose file):
+
+   ```bash
+   H=https://nas.example.ts.net
+   UT=$(curl -s -X POST $H/auth/realms/betterhome/protocol/openid-connect/token \
+     -d grant_type=password -d client_id=betterhome-api -d client_secret=<API_CLIENT_SECRET> \
+     -d username=<user> -d password=<password> | jq -r .access_token)
+   curl -s -X PUT $H/api/notifications/v1/push-target -H "Authorization: Bearer $UT" \
+     -H 'Content-Type: application/json' -d '{"token":"<application token>"}'
+   ```
+
+   `DELETE` on the same URL removes it. The token is never returned by the API.
+4. **Try it.** In the app, mark a housemate away (needs a second member), or send a test event with the service client (`OIDC_SERVICE_CLIENT_SECRET` from your Compose file). The user's `id` is in `GET $H/api/households/v1/me` and a household id in `GET $H/api/households/v1/households`:
+
+   ```bash
+   SVC=$(curl -s -X POST $H/auth/realms/betterhome/protocol/openid-connect/token \
+     -d grant_type=client_credentials -d client_id=betterhome-tasks-service \
+     -d client_secret=<OIDC_SERVICE_CLIENT_SECRET> | jq -r .access_token)
+   curl -s -X POST $H/api/notifications/v1/internal/notifications -H "Authorization: Bearer $SVC" \
+     -H 'Content-Type: application/json' \
+     -d '{"idempotencyKey":"test-1","householdId":"<household id>","userId":"<user id>","type":"marked_away","payload":{"householdName":"Flat"}}'
+   ```
+
+   Change `idempotencyKey` for every test: the same key is stored once. A push arrives on the phone within a second. If it does not, the notification is still in the app's inbox; check the token (a refused token is deleted by the server, register it again) and that the phone is on the tailnet.
+
 ## First user
 
 Registration is open in the realm, so a user can sign up from the app's sign-in page. To create one by hand, open `https://<host>/auth` (admin console, user `admin`), realm `betterhome`, Users, and give the user the `member` role.
@@ -64,4 +95,4 @@ Change the tag of the images (`:latest` moves with every merge; pin a commit SHA
 - **The realm is imported once**, on the first start with an empty Keycloak database, with the client secrets from the Compose file. Changing them later in the file does not change Keycloak: set the new value in the admin console (realm `betterhome`, Clients, each `betterhome-*-service` client, Credentials) and in the Compose file, then `docker compose up -d`. To start over, remove the `postgres-data` volume (this deletes every household too).
 - **One secret for the five service clients**, as in the local stack; a leak of it means regenerating it everywhere.
 - **No health checks on the services** (their image has no shell or curl): use the `/q/health/ready` URLs above.
-- **Push** needs the application token of each user in Gotify; see T-0114 and T-0086.
+- **Registering the Gotify token** is an API call until the app has a screen for it (T-0086).

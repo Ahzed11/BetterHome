@@ -1080,11 +1080,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0114 · Gotify push server on the NAS
 
-* Status: todo
-* Issue / PR: #126 / —
+* Status: in-review
+* Issue / PR: #126 / (pull request to follow; stacked on #134)
 * Depends on: T-0108, T-0109, T-0110
 * Spec: §5, §7
 * Acceptance criteria: Gotify (`gotify/server`, as the optional `gotify` profile of `deploy/podman-compose.yml`) runs in the NAS stack behind Caddy, reachable from the phone through Tailscale in the way T-0107 decides, with its data in a volume and the admin password a `CHANGE_ME` placeholder edited on the NAS, and the container joining `edge` as `betterhome-gotify`. notifications-service gets `GOTIFY_URL` pointing at it (ADR 0027). Documented: create a Gotify user and application, install the Gotify Android app, point it at the public URL, exempt it from battery optimisation. Verified on the phone: an event (for example an admin marking a member away, or a due reminder) arrives as a push. Until T-0086 exists the application token is registered with `PUT /v1/push-target` (curl command in the README).
+* Summary: Gotify and the `GOTIFY_URL` of notifications-service were already in `deploy/nas/compose.yml` (T-0108); this task verified them and documented the use. New: `redir /gotify /gotify/ permanent` in the Caddyfile (without it `https://<host>/gotify` fell through to the other site, and the web UI needs the slash), three more static checks in `make test-nas` (the redirect, `GOTIFY_URL`, the data volume), and a "Push notifications (Gotify)" section in `deploy/nas/README.md`: create the Gotify application and users, install the Gotify Android app against `https://<host>/gotify`, battery and Tailscale advice, register the token with `PUT /v1/push-target` (curl, until T-0086), and how to send a test event with the service client.
+* Decisions and deviations: Gotify stays on the `/gotify` path (ADR 0029) because it works there; ADR row amended. Each person who wants pushes needs a Gotify user and application (ADR 0027): one shared admin account is fine for one phone. No change to the services.
+* Verification: the NAS stack run locally (local images, throwaway Caddy with `tls internal` importing the snippet): Gotify's UI, its static assets (relative links), `/gotify/health` and its API (401 without credentials, 200 with, 401 with a wrong password) work under `/gotify/`; an application and a client created through the API; a user registered the application token with `PUT /api/notifications/v1/push-target` (200); a WebSocket on `wss://<host>/gotify/stream` upgraded (101); an event posted to `/api/notifications/v1/internal/notifications` with a service token produced the notification and, within a second, the message on the WebSocket and in Gotify's message list with the expected title, text, priority 5 and the `betterhome::push` extras. A browser-style WebSocket with the same `Origin` upgraded, a foreign `Origin` got 403. `/gotify` redirects (301) to `/gotify/`, `/gotifyx` is not claimed. `make test-nas` with negative cases for the three new checks. Not verified: the Gotify Android app on a phone (battery behaviour, the server URL with a path, push after the phone sleeps), Docker Compose v2 and a real Caddy and Tailscale certificate (T-0110), pulling the Gotify image on the NAS.
+* Follow-ups: T-0086 replaces the curl registration; `make nas-smoke` (T-0112) checks `/gotify/health`.
 
 ### T-0115 · App: server URL entered in the app
 
