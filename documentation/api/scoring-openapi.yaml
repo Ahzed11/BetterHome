@@ -17,6 +17,21 @@ components:
         delta:
           type: integer
           format: int32
+    AnonymizationResponse:
+      type: object
+      properties:
+        ledgerRows:
+          type: integer
+          format: int32
+        reversions:
+          type: integer
+          format: int32
+        recapsWon:
+          type: integer
+          format: int32
+        celebrationsForgotten:
+          type: integer
+          format: int64
     AwardRequest:
       type: object
       required:
@@ -602,6 +617,44 @@ paths:
                   $ref: "#/components/schemas/WinnerResponse"
       security:
       - bearerAuth: []
+  /v1/internal/users/{userId}/anonymize:
+    post:
+      summary: "Replace a deleted user's id on every ledger row, reversion and monthly\
+        \ recap with the anonymous id; totals stay the same, repeating it or naming\
+        \ an unknown user changes nothing (service role)"
+      operationId: anonymizeUser
+      tags:
+      - internal
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "Rows changed per kind, all zero when nothing was left to change"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnonymizationResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth:
+        - service
   /v1/meta:
     get:
       summary: "Service name, server time and caller subject"

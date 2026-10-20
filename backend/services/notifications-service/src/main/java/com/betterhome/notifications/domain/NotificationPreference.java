@@ -45,4 +45,9 @@ public class NotificationPreference extends PanacheEntityBase {
     public static List<NotificationPreference> forUser(UUID userId) {
         return list("userId", userId);
     }
+
+    /** Deletes every choice {@code userId} made; returns how many. */
+    public static long deleteForUser(UUID userId) {
+        return delete("userId", userId);
+    }
 }

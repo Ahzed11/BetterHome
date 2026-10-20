@@ -8,6 +8,33 @@ tags:
 - name: templates
 components:
   schemas:
+    AnonymizationResponse:
+      type: object
+      properties:
+        openTasksDismissed:
+          type: integer
+          format: int32
+        tasksAssigned:
+          type: integer
+          format: int32
+        tasksCompleted:
+          type: integer
+          format: int32
+        tasksDismissed:
+          type: integer
+          format: int32
+        templatesCreated:
+          type: integer
+          format: int32
+        recurrencesFixed:
+          type: integer
+          format: int32
+        rotationCursors:
+          type: integer
+          format: int32
+        queuedNotificationsDropped:
+          type: integer
+          format: int64
     AssignmentMode:
       type: string
       enum:
@@ -987,6 +1014,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DismissedCount"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth:
+        - service
+  /v1/internal/users/{userId}/anonymize:
+    post:
+      summary: "Replace a deleted user's id on every task, template, recurrence and\
+        \ rotation with the anonymous id and dismiss their open tasks; repeating it\
+        \ or naming an unknown user changes nothing (service role)"
+      operationId: anonymizeUser
+      tags:
+      - internal
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+        "200":
+          description: "Rows changed per kind, all zero when nothing was left to change"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnonymizationResponse"
         "400":
           description: Invalid input
           content:

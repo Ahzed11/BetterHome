@@ -43,4 +43,9 @@ public class MonthlyRecap extends PanacheEntityBase {
     public static List<MonthlyRecap> listForHousehold(UUID householdId) {
         return list("householdId = ?1 order by yearMonth desc", householdId);
     }
+
+    /** Hands every recap won by {@code user} to {@code replacement}; returns how many. */
+    public static int replaceWinner(UUID user, UUID replacement) {
+        return update("winnerUserId = ?1 where winnerUserId = ?2", replacement, user);
+    }
 }

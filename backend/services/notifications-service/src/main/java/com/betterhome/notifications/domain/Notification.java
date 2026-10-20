@@ -118,4 +118,9 @@ public class Notification extends PanacheEntityBase {
                 userId,
                 Channel.in_app);
     }
+
+    /** Deletes everything addressed to {@code userId}, read or not; returns how many. */
+    public static long deleteForUser(UUID userId) {
+        return delete("userId", userId);
+    }
 }

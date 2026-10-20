@@ -122,4 +122,9 @@ public class PointTransaction extends PanacheEntityBase {
                         .getSingleResult();
         return sum.intValue();
     }
+
+    /** Hands every ledger row of {@code user} to {@code replacement}; returns how many. */
+    public static int replaceUser(UUID user, UUID replacement) {
+        return update("userId = ?1 where userId = ?2", replacement, user);
+    }
 }

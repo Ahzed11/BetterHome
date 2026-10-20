@@ -65,4 +65,12 @@ public class TaskRecurrence extends PanacheEntityBase {
     public static Optional<TaskRecurrence> findOptionalById(UUID id) {
         return find("id", id).firstResultOptional();
     }
+
+    /**
+     * Replaces {@code user} as fixed assignee. The id no longer belongs to an active member, so
+     * spawning falls back to the round robin, as it does for any fixed assignee who left.
+     */
+    public static int replaceFixedAssignee(UUID user, UUID replacement) {
+        return update("fixedAssigneeId = ?1 where fixedAssigneeId = ?2", replacement, user);
+    }
 }

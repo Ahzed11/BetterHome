@@ -3,6 +3,7 @@ package com.betterhome.notifications.api;
 import com.betterhome.notifications.domain.Channel;
 import com.betterhome.notifications.domain.Notification;
 import com.betterhome.notifications.domain.NotificationType;
+import com.betterhome.notifications.service.AnonymizationService;
 import com.betterhome.notifications.service.IngestService;
 import com.betterhome.notifications.service.PreferenceService;
 import jakarta.validation.constraints.NotBlank;
@@ -42,6 +43,15 @@ public final class NotificationDtos {
     }
 
     public record ReadAllResponse(int updated) {}
+
+    /** Rows deleted per kind by an account deletion; both zero when nothing was left. */
+    public record AnonymizationResponse(long notificationsDeleted, long preferencesDeleted) {
+
+        public static AnonymizationResponse from(AnonymizationService.Result result) {
+            return new AnonymizationResponse(
+                    result.notificationsDeleted(), result.preferencesDeleted());
+        }
+    }
 
     public record PreferenceResponse(NotificationType type, Channel channel, boolean enabled) {
 
