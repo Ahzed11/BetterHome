@@ -93,7 +93,9 @@ class HouseholdPhase1Test {
                 .then()
                 .statusCode(200)
                 .body("$", hasSize(1))
-                .body("[0].role", is("admin"));
+                .body("[0].role", is("admin"))
+                .body("[0].givenName", is("Ada"))
+                .body("[0].familyName", is("Admin"));
     }
 
     @Test

@@ -153,6 +153,10 @@ components:
           $ref: "#/components/schemas/Instant"
         awaySetBy:
           $ref: "#/components/schemas/UUID"
+        givenName:
+          type: string
+        familyName:
+          type: string
     MembershipRole:
       type: string
       enum:

@@ -268,5 +268,12 @@
   "recurringToggleHint": "Turn on for a chore that comes back by itself.",
   "houseRules": "House rules",
   "choresAndRotations": "Chores & rotations",
-  "choresAndRotationsHint": "Add a recurring chore"
+  "choresAndRotationsHint": "Add a recurring chore",
+  "taskStatusOpen": "Open",
+  "taskStatusDone": "Done",
+  "taskStatusDismissed": "Dismissed",
+  "taskStatusReverted": "Reverted",
+  "taskStatusWithPoints": "{status} · {points}",
+  "@taskStatusWithPoints": {"placeholders": {"status": {"type": "String"}, "points": {"type": "String"}}},
+  "unknownMember": "Household member"
 }

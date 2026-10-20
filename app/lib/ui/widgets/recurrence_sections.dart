@@ -2,6 +2,7 @@ import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/member_labels.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
 import 'package:betterhome/ui/widgets/member_avatar.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
@@ -280,9 +281,7 @@ class RecurrenceSections extends StatelessWidget {
                       children: [
                         for (var i = 0; i < all.length; i++)
                           _MemberPick(
-                            label: all[i].userId == meId
-                                ? l10n.you
-                                : all[i].userId,
+                            label: memberLabel(l10n, all[i], meId),
                             color: memberColor(i),
                             selected: c.fixed == all[i].userId,
                             onTap: () =>

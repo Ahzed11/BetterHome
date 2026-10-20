@@ -47,6 +47,12 @@ Future<AppSession> _session(ScoringRepository scoring) async {
   );
   await session.syncProfile(email: 'ada@example.com', givenName: 'Ada');
   await session.repository.createHousehold(name: 'Flat', timezone: 'UTC');
+  (session.repository as FakeHouseholdsRepository).addMember(
+    _household,
+    memberUserId: 'user-2',
+    givenName: 'Bob',
+    familyName: 'Baker',
+  );
   // Syncing the profile replaces the scoring fake; the test's own repository goes back in.
   session.useScoringRepository(scoring);
   return session;
@@ -105,7 +111,7 @@ void main() {
     await _open(tester, await _session(scoring));
 
     expect(
-      find.text('user-2 won September 2026 with 20 points.'),
+      find.text('Bob Baker won September 2026 with 20 points.'),
       findsOneWidget,
     );
   });

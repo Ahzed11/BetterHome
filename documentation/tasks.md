@@ -613,11 +613,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0058 · Externalize remaining hard-coded strings and raw ids in app screens
 
-* Status: todo
-* Issue / PR: #45
+* Status: in-review
+* Issue / PR: #45 / (this PR; stacked on #107, T-0079 golden fonts)
 * Depends on: T-0022
-* Spec: AGENTS §9
+* Spec: AGENTS §9; §2 (members named on screen)
 * Acceptance criteria: Chores status and points labels, the default template title and member labels (currently raw user ids) come from ARB keys or the members API in FR and EN; goldens regenerated.
+* Summary: The chores meta line uses ARB keys (`taskStatusOpen/Done/Dismissed/Reverted`, `taskStatusWithPoints`, and the existing `pointsLabel`) instead of the enum name and a literal "pts". The members API had no names, so `MembershipResponse` now carries `givenName` and `familyName` (omitted once the account is deleted; OpenAPI documents regenerated with `make openapi`). Household detail, leaderboard (rows, podium, recap, hall of winners) and the fixed-assignee picker label members through `memberLabel`: "You" for the signed-in person, else the name, else the ARB key `unknownMember`. FR and EN ARB, generated l10n and the affected goldens updated.
+* Decisions and deviations: The "Chore" template title named in the issue no longer exists in `app/lib` (the restyle removed it; the only "Chore" left is text a test types), so nothing to externalize there. Names are exposed to fellow household members only, never the email. `MembershipResponse.from` looks the user up per member (small households, no batch query).
+* Verification: `make client`, `make openapi`, `./mvnw verify -pl services/households-service -am` (67 tests, Spotless, Checkstyle) with `givenName`/`familyName` asserted on the members list; from `app/`: `make update-goldens`, then `flutter test` (445 pass), `flutter analyze` and `dart format --set-exit-if-changed .` clean, on Linux; new `member_names_test.dart` (EN/FR names, fallback, no raw ids). Not run: the rest of `make check`, `make e2e` and the app against the real stack.
+* Follow-ups: `app/test/failures/` holds committed golden failure images from #107 (should be gitignored; suggested issue).
 
 ### T-0059 · Golden and accessibility coverage for dialogs and non-admin views
 

@@ -48,6 +48,8 @@ class Membership {
     this.awayFrom,
     this.awayUntil,
     this.awaySetBy,
+    this.givenName,
+    this.familyName,
   });
 
   final String id;
@@ -58,6 +60,18 @@ class Membership {
   final DateTime? awayFrom;
   final DateTime? awayUntil;
   final String? awaySetBy;
+  final String? givenName;
+  final String? familyName;
+
+  /// The member's name as the server knows it, or null once the account is gone.
+  String? get displayName {
+    final name = [givenName, familyName]
+        .whereType<String>()
+        .map((part) => part.trim())
+        .where((part) => part.isNotEmpty)
+        .join(' ');
+    return name.isEmpty ? null : name;
+  }
 
   bool get isAway => awayFrom != null;
 }

@@ -1273,6 +1273,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a recurring chore'**
   String get choresAndRotationsHint;
+
+  /// No description provided for @taskStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get taskStatusOpen;
+
+  /// No description provided for @taskStatusDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get taskStatusDone;
+
+  /// No description provided for @taskStatusDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismissed'**
+  String get taskStatusDismissed;
+
+  /// No description provided for @taskStatusReverted.
+  ///
+  /// In en, this message translates to:
+  /// **'Reverted'**
+  String get taskStatusReverted;
+
+  /// No description provided for @taskStatusWithPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'{status} · {points}'**
+  String taskStatusWithPoints(String status, String points);
+
+  /// No description provided for @unknownMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Household member'**
+  String get unknownMember;
 }
 
 class _AppLocalizationsDelegate

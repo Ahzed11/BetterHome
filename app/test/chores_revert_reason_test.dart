@@ -62,7 +62,7 @@ void main() {
     await _pump(tester, await _session());
 
     expect(find.text('Reverted: Not clean'), findsOneWidget);
-    expect(find.text('reverted · 5 pts'), findsOneWidget);
+    expect(find.text('Reverted · 5 pts'), findsOneWidget);
   });
 
   testWidgets('a chore that was reopened shows the reason too', (tester) async {
