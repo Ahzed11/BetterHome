@@ -111,8 +111,8 @@ AppNotification _notification(
   type: NotificationType.taskAssigned,
   title: title,
   body: body,
-  createdAt: DateTime.utc(2026, 10, 14, 10),
-  readAt: read ? DateTime.utc(2026, 10, 14, 11) : null,
+  createdAt: DateTime(2026, 10, 14, 10),
+  readAt: read ? DateTime(2026, 10, 14, 11) : null,
 );
 
 final List<_Scenario> _scenarios = [
