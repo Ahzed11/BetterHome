@@ -40,6 +40,8 @@ abstract final class AppTokens {
   static const Color podiumGold = Color(0xFFFBEBC0);
   static const Color podiumGoldInk = Color(0xFF8A5A00);
   static const Color goldRing = Color(0xFFF2B632);
+  static const Color deepBrand = Color(0xFF075D55);
+  static const double radiusHero = 40;
   static const double radiusMd = 16;
   static const double radiusCard = 20;
   static const double radiusLg = 20;

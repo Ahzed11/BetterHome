@@ -55,9 +55,10 @@ ThemeData buildAppTheme() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size(
-          AppTokens.minTouchTarget,
-          AppTokens.minTouchTarget,
+        minimumSize: const Size(AppTokens.minTapTarget, 54),
+        textStyle: AppTypography.body.copyWith(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTokens.radiusMd),
@@ -65,8 +66,23 @@ ThemeData buildAppTheme() {
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppTokens.card,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppTokens.spaceMd,
+        vertical: AppTokens.spaceMd,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+        borderSide: const BorderSide(color: AppTokens.outline),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+        borderSide: const BorderSide(color: AppTokens.outline),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+        borderSide: const BorderSide(color: AppTokens.brand, width: 2),
       ),
     ),
   );
