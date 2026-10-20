@@ -8,6 +8,7 @@ import 'package:betterhome/ui/widgets/app_card.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
+import 'package:betterhome/ui/widgets/round_icon_button.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/text_prompt.dart';
@@ -245,9 +246,9 @@ class _ListsScreenState extends State<ListsScreen> {
           final selected = lists.where((l) => l.id == _selectedId).firstOrNull;
           return ListView(
             padding: const EdgeInsets.fromLTRB(
-              AppTokens.spaceLg - AppTokens.spaceXs,
-              0,
-              AppTokens.spaceLg - AppTokens.spaceXs,
+              AppTokens.spaceMd,
+              AppTokens.spaceMd,
+              AppTokens.spaceMd,
               AppTokens.spaceLg,
             ),
             children: [
@@ -262,7 +263,7 @@ class _ListsScreenState extends State<ListsScreen> {
                       onPressed: () => _reset(selected),
                     ),
                   if (selected != null && _isAdmin)
-                    _ListMenu(
+                    _ListActions(
                       onRename: () => _rename(selected),
                       onArchive: () => _archive(selected),
                     ),
@@ -435,8 +436,9 @@ class _Items extends StatelessWidget {
   }
 }
 
-class _ListMenu extends StatelessWidget {
-  const _ListMenu({required this.onRename, required this.onArchive});
+/// The rename and archive buttons of the selected list, an admin's.
+class _ListActions extends StatelessWidget {
+  const _ListActions({required this.onRename, required this.onArchive});
 
   final VoidCallback onRename;
   final VoidCallback onArchive;
@@ -444,12 +446,19 @@ class _ListMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return PopupMenuButton<VoidCallback>(
-      tooltip: l10n.listOptions,
-      onSelected: (action) => action(),
-      itemBuilder: (context) => [
-        PopupMenuItem(value: onRename, child: Text(l10n.renameList)),
-        PopupMenuItem(value: onArchive, child: Text(l10n.archiveList)),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        RoundIconButton(
+          tooltip: l10n.renameList,
+          icon: Icons.edit_outlined,
+          onPressed: onRename,
+        ),
+        RoundIconButton(
+          tooltip: l10n.archiveList,
+          icon: Icons.archive_outlined,
+          onPressed: onArchive,
+        ),
       ],
     );
   }

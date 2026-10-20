@@ -13,12 +13,13 @@ const List<Locale> baselineLocales = [Locale('en'), Locale('fr')];
 /// `BetterHomeApp` without its profile-sync gate.
 ///
 /// [textScale] is applied through `MediaQuery`, as the operating system's font
-/// size setting would be.
+/// size setting would be. [settle] false leaves running animations (a toast) alone.
 Future<void> pumpScreen(
   WidgetTester tester, {
   required Widget home,
   required Locale locale,
   double textScale = 1,
+  bool settle = true,
 }) async {
   tester.view
     ..physicalSize = goldenSurface
@@ -45,7 +46,9 @@ Future<void> pumpScreen(
       home: home,
     ),
   );
-  await tester.pumpAndSettle();
+  if (settle) {
+    await tester.pumpAndSettle();
+  }
 }
 
 /// Asserts every accessibility guideline of the baseline on the pumped screen.

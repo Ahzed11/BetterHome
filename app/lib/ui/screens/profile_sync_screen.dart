@@ -94,8 +94,8 @@ class _ProfileSyncScreenState extends State<ProfileSyncScreen> {
                   padding: const EdgeInsets.only(bottom: AppTokens.spaceMd),
                   child: Text(
                     l10n.errorGeneric,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                    style: AppTypography.label.copyWith(
+                      color: AppTokens.overdueText,
                     ),
                   ),
                 ),

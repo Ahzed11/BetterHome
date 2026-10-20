@@ -69,7 +69,7 @@ void main() {
     await _pump(tester, await _session());
 
     expect(find.text('Reverted: Plates still dirty'), findsOneWidget);
-    expect(find.text('open · 3 pts'), findsOneWidget);
+    expect(find.text('+3'), findsOneWidget);
   });
 
   testWidgets('a chore done again no longer shows the old reason', (

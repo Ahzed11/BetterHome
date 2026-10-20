@@ -97,16 +97,12 @@ void main() {
       await _type(tester, 'Weekly shop');
       expect(find.text('Weekly shop · 0'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('List options'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Rename'));
+      await tester.tap(find.byTooltip('Rename'));
       await tester.pumpAndSettle();
       await _type(tester, 'Food');
       expect(find.text('Food · 0'), findsOneWidget);
 
-      await tester.tap(find.byTooltip('List options'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Archive'));
+      await tester.tap(find.byTooltip('Archive'));
       await tester.pumpAndSettle();
       expect(find.text('Archive this list?'), findsOneWidget);
       await tester.tap(find.widgetWithText(FilledButton, 'Archive'));
@@ -119,9 +115,7 @@ void main() {
     testWidgets('cancelling the archive keeps the list', (tester) async {
       await _withList(tester);
 
-      await tester.tap(find.byTooltip('List options'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Archive'));
+      await tester.tap(find.byTooltip('Archive'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
@@ -134,7 +128,8 @@ void main() {
 
       expect(find.text('Weekly shop · 1'), findsOneWidget);
       expect(find.byTooltip('New list'), findsNothing);
-      expect(find.byTooltip('List options'), findsNothing);
+      expect(find.byTooltip('Rename'), findsNothing);
+      expect(find.byTooltip('Archive'), findsNothing);
     });
 
     testWidgets('picking a pill shows that list', (tester) async {
@@ -260,7 +255,8 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'Milk');
       await tester.tap(find.byTooltip('Add'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.text('Something went wrong'), findsOneWidget);
       expect(find.text('Milk'), findsNothing);

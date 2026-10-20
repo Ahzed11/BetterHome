@@ -350,12 +350,6 @@ abstract class AppLocalizations {
   /// **'New chore template'**
   String get createTemplate;
 
-  /// No description provided for @templateTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Title'**
-  String get templateTitle;
-
   /// No description provided for @leaderboardTitle.
   ///
   /// In en, this message translates to:
@@ -385,12 +379,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All time'**
   String get periodAll;
-
-  /// No description provided for @podiumTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Podium'**
-  String get podiumTitle;
 
   /// No description provided for @effortBarTitle.
   ///
@@ -638,12 +626,6 @@ abstract class AppLocalizations {
   /// **'In the basket'**
   String get basketTitle;
 
-  /// No description provided for @listOptions.
-  ///
-  /// In en, this message translates to:
-  /// **'List options'**
-  String get listOptions;
-
   /// No description provided for @checkItem.
   ///
   /// In en, this message translates to:
@@ -860,47 +842,437 @@ abstract class AppLocalizations {
   /// **'Edit template'**
   String get editTemplate;
 
-  /// No description provided for @templateEmoji.
-  ///
-  /// In en, this message translates to:
-  /// **'Emoji (optional)'**
-  String get templateEmoji;
-
-  /// No description provided for @templateDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Description (optional)'**
-  String get templateDescription;
-
-  /// No description provided for @templatePoints.
-  ///
-  /// In en, this message translates to:
-  /// **'Points'**
-  String get templatePoints;
-
-  /// No description provided for @templateLatePoints.
-  ///
-  /// In en, this message translates to:
-  /// **'Points if late'**
-  String get templateLatePoints;
-
   /// No description provided for @templatePointsSummary.
   ///
   /// In en, this message translates to:
   /// **'{points} pts · {latePoints} if late'**
   String templatePointsSummary(int points, int latePoints);
 
-  /// No description provided for @templateTitleRequired.
+  /// No description provided for @catchUp.
   ///
   /// In en, this message translates to:
-  /// **'Enter a title'**
-  String get templateTitleRequired;
+  /// **'Catch up'**
+  String get catchUp;
 
-  /// No description provided for @templateNumberInvalid.
+  /// No description provided for @catchUpHint.
   ///
   /// In en, this message translates to:
-  /// **'Enter a whole number, 0 or more'**
-  String get templateNumberInvalid;
+  /// **'Late, still worth points'**
+  String get catchUpHint;
+
+  /// No description provided for @dueInDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =0{today} =1{tomorrow} other{in {days} days}}'**
+  String dueInDays(int days);
+
+  /// No description provided for @noDueDate.
+  ///
+  /// In en, this message translates to:
+  /// **'No due date'**
+  String get noDueDate;
+
+  /// No description provided for @choresDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get choresDone;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All · {count}'**
+  String filterAll(int count);
+
+  /// No description provided for @filterMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine · {count}'**
+  String filterMine(int count);
+
+  /// No description provided for @filterDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get filterDone;
+
+  /// No description provided for @householdEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'Household'**
+  String get householdEyebrow;
+
+  /// No description provided for @podiumRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Room for one more'**
+  String get podiumRoom;
+
+  /// No description provided for @effortTogether.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} pts together'**
+  String effortTogether(int points);
+
+  /// No description provided for @inviteHousemate.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite a housemate'**
+  String get inviteHousemate;
+
+  /// No description provided for @householdSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}} · {timezone}'**
+  String householdSummary(int count, String timezone);
+
+  /// No description provided for @yourChores.
+  ///
+  /// In en, this message translates to:
+  /// **'Your chores'**
+  String get yourChores;
+
+  /// No description provided for @heyHousehold.
+  ///
+  /// In en, this message translates to:
+  /// **'Hey {name} · {household}'**
+  String heyHousehold(String name, String household);
+
+  /// No description provided for @thisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get thisWeek;
+
+  /// No description provided for @rankBehind.
+  ///
+  /// In en, this message translates to:
+  /// **'#{rank} · {behind} behind'**
+  String rankBehind(int rank, int behind);
+
+  /// No description provided for @rankFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'#1 · in front'**
+  String get rankFirst;
+
+  /// No description provided for @withinReach.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} pts within reach this week — {count, plural, =0{nothing left} =1{one chore left} other{{count} chores left}}.'**
+  String withinReach(int points, int count);
+
+  /// No description provided for @quickLogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One tap logs it. Full points, straight to you.'**
+  String get quickLogSubtitle;
+
+  /// No description provided for @searchChores.
+  ///
+  /// In en, this message translates to:
+  /// **'Search chores'**
+  String get searchChores;
+
+  /// No description provided for @quickLogFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Doesn\'t change anyone\'s scheduled chores.'**
+  String get quickLogFootnote;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @newRecurringTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New recurring chore'**
+  String get newRecurringTitle;
+
+  /// No description provided for @newRecurringSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set it once — the household takes turns from there.'**
+  String get newRecurringSubtitle;
+
+  /// No description provided for @adminsOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Admins only'**
+  String get adminsOnly;
+
+  /// No description provided for @choreIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get choreIcon;
+
+  /// No description provided for @chooseEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an emoji, current: {emoji}'**
+  String chooseEmoji(String emoji);
+
+  /// No description provided for @choreName.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore name'**
+  String get choreName;
+
+  /// No description provided for @choreNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes — optional'**
+  String get choreNotes;
+
+  /// No description provided for @pointsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get pointsSection;
+
+  /// No description provided for @onTimePoints.
+  ///
+  /// In en, this message translates to:
+  /// **'On time'**
+  String get onTimePoints;
+
+  /// No description provided for @latePointsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'If late, still'**
+  String get latePointsLabel;
+
+  /// No description provided for @fewerPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer {what}'**
+  String fewerPoints(String what);
+
+  /// No description provided for @morePoints.
+  ///
+  /// In en, this message translates to:
+  /// **'More {what}'**
+  String morePoints(String what);
+
+  /// No description provided for @pointsRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Late points never go above on-time points, and no one ever loses points.'**
+  String get pointsRule;
+
+  /// No description provided for @whenSection.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get whenSection;
+
+  /// No description provided for @every.
+  ///
+  /// In en, this message translates to:
+  /// **'Every'**
+  String get every;
+
+  /// No description provided for @intervalDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String intervalDays(int count);
+
+  /// No description provided for @intervalWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 week} other{{count} weeks}}'**
+  String intervalWeeks(int count);
+
+  /// No description provided for @intervalMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 month} other{{count} months}}'**
+  String intervalMonths(int count);
+
+  /// No description provided for @decreaseInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease interval'**
+  String get decreaseInterval;
+
+  /// No description provided for @increaseInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase interval'**
+  String get increaseInterval;
+
+  /// No description provided for @onDays.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get onDays;
+
+  /// No description provided for @monthlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'On the 1st of the month.'**
+  String get monthlyHint;
+
+  /// No description provided for @whoSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Who does it'**
+  String get whoSection;
+
+  /// No description provided for @takeTurns.
+  ///
+  /// In en, this message translates to:
+  /// **'Take turns'**
+  String get takeTurns;
+
+  /// No description provided for @takeTurnsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotates fairly between members'**
+  String get takeTurnsHint;
+
+  /// No description provided for @onePerson.
+  ///
+  /// In en, this message translates to:
+  /// **'One person'**
+  String get onePerson;
+
+  /// No description provided for @onePersonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Always the same member'**
+  String get onePersonHint;
+
+  /// No description provided for @saveChore.
+  ///
+  /// In en, this message translates to:
+  /// **'Save chore'**
+  String get saveChore;
+
+  /// No description provided for @stripDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{date}, {count, plural, =0{no chores} =1{1 chore} other{{count} chores}}'**
+  String stripDayLabel(String date, int count);
+
+  /// No description provided for @stripToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get stripToday;
+
+  /// No description provided for @thisWeekLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get thisWeekLabel;
+
+  /// No description provided for @dayEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on this day.'**
+  String get dayEmpty;
+
+  /// No description provided for @noEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'none'**
+  String get noEmoji;
+
+  /// No description provided for @templateFormSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Templates feed the quick log and the recurring chores.'**
+  String get templateFormSubtitle;
+
+  /// No description provided for @saveTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Save template'**
+  String get saveTemplate;
+
+  /// No description provided for @pickEmojiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an icon'**
+  String get pickEmojiTitle;
+
+  /// No description provided for @noIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'No icon'**
+  String get noIcon;
+
+  /// No description provided for @emojiCleaning.
+  ///
+  /// In en, this message translates to:
+  /// **'Cleaning'**
+  String get emojiCleaning;
+
+  /// No description provided for @emojiKitchen.
+  ///
+  /// In en, this message translates to:
+  /// **'Kitchen'**
+  String get emojiKitchen;
+
+  /// No description provided for @emojiHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get emojiHome;
+
+  /// No description provided for @emojiLaundry.
+  ///
+  /// In en, this message translates to:
+  /// **'Laundry'**
+  String get emojiLaundry;
+
+  /// No description provided for @emojiOutdoors.
+  ///
+  /// In en, this message translates to:
+  /// **'Garden and pets'**
+  String get emojiOutdoors;
+
+  /// No description provided for @emojiErrands.
+  ///
+  /// In en, this message translates to:
+  /// **'Errands'**
+  String get emojiErrands;
+
+  /// No description provided for @recurringToggleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats on a schedule'**
+  String get recurringToggleTitle;
+
+  /// No description provided for @recurringToggleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on for a chore that comes back by itself.'**
+  String get recurringToggleHint;
+
+  /// No description provided for @houseRules.
+  ///
+  /// In en, this message translates to:
+  /// **'House rules'**
+  String get houseRules;
+
+  /// No description provided for @choresAndRotations.
+  ///
+  /// In en, this message translates to:
+  /// **'Chores & rotations'**
+  String get choresAndRotations;
+
+  /// No description provided for @choresAndRotationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a recurring chore'**
+  String get choresAndRotationsHint;
 }
 
 class _AppLocalizationsDelegate

@@ -56,6 +56,7 @@ Future<void> _open(
   WidgetTester tester,
   AppSession session, {
   Locale locale = const Locale('en'),
+  bool settle = true,
 }) async {
   await pumpScreen(
     tester,
@@ -66,6 +67,7 @@ Future<void> _open(
       householdId: _household,
     ),
     locale: locale,
+    settle: settle,
   );
   await tester.pump(const Duration(milliseconds: 600));
 }
@@ -173,8 +175,8 @@ void main() {
       final scoring = _Recaps([
         _winner('2026-09', 'user-1', 20),
       ], rejectMark: true);
-      await _open(tester, await _session(scoring));
-      await tester.pumpAndSettle();
+      await _open(tester, await _session(scoring), settle: false);
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Nice!'), findsNothing);
       expect(find.text('Something went wrong'), findsOneWidget);

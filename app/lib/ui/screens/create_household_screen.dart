@@ -69,7 +69,7 @@ class _CreateHouseholdScreenState extends State<CreateHouseholdScreen> {
           if (_error != null)
             Text(
               _error!,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              style: AppTypography.label.copyWith(color: AppTokens.overdueText),
             ),
           FilledButton(
             onPressed: _busy ? null : _save,

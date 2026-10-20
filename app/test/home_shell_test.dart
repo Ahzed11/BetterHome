@@ -81,12 +81,33 @@ void main() {
       );
     });
 
+    testWidgets('only the chores tab has the switcher bar', (tester) async {
+      await _pumpShell(tester, await _session());
+      expect(find.byType(AppBar), findsOneWidget);
+      expect(find.byTooltip('Notifications'), findsOneWidget);
+      // No title and no menu on the chores list: the design has neither.
+      expect(find.text('All chores'), findsOneWidget, reason: 'the tab only');
+      expect(find.byType(PopupMenuButton<String>), findsNothing);
+
+      await _openTab(tester, 'My chores');
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.byTooltip('Notifications'), findsNothing);
+
+      await _openTab(tester, 'Lists');
+      expect(find.byType(AppBar), findsNothing);
+
+      await _openTab(tester, 'All chores');
+      expect(find.byType(AppBar), findsOneWidget);
+    });
+
     testWidgets('each tab shows its own screen', (tester) async {
       await _pumpShell(tester, await _session());
 
       await _openTab(tester, 'Leaderboard');
-      expect(find.text('Podium'), findsOneWidget);
+      expect(find.text('Shared effort'), findsOneWidget);
       await _tapText(tester, 'Nice!'); // the unseen month recap
+      // The household name is the small line above the title, as on the other tabs.
+      expect(find.text('Flat'), findsOneWidget);
 
       await _openTab(tester, 'Lists');
       expect(
@@ -213,7 +234,7 @@ void main() {
       await tester.pumpAndSettle();
       await _tapText(tester, 'Household details');
 
-      expect(find.text('Members'), findsOneWidget);
+      expect(find.text('MEMBERS'), findsOneWidget);
       expect(find.text('Leave household'), findsOneWidget);
     });
 
