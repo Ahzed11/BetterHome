@@ -1008,11 +1008,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0107 · ADR and design for the Caddy reverse proxy
 
-* Status: todo
-* Issue / PR: #117 / —
+* Status: in-review
+* Issue / PR: #117 / (pull request to follow; stacked on #124)
 * Depends on: —
 * Spec: §7
 * Acceptance criteria: ADR 0029 records the design: one Tailscale MagicDNS host taken from configuration (`NAS_HOST`; the tailnet name is never written in the repository, examples use `nas.example.ts.net`), path routing (`/auth` to Keycloak, `/api/<service>` to each service with the prefix stripped), TLS from tailscaled certificates (fallback `tls internal`, root CA installed on the phone), Keycloak behind a proxy, where Gotify is reached from the phone (decided there: a path under the same host or a second port; the Gotify app and its web UI must work), and why not subdomains (MagicDNS has none) or a public domain (exposes Keycloak and the APIs). Spec §7 gets one line. The app needs one base URL: it derives the Keycloak issuer (`/auth/realms/betterhome`) and the five service URLs from it (T-0115).
+* Summary: ADR 0029 fixes the layout for T-0108 to T-0115: Caddy is the only published service, on one host from `NAS_HOST`; `/auth` goes to Keycloak (relative path, prefix kept), `/api/<service>` to each service (prefix stripped, only `/v1/*` and `/q/health/*` forwarded), `/gotify` to Gotify; TLS from tailscaled certificates with `tls internal` as the fallback; Keycloak in production mode with the public URL as issuer and a dynamic back channel. Spec §7 has one paragraph and the ADR index a line.
+* Decisions and deviations: Gotify is on a path (`/gotify`) rather than a second port, because Gotify supports a sub-path behind a proxy and one host keeps one certificate; T-0114 verifies the Android app and the web UI work that way. Consequence recorded: Tailscale certificates put the machine and tailnet name in public Certificate Transparency logs, so the name stays out of the repository but is not secret.
+* Verification: `make test-docs`. Documentation only; nothing was run against Caddy or a NAS yet.
+* Follow-ups: none new.
 
 ### T-0108 · NAS compose stack with Caddy
 
