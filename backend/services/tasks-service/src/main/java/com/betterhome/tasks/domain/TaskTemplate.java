@@ -67,4 +67,9 @@ public class TaskTemplate extends PanacheEntityBase {
     public static List<TaskTemplate> listActive(UUID householdId) {
         return list("householdId = ?1 and archivedAt is null order by createdAt", householdId);
     }
+
+    /** Hands every template created by {@code user} to {@code replacement}; returns how many. */
+    public static int replaceCreator(UUID user, UUID replacement) {
+        return update("createdBy = ?1 where createdBy = ?2", replacement, user);
+    }
 }

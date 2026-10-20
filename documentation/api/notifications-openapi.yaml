@@ -93,6 +93,15 @@ components:
       - reverted
       - marked_away
       - invitation
+    NotificationsAnonymizationResponse:
+      type: object
+      properties:
+        notificationsDeleted:
+          type: integer
+          format: int64
+        preferencesDeleted:
+          type: integer
+          format: int64
     Outcome:
       type: string
       enum:
@@ -197,6 +206,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth:
+        - service
+  /v1/internal/users/{userId}/anonymize:
+    post:
+      summary: Delete a deleted user's notifications and preferences; repeating it
+        or naming an unknown user changes nothing (service role)
+      operationId: anonymizeUser
+      tags:
+      - internal
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/UUID"
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+        "200":
+          description: "Rows deleted per kind, all zero when nothing was left to delete"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationsAnonymizationResponse"
       security:
       - bearerAuth:
         - service

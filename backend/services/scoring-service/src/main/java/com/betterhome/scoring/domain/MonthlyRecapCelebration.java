@@ -68,4 +68,9 @@ public class MonthlyRecapCelebration extends PanacheEntityBase {
             return Objects.hash(recapId, userId);
         }
     }
+
+    /** Forgets which recaps {@code user} has seen; returns how many rows went. */
+    public static long deleteForUser(UUID userId) {
+        return delete("userId", userId);
+    }
 }

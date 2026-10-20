@@ -26,7 +26,10 @@ configMapGenerator:
       - DB_JDBC_URL=jdbc:postgresql://postgres:5432/betterhome_households
       - OIDC_SERVICE_CLIENT_ID=betterhome-households-service
       - TASKS_SERVICE_URL=http://tasks-service:8082
+      - SCORING_SERVICE_URL=http://scoring-service:8083
+      - LISTS_SERVICE_URL=http://lists-service:8084
       - NOTIFICATIONS_SERVICE_URL=http://notifications-service:8085
+      - KEYCLOAK_ADMIN_URL=http://keycloak:8180/admin/realms/betterhome
   - name: tasks-service-config
     literals:
       - DB_JDBC_URL=jdbc:postgresql://postgres:5432/betterhome_tasks

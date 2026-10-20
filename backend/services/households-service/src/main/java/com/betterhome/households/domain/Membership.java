@@ -80,4 +80,18 @@ public class Membership extends PanacheEntityBase {
                 householdId,
                 MembershipRole.admin);
     }
+
+    /** Ends the membership at {@code now}, dropping any away period. */
+    public void leave(Instant now) {
+        leftAt = now;
+        awayFrom = null;
+        awayUntil = null;
+        awaySetBy = null;
+        awayTasksDismissedAt = null;
+    }
+
+    /** How many people are active members of the household. */
+    public static long countActive(UUID householdId) {
+        return count("householdId = ?1 and leftAt is null", householdId);
+    }
 }

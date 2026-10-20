@@ -28,4 +28,9 @@ public class Rotation extends PanacheEntityBase {
     public static java.util.Optional<Rotation> findOptionalById(UUID id) {
         return find("id", id).firstResultOptional();
     }
+
+    /** Moves the cursor off {@code user}; the next pick starts from the first eligible member. */
+    public static int replaceLastAssigned(UUID user, UUID replacement) {
+        return update("lastAssignedUserId = ?1 where lastAssignedUserId = ?2", replacement, user);
+    }
 }

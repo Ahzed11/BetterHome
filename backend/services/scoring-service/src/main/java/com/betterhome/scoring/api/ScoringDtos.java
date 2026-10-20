@@ -5,6 +5,7 @@ import com.betterhome.scoring.domain.PointTransaction;
 import com.betterhome.scoring.domain.ReversionResultingStatus;
 import com.betterhome.scoring.domain.ScorePeriod;
 import com.betterhome.scoring.domain.TaskReversion;
+import com.betterhome.scoring.service.AnonymizationService;
 import com.betterhome.scoring.service.ScoreboardService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -33,6 +34,19 @@ public final class ScoringDtos {
             @NotNull ReversionResultingStatus resultingStatus) {}
 
     public record AdjustRequest(@NotNull UUID userId, int delta) {}
+
+    /** Rows changed per kind by an account deletion; all zero when nothing was left. */
+    public record ScoringAnonymizationResponse(
+            int ledgerRows, int reversions, int recapsWon, long celebrationsForgotten) {
+
+        public static ScoringAnonymizationResponse from(AnonymizationService.Result result) {
+            return new ScoringAnonymizationResponse(
+                    result.ledgerRows(),
+                    result.reversions(),
+                    result.recapsWon(),
+                    result.celebrationsForgotten());
+        }
+    }
 
     public record TransactionResponse(
             UUID id,

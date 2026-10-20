@@ -217,7 +217,7 @@ AGENTS.md
 ## 9. Cross-cutting requirements
 
 - **Languages:** French and English at launch, externalized ARB files.
-- **Privacy / GDPR:** EU hosting for database instances. Account deletion triggers user removal/anonymization in Keycloak and across microservice schemas.
+- **Privacy / GDPR:** EU hosting for database instances. Account deletion triggers user removal/anonymization in Keycloak and across microservice schemas. A household's only admin cannot delete the account while the household has other members (hand over the admin role first); a household where the user is the only member is deleted with the account. Other systems are told until each confirmed (ADR 0028).
 - **Swappability:** External dependencies remain behind Java interfaces (`AuthVerifier`, `PushSender`).
 - **Quality:** Spec-driven development, unit/integration testing with JUnit 5 and Quarkus Testcontainers.
 

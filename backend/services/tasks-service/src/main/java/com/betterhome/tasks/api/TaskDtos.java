@@ -7,6 +7,7 @@ import com.betterhome.tasks.domain.TaskOrigin;
 import com.betterhome.tasks.domain.TaskRecurrence;
 import com.betterhome.tasks.domain.TaskStatus;
 import com.betterhome.tasks.domain.TaskTemplate;
+import com.betterhome.tasks.service.AnonymizationService;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -65,6 +66,30 @@ public final class TaskDtos {
     public record QuickLogRequest(@NotNull UUID templateId) {}
 
     public record DismissedCount(int dismissed) {}
+
+    /** Rows changed per kind by an account deletion; all zero when nothing was left. */
+    public record TasksAnonymizationResponse(
+            int openTasksDismissed,
+            int tasksAssigned,
+            int tasksCompleted,
+            int tasksDismissed,
+            int templatesCreated,
+            int recurrencesFixed,
+            int rotationCursors,
+            long queuedNotificationsDropped) {
+
+        public static TasksAnonymizationResponse from(AnonymizationService.Result result) {
+            return new TasksAnonymizationResponse(
+                    result.openTasksDismissed(),
+                    result.tasksAssigned(),
+                    result.tasksCompleted(),
+                    result.tasksDismissed(),
+                    result.templatesCreated(),
+                    result.recurrencesFixed(),
+                    result.rotationCursors(),
+                    result.queuedNotificationsDropped());
+        }
+    }
 
     public record ReassignedCount(int reassigned) {}
 

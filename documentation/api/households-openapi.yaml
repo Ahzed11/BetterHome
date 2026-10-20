@@ -971,6 +971,40 @@ paths:
                 $ref: "#/components/schemas/UserResponse"
       security:
       - bearerAuth: []
+    delete:
+      summary: "Delete the caller's account: leave every household, anonymize the\
+        \ profile and have the other services and the identity provider remove the\
+        \ rest"
+      operationId: deleteMyAccount
+      tags:
+      - users
+      responses:
+        "401":
+          description: Not authenticated
+        "403":
+          description: Not allowed to do this
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "202":
+          description: "Accepted: the profile and memberships are already gone; telling\
+            \ the other services and the identity provider continues until each confirmed"
+        "409":
+          description: The caller is the only admin of a household that has other
+            members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
   /v1/meta:
     get:
       summary: "Service name, server time and caller subject"

@@ -37,4 +37,9 @@ public class TaskReversion extends PanacheEntityBase {
 
     @Column(name = "created_at", nullable = false)
     public Instant createdAt;
+
+    /** Hands every reversion made by {@code admin} to {@code replacement}; returns how many. */
+    public static int replaceAdmin(UUID admin, UUID replacement) {
+        return update("adminUserId = ?1 where adminUserId = ?2", replacement, admin);
+    }
 }

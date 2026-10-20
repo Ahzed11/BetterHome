@@ -42,6 +42,9 @@ public class CurrentUserService {
     public AppUser sync(
             String email, String givenName, String familyName, String language, String timezone) {
         UUID subject = requireAuthSubject();
+        if (AppUser.findDeletedByAuthSubject(subject).isPresent()) {
+            throw new HouseholdException.Forbidden("This account was deleted");
+        }
         Instant now = clock.now();
         String normalizedEmail = normalizeEmail(email);
         AppUser user = AppUser.findByAuthSubject(subject).orElse(null);

@@ -48,4 +48,9 @@ public class NotificationOutbox extends PanacheEntityBase {
     /** Set when the event is refused for good; the row is never tried again. */
     @Column(name = "failed_at")
     public Instant failedAt;
+
+    /** Drops every event queued for {@code user}, sent or not; returns how many. */
+    public static long deleteForUser(UUID user) {
+        return delete("userId", user);
+    }
 }

@@ -132,4 +132,32 @@ public class Task extends PanacheEntityBase {
                 TaskOrigin.recurrence,
                 TaskStatus.open);
     }
+
+    /** Dismisses every open task of {@code assignee}, in any household; returns how many. */
+    public static int dismissOpenOf(UUID assignee, UUID dismissedBy, Instant now) {
+        return update(
+                "status = ?1, dismissedBy = ?2, dismissalReason = ?3, updatedAt = ?4"
+                        + " where assigneeId = ?5 and status = ?6",
+                TaskStatus.dismissed,
+                dismissedBy,
+                DismissalReason.assignee_away,
+                now,
+                assignee,
+                TaskStatus.open);
+    }
+
+    /** Hands every task assigned to {@code user} to {@code replacement}; returns how many. */
+    public static int replaceAssignee(UUID user, UUID replacement) {
+        return update("assigneeId = ?1 where assigneeId = ?2", replacement, user);
+    }
+
+    /** Hands every completion by {@code user} to {@code replacement}; returns how many. */
+    public static int replaceCompleter(UUID user, UUID replacement) {
+        return update("completerId = ?1 where completerId = ?2", replacement, user);
+    }
+
+    /** Hands every dismissal by {@code user} to {@code replacement}; returns how many. */
+    public static int replaceDismissedBy(UUID user, UUID replacement) {
+        return update("dismissedBy = ?1 where dismissedBy = ?2", replacement, user);
+    }
 }
