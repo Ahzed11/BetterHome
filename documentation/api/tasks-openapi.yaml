@@ -8,33 +8,6 @@ tags:
 - name: templates
 components:
   schemas:
-    AnonymizationResponse:
-      type: object
-      properties:
-        openTasksDismissed:
-          type: integer
-          format: int32
-        tasksAssigned:
-          type: integer
-          format: int32
-        tasksCompleted:
-          type: integer
-          format: int32
-        tasksDismissed:
-          type: integer
-          format: int32
-        templatesCreated:
-          type: integer
-          format: int32
-        recurrencesFixed:
-          type: integer
-          format: int32
-        rotationCursors:
-          type: integer
-          format: int32
-        queuedNotificationsDropped:
-          type: integer
-          format: int64
     AssignmentMode:
       type: string
       enum:
@@ -211,6 +184,33 @@ components:
       - done
       - dismissed
       - reverted
+    TasksAnonymizationResponse:
+      type: object
+      properties:
+        openTasksDismissed:
+          type: integer
+          format: int32
+        tasksAssigned:
+          type: integer
+          format: int32
+        tasksCompleted:
+          type: integer
+          format: int32
+        tasksDismissed:
+          type: integer
+          format: int32
+        templatesCreated:
+          type: integer
+          format: int32
+        recurrencesFixed:
+          type: integer
+          format: int32
+        rotationCursors:
+          type: integer
+          format: int32
+        queuedNotificationsDropped:
+          type: integer
+          format: int64
     TemplateResponse:
       type: object
       properties:
@@ -1047,7 +1047,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AnonymizationResponse"
+                $ref: "#/components/schemas/TasksAnonymizationResponse"
         "400":
           description: Invalid input
           content:

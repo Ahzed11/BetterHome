@@ -17,21 +17,6 @@ components:
         delta:
           type: integer
           format: int32
-    AnonymizationResponse:
-      type: object
-      properties:
-        ledgerRows:
-          type: integer
-          format: int32
-        reversions:
-          type: integer
-          format: int32
-        recapsWon:
-          type: integer
-          format: int32
-        celebrationsForgotten:
-          type: integer
-          format: int64
     AwardRequest:
       type: object
       required:
@@ -178,6 +163,21 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ScoreEntryResponse"
+    ScoringAnonymizationResponse:
+      type: object
+      properties:
+        ledgerRows:
+          type: integer
+          format: int32
+        reversions:
+          type: integer
+          format: int32
+        recapsWon:
+          type: integer
+          format: int32
+        celebrationsForgotten:
+          type: integer
+          format: int64
     ServiceInfo:
       type: object
       properties:
@@ -645,7 +645,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AnonymizationResponse"
+                $ref: "#/components/schemas/ScoringAnonymizationResponse"
         "400":
           description: Invalid input
           content:

@@ -68,7 +68,7 @@ public final class TaskDtos {
     public record DismissedCount(int dismissed) {}
 
     /** Rows changed per kind by an account deletion; all zero when nothing was left. */
-    public record AnonymizationResponse(
+    public record TasksAnonymizationResponse(
             int openTasksDismissed,
             int tasksAssigned,
             int tasksCompleted,
@@ -78,8 +78,8 @@ public final class TaskDtos {
             int rotationCursors,
             long queuedNotificationsDropped) {
 
-        public static AnonymizationResponse from(AnonymizationService.Result result) {
-            return new AnonymizationResponse(
+        public static TasksAnonymizationResponse from(AnonymizationService.Result result) {
+            return new TasksAnonymizationResponse(
                     result.openTasksDismissed(),
                     result.tasksAssigned(),
                     result.tasksCompleted(),

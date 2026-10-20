@@ -36,11 +36,11 @@ public final class ScoringDtos {
     public record AdjustRequest(@NotNull UUID userId, int delta) {}
 
     /** Rows changed per kind by an account deletion; all zero when nothing was left. */
-    public record AnonymizationResponse(
+    public record ScoringAnonymizationResponse(
             int ledgerRows, int reversions, int recapsWon, long celebrationsForgotten) {
 
-        public static AnonymizationResponse from(AnonymizationService.Result result) {
-            return new AnonymizationResponse(
+        public static ScoringAnonymizationResponse from(AnonymizationService.Result result) {
+            return new ScoringAnonymizationResponse(
                     result.ledgerRows(),
                     result.reversions(),
                     result.recapsWon(),

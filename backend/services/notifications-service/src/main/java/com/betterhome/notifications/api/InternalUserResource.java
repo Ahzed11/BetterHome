@@ -1,6 +1,6 @@
 package com.betterhome.notifications.api;
 
-import com.betterhome.notifications.api.NotificationDtos.AnonymizationResponse;
+import com.betterhome.notifications.api.NotificationDtos.NotificationsAnonymizationResponse;
 import com.betterhome.notifications.service.AnonymizationService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -40,10 +40,15 @@ public class InternalUserResource {
     @APIResponse(
             responseCode = "200",
             description = "Rows deleted per kind, all zero when nothing was left to delete",
-            content = @Content(schema = @Schema(implementation = AnonymizationResponse.class)))
+            content =
+                    @Content(
+                            schema =
+                                    @Schema(
+                                            implementation =
+                                                    NotificationsAnonymizationResponse.class)))
     @POST
     @Path("/{userId}/anonymize")
-    public AnonymizationResponse anonymize(@PathParam("userId") UUID userId) {
-        return AnonymizationResponse.from(anonymizationService.anonymize(userId));
+    public NotificationsAnonymizationResponse anonymize(@PathParam("userId") UUID userId) {
+        return NotificationsAnonymizationResponse.from(anonymizationService.anonymize(userId));
     }
 }

@@ -1,6 +1,6 @@
 package com.betterhome.tasks.api;
 
-import com.betterhome.tasks.api.TaskDtos.AnonymizationResponse;
+import com.betterhome.tasks.api.TaskDtos.TasksAnonymizationResponse;
 import com.betterhome.tasks.service.AnonymizationService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -41,14 +41,14 @@ public class InternalUserResource {
     @APIResponse(
             responseCode = "200",
             description = "Rows changed per kind, all zero when nothing was left to change",
-            content = @Content(schema = @Schema(implementation = AnonymizationResponse.class)))
+            content = @Content(schema = @Schema(implementation = TasksAnonymizationResponse.class)))
     @APIResponse(
             responseCode = "400",
             description = "Invalid input",
             content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
     @Path("/{userId}/anonymize")
-    public AnonymizationResponse anonymize(@PathParam("userId") UUID userId) {
-        return AnonymizationResponse.from(anonymizationService.anonymize(userId));
+    public TasksAnonymizationResponse anonymize(@PathParam("userId") UUID userId) {
+        return TasksAnonymizationResponse.from(anonymizationService.anonymize(userId));
     }
 }

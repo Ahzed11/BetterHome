@@ -7,15 +7,6 @@ tags:
 - name: preferences
 components:
   schemas:
-    AnonymizationResponse:
-      type: object
-      properties:
-        notificationsDeleted:
-          type: integer
-          format: int64
-        preferencesDeleted:
-          type: integer
-          format: int64
     Channel:
       type: string
       enum:
@@ -101,6 +92,15 @@ components:
       - reverted
       - marked_away
       - invitation
+    NotificationsAnonymizationResponse:
+      type: object
+      properties:
+        notificationsDeleted:
+          type: integer
+          format: int64
+        preferencesDeleted:
+          type: integer
+          format: int64
     Outcome:
       type: string
       enum:
@@ -217,7 +217,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AnonymizationResponse"
+                $ref: "#/components/schemas/NotificationsAnonymizationResponse"
       security:
       - bearerAuth:
         - service

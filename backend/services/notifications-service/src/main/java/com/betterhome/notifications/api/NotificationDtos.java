@@ -45,10 +45,11 @@ public final class NotificationDtos {
     public record ReadAllResponse(int updated) {}
 
     /** Rows deleted per kind by an account deletion; both zero when nothing was left. */
-    public record AnonymizationResponse(long notificationsDeleted, long preferencesDeleted) {
+    public record NotificationsAnonymizationResponse(
+            long notificationsDeleted, long preferencesDeleted) {
 
-        public static AnonymizationResponse from(AnonymizationService.Result result) {
-            return new AnonymizationResponse(
+        public static NotificationsAnonymizationResponse from(AnonymizationService.Result result) {
+            return new NotificationsAnonymizationResponse(
                     result.notificationsDeleted(), result.preferencesDeleted());
         }
     }
