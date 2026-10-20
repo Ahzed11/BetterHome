@@ -319,11 +319,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0032 · Account deletion and anonymization
 
-* Status: todo
+* Status: in-review
 * Issue / PR: #25
 * Depends on: T-0016, T-0025
 * Spec: §9 Privacy, AGENTS §8
 * Acceptance criteria: Deleting an account removes or anonymizes the user in Keycloak through the Admin REST API and anonymizes their data in every service while keeping the ledger consistent. Last-admin rule enforced. Tests in each service plus an e2e journey.
+* Summary: `DELETE /v1/me` in households-service answers 202. In one transaction: last-admin rule (sole admin of a household with other members gets 409 until handing over), the user leaves every household, a household where they are the only member is deleted with them, queued outbox events and invitations to their address are dropped or blanked, the profile is anonymized and a surviving token cannot re-register (403 on sync). The remaining work (tasks, scoring, lists, notifications anonymize endpoints with the service token; Keycloak Admin `DELETE /users/{id}` behind `IdentityAdmin`) is recorded in `account_deletion`/`account_deletion_step` (migration V5) and retried by a 15 s scheduler with backoff until each target confirmed. Tasks, scoring and notifications gained the same anonymize endpoint as lists (T-0102). Orchestration is in ADR 0028; spec §9 states the last-admin and sole-member rules.
+* Decisions and deviations: the anonymized profile row stays (needed to address the other services and for the retry record); retry has no limit, an error is logged after 10 attempts; Keycloak user is deleted, not disabled; the realm export gives the households service account `manage-users` of `realm-management`.
+* Verification: `./mvnw verify` of households, tasks, scoring, lists and notifications; households tests cover service level, HTTP level, and a wiring test of the real REST clients against a fake HTTP server (service token, routes, 404/403/500/dropped connection); `make openapi`. Not verified: a real Keycloak (the `manage-users` grant and the Admin URL), the e2e journey (T-0106).
+* Follow-ups: T-0106.
 
 ### T-0033 · Activity log
 
@@ -977,3 +981,11 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0004
 * Spec: §7
 * Acceptance criteria: The CRC overlay (or a sibling) provides a `postgres` Service with the five databases and the Keycloak realm (Keycloak Operator, AGENTS §3), so `oc apply -k` gives a working stack. Needs a running cluster to verify.
+
+### T-0106 · Account deletion: e2e journey and real Keycloak check (part of T-0032)
+
+* Status: todo
+* Issue / PR: #25 / —
+* Depends on: T-0032
+* Spec: §9 Privacy, AGENTS §8
+* Acceptance criteria: An e2e journey deletes an account against the real stack (Keycloak included): last-admin refusal, hand-over, deletion, the Keycloak login gone, history shown under the nil UUID. Checks that the `manage-users` grant in `realm-betterhome.json` and `KEYCLOAK_ADMIN_URL` work against a real Keycloak. App: delete-account screen and rendering the nil UUID as a former member.
