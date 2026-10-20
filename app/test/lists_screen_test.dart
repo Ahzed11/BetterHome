@@ -260,7 +260,8 @@ void main() {
 
       await tester.enterText(find.byType(TextField), 'Milk');
       await tester.tap(find.byTooltip('Add'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(find.text('Something went wrong'), findsOneWidget);
       expect(find.text('Milk'), findsNothing);

@@ -6,6 +6,7 @@ import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/new_recurring_screen.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
+import 'package:betterhome/ui/widgets/app_toast.dart';
 import 'package:betterhome/ui/widgets/chore_card.dart';
 import 'package:betterhome/ui/widgets/overdue_badge.dart';
 import 'package:betterhome/ui/widgets/quick_log_sheet.dart';
@@ -229,9 +230,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
     if (saved != true || !mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context).recurrenceSet)),
-    );
+    showAppToast(context, message: AppLocalizations.of(context).recurrenceSet);
   }
 
   Future<void> _revert(ChoreTask task) async {
@@ -579,14 +578,14 @@ class _ChoresScreenState extends State<ChoresScreen> {
                           if (value == 'recurring') {
                             await _makeRecurring();
                           } else if (value == 'spawn') {
-                            final messenger = ScaffoldMessenger.of(context);
                             final count = await widget.session.tasksRepository
                                 .runDueRecurrences(widget.householdId);
                             if (!mounted) {
                               return;
                             }
-                            messenger.showSnackBar(
-                              SnackBar(content: Text(l10n.spawnedCount(count))),
+                            showAppToast(
+                              this.context,
+                              message: l10n.spawnedCount(count),
                             );
                             setState(_reload);
                           }

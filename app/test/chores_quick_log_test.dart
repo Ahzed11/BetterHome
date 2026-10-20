@@ -130,7 +130,8 @@ void main() {
 
     await _quickLog(tester);
     await tester.pump(const Duration(seconds: 6));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     expect(find.text('Something went wrong'), findsOneWidget);
     expect(await _logged(), isEmpty);

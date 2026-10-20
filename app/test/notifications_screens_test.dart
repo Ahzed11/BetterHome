@@ -144,7 +144,8 @@ void main() {
         await _inbox(tester, _session(repo));
 
         await tester.tap(find.text('Title 1'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump();
 
         expect(find.text('Something went wrong'), findsOneWidget);
         expect((await repo.list()).single.isRead, isFalse);

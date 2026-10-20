@@ -153,7 +153,9 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     await tester.tap(find.text('Save chore'));
-    await tester.pumpAndSettle();
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(find.text('Recurrence saved'), findsOneWidget);
   });
 

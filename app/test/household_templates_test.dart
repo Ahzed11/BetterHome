@@ -201,7 +201,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(_field('Title'), 'Bins');
     await tester.tap(find.text('Save'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
     expect(find.text('Something went wrong'), findsOneWidget);
     expect(await _templates(), isEmpty);
