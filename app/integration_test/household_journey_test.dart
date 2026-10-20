@@ -146,6 +146,11 @@ Future<AppSession> _openAs(
 
 /// Makes [name] the household every tab shows, through the switcher.
 Future<void> _selectHousehold(WidgetTester tester, String name) async {
+  // The switcher bar is on the All chores tab only.
+  if (find.byType(HouseholdSwitcher).evaluate().isEmpty &&
+      find.byType(NavigationBar).evaluate().isNotEmpty) {
+    await _tap(tester, find.text('All chores'));
+  }
   await _see(tester, find.byType(HouseholdSwitcher));
   final current = tester
       .widget<HouseholdSwitcher>(find.byType(HouseholdSwitcher))
@@ -213,7 +218,15 @@ void main() {
         find.widgetWithText(TextField, 'Chore name'),
         'Dishes',
       );
-      await tester.pump();
+      // The form starts at 10 points (5 if late); the journey's figures are 5 and 2.
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.byTooltip('Fewer On time'));
+        await tester.pump();
+      }
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.byTooltip('Fewer If late, still'));
+        await tester.pump();
+      }
       await tester.scrollUntilVisible(
         find.widgetWithText(FilledButton, 'Save chore'),
         200,
@@ -301,8 +314,8 @@ void main() {
     await _selectHousehold(tester, householdName);
     await _see(tester, find.textContaining('pts'));
     expect(find.textContaining('No chores yet'), findsNothing);
-    await _tap(tester, find.text('Lists'));
     await _selectHousehold(tester, cabin);
+    await _tap(tester, find.text('Lists'));
     await _see(tester, find.text('No lists yet. An admin can create one.'));
   });
 
