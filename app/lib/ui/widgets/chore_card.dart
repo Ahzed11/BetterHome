@@ -98,18 +98,21 @@ class _Circle extends StatelessWidget {
     if (onPressed == null) {
       return ExcludeSemantics(child: child);
     }
-    return Semantics(
-      container: true,
-      button: true,
-      label: label,
-      onTap: onPressed,
-      child: ExcludeSemantics(
-        child: InkResponse(
-          onTap: onPressed,
-          radius: AppTokens.minTapTarget / 2,
-          child: SizedBox.square(
-            dimension: AppTokens.minTapTarget,
-            child: Center(child: child),
+    return Tooltip(
+      message: label ?? '',
+      child: Semantics(
+        container: true,
+        button: true,
+        label: label,
+        onTap: onPressed,
+        child: ExcludeSemantics(
+          child: InkResponse(
+            onTap: onPressed,
+            radius: AppTokens.minTapTarget / 2,
+            child: SizedBox.square(
+              dimension: AppTokens.minTapTarget,
+              child: Center(child: child),
+            ),
           ),
         ),
       ),
