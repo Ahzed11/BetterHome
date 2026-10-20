@@ -4,6 +4,7 @@ import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/screens/chores_screen.dart';
 import 'package:betterhome/ui/screens/create_household_screen.dart';
+import 'package:betterhome/ui/screens/delete_account_screen.dart';
 import 'package:betterhome/ui/screens/household_detail_screen.dart';
 import 'package:betterhome/ui/screens/leaderboard_screen.dart';
 import 'package:betterhome/ui/screens/lists_screen.dart';
@@ -16,12 +17,21 @@ enum _Tab { allChores, myChores, leaderboard, lists }
 /// The signed-in app: the household switcher at the top and four tabs at the bottom, all showing
 /// the selected household.
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key, required this.session, this.onSignOut});
+  const HomeShell({
+    super.key,
+    required this.session,
+    this.onSignOut,
+    this.onAccountDeleted,
+  });
 
   final AppSession session;
 
   /// Shown as a sign-out action when the app signs in with an identity provider.
   final VoidCallback? onSignOut;
+
+  /// Called after the user deleted their account, to end the session. Shown as a delete-account
+  /// action when the app signs in with an identity provider.
+  final VoidCallback? onAccountDeleted;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -87,8 +97,23 @@ class _HomeShellState extends State<HomeShell> {
     }
   }
 
+  void _openDeleteAccount(VoidCallback onDeleted) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            DeleteAccountScreen(session: widget.session, onDeleted: onDeleted),
+      ),
+    );
+  }
+
   List<Widget> _actions(AppLocalizations l10n) => [
     NotificationsBell(session: widget.session),
+    if (widget.onAccountDeleted case final onDeleted?)
+      IconButton(
+        tooltip: l10n.deleteAccount,
+        icon: const Icon(Icons.person_remove_outlined),
+        onPressed: () => _openDeleteAccount(onDeleted),
+      ),
     if (widget.onSignOut != null)
       IconButton(
         tooltip: l10n.signOut,

@@ -1000,8 +1000,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0106 · Account deletion: e2e journey and real Keycloak check (part of T-0032)
 
-* Status: todo
-* Issue / PR: #25 / —
+* Status: in-review
+* Issue / PR: #25 / (pull request to follow)
 * Depends on: T-0032
 * Spec: §9 Privacy, AGENTS §8
 * Acceptance criteria: An e2e journey deletes an account against the real stack (Keycloak included): last-admin refusal, hand-over, deletion, the Keycloak login gone, history shown under the nil UUID. Checks that the `manage-users` grant in `realm-betterhome.json` and `KEYCLOAK_ADMIN_URL` work against a real Keycloak. App: delete-account screen and rendering the nil UUID as a former member.
+* Summary: the app has a delete-account screen (a person-with-minus action in the top bar of the signed-in app, explanation, confirmation dialog, the 409 last-admin refusal explained in FR and EN, any other failure as the generic error); a successful deletion ends the session (sign-out with an identity provider, back to the profile step in demo mode). `HouseholdsRepository.deleteMyAccount` (HTTP through the generated client, and the fake follows the same last-admin and sole-member rules). A new e2e journey with a throwaway user (carol, created by `tooling/e2e.sh`) is refused as the only admin, hands the role to bob through the API (the app has no hand-over screen), deletes the account from the screen, cannot sync with the old token (403), and shows bob the chore she did with her id replaced by the nil UUID; `e2e.sh` then waits until the user is gone from Keycloak.
+* Decisions and deviations: no screen shows a former member's id today (the scoreboard lists active members only, chore cards show no assignee name), so there was nothing to render as "former member"; `memberLabel` already names any id it cannot find "Household member", and the journey checks the nil UUID through the tasks API instead. Demo mode (no identity provider) also offers the deletion so the e2e app can reach it; it returns to the profile step.
+* Verification: `make e2e` on a fresh stack (`make down` first, web target): all journeys passed, the deletion journey against real Keycloak included, so the `manage-users` grant and the Admin URL work; `make test-app` (544 tests, 18 new baseline cases for the screen, dialog and refusal in FR and EN, plus delete_account_test and HTTP contract tests). Not run: the Android e2e target (T-0045), `make test-backend` (no backend change).
+* Follow-ups: a hand-over screen for the admin role (the API exists, the app cannot call it), suggested title "Make another member an admin".

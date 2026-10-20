@@ -1,4 +1,5 @@
 import 'package:betterhome/app.dart';
+import 'package:betterhome/data/api_support.dart';
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
@@ -10,6 +11,7 @@ import 'package:betterhome/ui/widgets/add_field.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
 import 'package:betterhome/ui/widgets/household_switcher.dart';
 import 'package:betterhome/ui/widgets/quick_log_sheet.dart';
+import 'package:betterhome_api/api.dart' as api;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -23,9 +25,14 @@ const _listsUrl = String.fromEnvironment('E2E_LISTS_URL');
 const _notificationsUrl = String.fromEnvironment('E2E_NOTIFICATIONS_URL');
 const _aliceToken = String.fromEnvironment('E2E_ACCESS_TOKEN');
 const _bobToken = String.fromEnvironment('E2E_ACCESS_TOKEN_BOB');
+const _carolToken = String.fromEnvironment('E2E_ACCESS_TOKEN_CAROL');
 
 const _aliceEmail = 'alice@betterhome.local';
 const _bobEmail = 'bob@betterhome.local';
+const _carolEmail = 'carol@betterhome.local';
+
+/// What the services keep in place of a deleted user's id.
+const _formerMemberId = '00000000-0000-0000-0000-000000000000';
 
 AppSession _sessionFor(String token) => AppSession(
   repository: HttpHouseholdsRepository(
@@ -473,6 +480,90 @@ void main() {
       await _back(tester);
       await _back(tester);
       await _see(tester, find.byTooltip('Notifications'));
+    },
+  );
+
+  testWidgets(
+    'account deletion: the last admin hands over, then the account and its history go',
+    (tester) async {
+      // Carol is a throwaway user: deleting alice or bob would break the other journeys.
+      final carol = await _openAs(tester, _carolToken, _carolEmail);
+      final home = 'E2E delete home ${DateTime.now().millisecondsSinceEpoch}';
+      await _createHousehold(tester, home);
+      final homeId = (await carol.repository.listHouseholds())
+          .firstWhere((h) => h.name == home)
+          .id;
+      final laundry = await carol.tasksRepository.createTemplate(
+        householdId: homeId,
+        title: 'Laundry',
+        points: 5,
+        latePoints: 2,
+      );
+      await carol.tasksRepository.quickLog(
+        householdId: homeId,
+        templateId: laundry.id,
+      );
+      final bob = _sessionFor(_bobToken);
+      await bob.repository.acceptInvitation(
+        (await carol.repository.createInvitation(
+          householdId: homeId,
+          email: _bobEmail,
+        )).token,
+      );
+      final bobId = (await bob.repository.getMe()).id;
+
+      // Carol is the only admin of a household that has another member: the server refuses and
+      // the screen says what to do.
+      Future<void> deleteFromTheScreen() async {
+        final button = find.widgetWithText(FilledButton, 'Delete my account');
+        await _tap(tester, button);
+        await _tap(
+          tester,
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.text('Delete my account'),
+          ),
+        );
+      }
+
+      await _tap(tester, find.byTooltip('Delete my account'));
+      await deleteFromTheScreen();
+      await _see(tester, find.textContaining('only admin of a household'));
+      await expectLater(carol.repository.getMe(), completes);
+
+      // After handing the admin role to bob, the same request goes through and the app
+      // returns to its first screen.
+      await api.MembershipsApi(
+        buildApiClient(baseUrl: _householdsUrl, accessToken: () => _carolToken),
+      ).changeMemberRole(
+        homeId,
+        bobId,
+        api.ChangeRoleRequest(role: api.MembershipRole.admin),
+      );
+      await deleteFromTheScreen();
+      await _see(tester, find.text('Your profile'));
+
+      // The token that is still valid cannot bring the account back, and bob is alone.
+      await expectLater(
+        carol.repository.syncMe(email: _carolEmail),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 403)),
+      );
+      expect((await bob.repository.listMembers(homeId)).map((m) => m.userId), [
+        bobId,
+      ]);
+
+      // The services are told in the background: once tasks has been, the chore carol did is kept
+      // for bob to see, but no longer carries her id.
+      await _waitFor(() async {
+        final tasks = await bob.tasksRepository.listTasks(homeId);
+        return tasks.any(
+          (t) => t.title == 'Laundry' && t.assigneeId == _formerMemberId,
+        );
+      }, 'carol\'s chore to be anonymized');
+      await _openAs(tester, _bobToken, _bobEmail);
+      await _selectHousehold(tester, home);
+      await _see(tester, find.text('Laundry'));
+      await _see(tester, find.text('Done · 5 pts'));
     },
   );
 }
