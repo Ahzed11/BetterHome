@@ -1,0 +1,26 @@
+# OpenShift Local (CRC) overlay: one replica per service, smaller requests, CRC's route domain.
+# Prerequisites it does not create: namespace `betterhome`, a PostgreSQL reachable as Service `postgres`
+# with the five databases (deploy/postgres/init-databases.sql), Keycloak with the realm
+# (deploy/keycloak), and the Secrets betterhome-db and betterhome-oidc (secrets.example.yaml).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: betterhome
+resources:
+  - ../base
+configMapGenerator:
+  - name: betterhome-config
+    behavior: merge
+    literals:
+      - OIDC_AUTH_SERVER_URL=https://keycloak-betterhome.apps-crc.testing/realms/betterhome
+patches:
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests
+        value:
+          cpu: 50m
+          memory: 192Mi

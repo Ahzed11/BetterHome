@@ -1,0 +1,96 @@
+# Base manifests for the five BetterHome services on OpenShift (T-0004, ADR 0003).
+# The migration ConfigMaps read the SQL straight from backend/, outside this directory, so render with
+# the load restrictor off:  oc kustomize --load-restrictor=LoadRestrictionsNone deploy/openshift/crc
+# (see deploy/openshift/README.md; `make test-openshift` does it).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: betterhome
+    includeSelectors: false
+resources:
+  - households-service.yaml
+  - tasks-service.yaml
+  - scoring-service.yaml
+  - lists-service.yaml
+  - notifications-service.yaml
+configMapGenerator:
+  - name: betterhome-config
+    literals:
+      # Placeholder issuer: the overlay sets the real Keycloak realm URL.
+      - OIDC_AUTH_SERVER_URL=http://keycloak:8180/realms/betterhome
+      - QUARKUS_HTTP_CORS_ENABLED=true
+      - QUARKUS_HTTP_CORS_ORIGINS=http://localhost:8090
+  - name: households-service-config
+    literals:
+      - DB_JDBC_URL=jdbc:postgresql://postgres:5432/betterhome_households
+      - OIDC_SERVICE_CLIENT_ID=betterhome-households-service
+      - TASKS_SERVICE_URL=http://tasks-service:8082
+      - NOTIFICATIONS_SERVICE_URL=http://notifications-service:8085
+  - name: tasks-service-config
+    literals:
+      - DB_JDBC_URL=jdbc:postgresql://postgres:5432/betterhome_tasks
+      - OIDC_SERVICE_CLIENT_ID=betterhome-tasks-service
+      - HOUSEHOLDS_SERVICE_URL=http://households-service:8081
+      - SCORING_SERVICE_URL=http://scoring-service:8083
+      - NOTIFICATIONS_SERVICE_URL=http://notifications-service:8085
+  - name: scoring-service-config
+    literals:
+      - DB_JDBC_URL=jdbc:postgresql://postgres:5432/betterhome_scoring
+      - OIDC_SERVICE_CLIENT_ID=betterhome-scoring-service
+      - HOUSEHOLDS_SERVICE_URL=http://households-service:8081
+  - name: lists-service-config
+    literals:
+      - DB_JDBC_URL=jdbc:postgresql://postgres:5432/betterhome_lists
+      - OIDC_SERVICE_CLIENT_ID=betterhome-lists-service
+      - HOUSEHOLDS_SERVICE_URL=http://households-service:8081
+  - name: notifications-service-config
+    literals:
+      - DB_JDBC_URL=jdbc:postgresql://postgres:5432/betterhome_notifications
+      - OIDC_SERVICE_CLIENT_ID=betterhome-notifications-service
+      - HOUSEHOLDS_SERVICE_URL=http://households-service:8081
+  # Flyway SQL of households-service. No name suffix: the Job mounts it by name (rerun: delete the Job, see README).
+  - name: households-service-migrations
+    options:
+      disableNameSuffixHash: true
+    files:
+      - V1__baseline.sql=../../../backend/services/households-service/src/main/resources/db/migration/V1__baseline.sql
+      - V2__users_households_memberships_invitations.sql=../../../backend/services/households-service/src/main/resources/db/migration/V2__users_households_memberships_invitations.sql
+      - V3__notification_outbox.sql=../../../backend/services/households-service/src/main/resources/db/migration/V3__notification_outbox.sql
+      - V4__away_tasks_dismissed.sql=../../../backend/services/households-service/src/main/resources/db/migration/V4__away_tasks_dismissed.sql
+  # Flyway SQL of tasks-service. No name suffix: the Job mounts it by name (rerun: delete the Job, see README).
+  - name: tasks-service-migrations
+    options:
+      disableNameSuffixHash: true
+    files:
+      - V1__baseline.sql=../../../backend/services/tasks-service/src/main/resources/db/migration/V1__baseline.sql
+      - V2__templates_tasks_rotations.sql=../../../backend/services/tasks-service/src/main/resources/db/migration/V2__templates_tasks_rotations.sql
+      - V3__recurrence_outbox.sql=../../../backend/services/tasks-service/src/main/resources/db/migration/V3__recurrence_outbox.sql
+      - V4__dismissal_reason_assignee_away.sql=../../../backend/services/tasks-service/src/main/resources/db/migration/V4__dismissal_reason_assignee_away.sql
+      - V5__completion_number.sql=../../../backend/services/tasks-service/src/main/resources/db/migration/V5__completion_number.sql
+      - V6__outbox_relay.sql=../../../backend/services/tasks-service/src/main/resources/db/migration/V6__outbox_relay.sql
+      - V7__task_overdue_notified.sql=../../../backend/services/tasks-service/src/main/resources/db/migration/V7__task_overdue_notified.sql
+      - V8__task_reversion_reason.sql=../../../backend/services/tasks-service/src/main/resources/db/migration/V8__task_reversion_reason.sql
+  # Flyway SQL of scoring-service. No name suffix: the Job mounts it by name (rerun: delete the Job, see README).
+  - name: scoring-service-migrations
+    options:
+      disableNameSuffixHash: true
+    files:
+      - V1__baseline.sql=../../../backend/services/scoring-service/src/main/resources/db/migration/V1__baseline.sql
+      - V2__ledger_reversions_recaps.sql=../../../backend/services/scoring-service/src/main/resources/db/migration/V2__ledger_reversions_recaps.sql
+      - V3__award_idempotency.sql=../../../backend/services/scoring-service/src/main/resources/db/migration/V3__award_idempotency.sql
+      - V4__month_close_cursor.sql=../../../backend/services/scoring-service/src/main/resources/db/migration/V4__month_close_cursor.sql
+  # Flyway SQL of lists-service. No name suffix: the Job mounts it by name (rerun: delete the Job, see README).
+  - name: lists-service-migrations
+    options:
+      disableNameSuffixHash: true
+    files:
+      - V1__baseline.sql=../../../backend/services/lists-service/src/main/resources/db/migration/V1__baseline.sql
+      - V2__lists_items.sql=../../../backend/services/lists-service/src/main/resources/db/migration/V2__lists_items.sql
+  # Flyway SQL of notifications-service. No name suffix: the Job mounts it by name (rerun: delete the Job, see README).
+  - name: notifications-service-migrations
+    options:
+      disableNameSuffixHash: true
+    files:
+      - V1__baseline.sql=../../../backend/services/notifications-service/src/main/resources/db/migration/V1__baseline.sql
+      - V2__notifications_preferences.sql=../../../backend/services/notifications-service/src/main/resources/db/migration/V2__notifications_preferences.sql
