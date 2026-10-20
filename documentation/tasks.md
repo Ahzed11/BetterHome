@@ -715,11 +715,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0079 · Bundle the design fonts
 
-* Status: todo
+* Status: in-review
 * Issue / PR: — (suggested: "Use Bricolage Grotesque and Figtree")
 * Depends on: T-0024
 * Spec: §8, ADR 0021
 * Acceptance criteria: Bricolage Grotesque (titles) and Figtree (text) from the design canvas are bundled with the app (their licenses allow it) and set in `AppTypography`; goldens use a readable test font (T-0057) so they show the real look. Decide first: bundle files, or fetch at runtime.
+* Decisions and deviations: bundled files (no runtime fetch, works offline): static instances cut from the Google Fonts variable files, Figtree 400–700 and Bricolage Grotesque 600–800 (opsz 36), in `app/assets/fonts` with their OFL licenses. `flutter test` loads them from the pubspec, so goldens show the real fonts. Verified: `flutter analyze`, `flutter test` (goldens regenerated), `dart format`, `make test-docs`. Not run: `make check` and `make e2e`. ADR 0021 deviation "Fonts" no longer applies.
 
 ### T-0080 · Restyle the existing screens with the shared widgets
 
