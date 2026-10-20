@@ -508,11 +508,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0046 · Build the five container images in make check and CI
 
-* Status: todo
-* Issue / PR: #37
+* Status: in-review
+* Issue / PR: #37 / (this PR)
 * Depends on: T-0016, T-0018
 * Spec: AGENTS §5.3
 * Acceptance criteria: `make check` / CI builds the five images from the packaged jars and runs `make smoke`; the Dockerfiles' `EXPOSE 8080` matches the real service ports (8081-8085).
+* Summary: New `make test-images` (in `make check`) runs `tooling/check-image-ports.sh` (every `Dockerfile.*` must EXPOSE the service's `quarkus.http.port`), packages the jars and builds the five images with `tooling/build-images.sh`. `Dockerfile.jvm` now has `EXPOSE 8081-8085`; the unused variants' `EXPOSE`/`docker run` lines use the real port too. CI has a new `images` job (required by the `check` job).
+* Decisions and deviations: `make smoke` needs the whole stack (Postgres, Keycloak, migrations), so it is not run a second time in `images`: it already runs inside `make up`, which `make e2e` (the `e2e` job) calls.
+* Verification: `make test-images` with the jars packaged under JDK 21 (five images built with Podman 5.8, port check passes); `make -n check`; YAML parse of `check.yml`. NOT verified: the new CI job on GitHub, `make check` in full, `make smoke`/e2e.
+* Follow-ups: none.
 
 ### T-0045 · Headless Android emulator crashes on the development VM
 

@@ -162,6 +162,7 @@ Agents must not claim something works without having run it.
 | `make test-docs` | Resolve documentation's relative links and its ADR/ledger references |
 | `make test-policy` | Require every dependency unvulnerable and verified against policies |
 | `make mutation` | Mutation testing with Pitest on the pure domain code of `tasks` and `scoring` (run periodically, not part of `make check`; `decisions/0023-property-and-mutation-testing.md`) |
+| `make test-images` | Check every Dockerfile EXPOSEs its service's port, then build the five container images from the packaged jars |
 | `make test-guard` | Prove the generated-client guard fails when the document or the client is broken |
 | `make run-app` | Try the app by hand: stack up, demo users `alice` / `bob` (password `demo`), web app on `http://localhost:8090` (`RUN_APP_SEED=1` adds the demo household) |
 | `make e2e` | Full microservice stack up on OpenShift/Podman, app launched on the selected target (`E2E_TARGET=web` default, or `android`), integration tests run against Keycloak Auth |
