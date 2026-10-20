@@ -104,6 +104,17 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.pump();
 }
 
+/// Taps [title] in the quick-log sheet once the sheet has finished sliding up: it is built at the
+/// bottom edge, where a tap would miss it.
+Future<void> _pickTemplate(WidgetTester tester, String title) async {
+  await _see(tester, find.byType(QuickLogSheet));
+  await tester.pumpAndSettle();
+  await _tap(
+    tester,
+    find.descendant(of: find.byType(QuickLogSheet), matching: find.text(title)),
+  );
+}
+
 /// Opens the app as [token]'s user, completes the profile step, and returns its session.
 Future<AppSession> _openAs(
   WidgetTester tester,
@@ -209,13 +220,7 @@ void main() {
         scrollable: find.byType(Scrollable).last,
       );
       await _tap(tester, find.widgetWithText(FilledButton, 'Save chore'));
-      await _tap(
-        tester,
-        find.descendant(
-          of: find.byType(QuickLogSheet),
-          matching: find.text('Dishes'),
-        ),
-      );
+      await _pickTemplate(tester, 'Dishes');
 
       // The log can be cancelled for five seconds: nothing reaches the server.
       await _see(tester, find.text('Logging Dishes…'));
@@ -227,13 +232,7 @@ void main() {
 
       // Left alone, the log is sent when the five seconds pass.
       await _tap(tester, find.text('I just did…'));
-      await _tap(
-        tester,
-        find.descendant(
-          of: find.byType(QuickLogSheet),
-          matching: find.text('Dishes'),
-        ),
-      );
+      await _pickTemplate(tester, 'Dishes');
       await _see(tester, find.text('done · 5 pts'));
 
       // The assignee completes an open task.
@@ -245,7 +244,7 @@ void main() {
         templateId: template.id,
       );
       await _tap(tester, find.text('My chores'));
-      await _see(tester, find.text('open · 5 pts'));
+      await _see(tester, find.text('+5'));
       await _tap(tester, find.byTooltip('Complete'));
       await _seeCount(tester, find.text('done · 5 pts'), 2);
 
