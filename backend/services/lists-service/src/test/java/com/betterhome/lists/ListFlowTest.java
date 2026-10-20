@@ -242,7 +242,7 @@ class ListFlowTest {
         clock.set(T1);
 
         List<ChecklistItem> result =
-                world.asUser(MEMBER_SUBJECT, () -> items.reset(HOUSEHOLD, list.id));
+                world.asUser(ADMIN_SUBJECT, () -> items.reset(HOUSEHOLD, list.id));
 
         assertEquals(3, result.size());
         assertTrue(result.stream().noneMatch(ChecklistItem::isChecked));
@@ -253,13 +253,29 @@ class ListFlowTest {
     }
 
     @Test
+    void aMemberCannotResetAList() {
+        Checklist list = createList("Packing");
+        ChecklistItem socks = addItem(list.id, "Socks");
+        world.runAs(MEMBER_SUBJECT, () -> items.check(HOUSEHOLD, list.id, socks.id));
+
+        world.runAs(
+                MEMBER_SUBJECT,
+                () ->
+                        assertThrows(
+                                ListException.Forbidden.class,
+                                () -> items.reset(HOUSEHOLD, list.id)));
+
+        assertTrue(world.reloadItem(socks.id).isChecked());
+    }
+
+    @Test
     void resetOnlyTouchesItsOwnList() {
         Checklist packing = createList("Packing");
         Checklist groceries = createList("Groceries");
         ChecklistItem milk = addItem(groceries.id, "Milk");
         world.runAs(MEMBER_SUBJECT, () -> items.check(HOUSEHOLD, groceries.id, milk.id));
 
-        world.runAs(MEMBER_SUBJECT, () -> items.reset(HOUSEHOLD, packing.id));
+        world.runAs(ADMIN_SUBJECT, () -> items.reset(HOUSEHOLD, packing.id));
 
         assertTrue(world.reloadItem(milk.id).isChecked());
     }
@@ -285,10 +301,14 @@ class ListFlowTest {
                     assertThrows(
                             ListException.Conflict.class,
                             () -> items.delete(HOUSEHOLD, list.id, milk.id));
-                    assertThrows(
-                            ListException.Conflict.class, () -> items.reset(HOUSEHOLD, list.id));
                     assertEquals(1, items.list(HOUSEHOLD, list.id).size());
                 });
+        world.runAs(
+                ADMIN_SUBJECT,
+                () ->
+                        assertThrows(
+                                ListException.Conflict.class,
+                                () -> items.reset(HOUSEHOLD, list.id)));
         ChecklistItem unchanged = world.reloadItem(milk.id);
         assertTrue(unchanged.isChecked());
         assertNull(unchanged.deletedAt);

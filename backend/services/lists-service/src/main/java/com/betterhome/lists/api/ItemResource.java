@@ -179,7 +179,7 @@ public class ItemResource {
 
     @Operation(
             operationId = "resetList",
-            summary = "Uncheck every item of the list (bulk reset) and return the items")
+            summary = "Uncheck every item of the list (bulk reset, admin) and return the items")
     @APIResponse(
             responseCode = "200",
             description = "OK",
@@ -189,6 +189,10 @@ public class ItemResource {
                                     @Schema(
                                             type = SchemaType.ARRAY,
                                             implementation = ItemResponse.class)))
+    @APIResponse(
+            responseCode = "403",
+            description = "Not an active admin of the household",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @APIResponse(
             responseCode = "409",
             description = ARCHIVED,

@@ -118,7 +118,7 @@ class ListsAuthorizationTest {
                         "POST",
                         () -> lists() + "/" + list.id + "/reset",
                         null,
-                        false,
+                        true,
                         200));
     }
 
