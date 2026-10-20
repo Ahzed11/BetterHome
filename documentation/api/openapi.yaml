@@ -835,7 +835,8 @@ paths:
       - bearerAuth: []
   /v1/households/{householdId}/lists/{listId}/reset:
     post:
-      summary: "Uncheck every item of the list (bulk reset) and return the items"
+      summary: "Uncheck every item of the list (bulk reset, admin) and return the\
+        \ items"
       operationId: "resetList"
       tags:
       - "items"
@@ -854,7 +855,7 @@ paths:
         "401":
           description: "Not authenticated"
         "403":
-          description: "Not an active member of the household"
+          description: "Not an active admin of the household"
           content:
             application/json:
               schema:

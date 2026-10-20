@@ -155,8 +155,25 @@ class ListsApiTest {
     }
 
     @Test
+    @TestSecurity(user = ADMIN_SUBJECT)
+    void anAdminResetsTheListAndGetsItsItemsBack() {
+        String listId = world.seedList(HOUSEHOLD, "Packing", clock.now()).id.toString();
+        String socks = addItem(listId, "Socks");
+        addItem(listId, "Shoes");
+        given().post(LISTS + "/" + listId + "/items/" + socks + "/check").then().statusCode(200);
+
+        given().post(LISTS + "/" + listId + "/reset")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(2))
+                .body("[0].title", is("Socks"))
+                .body("[0].completedAt", nullValue())
+                .body("[1].title", is("Shoes"));
+    }
+
+    @Test
     @TestSecurity(user = MEMBER_SUBJECT)
-    void aMemberRunsTheItemJourneyWithSoftDeleteAndReset() {
+    void aMemberRunsTheItemJourneyWithSoftDeleteAndIsForbiddenToReset() {
         String listId = world.seedList(HOUSEHOLD, "Packing", clock.now()).id.toString();
         String socks = addItem(listId, "Socks");
         String shoes = addItem(listId, "Shoes");
@@ -180,13 +197,11 @@ class ListsApiTest {
                 .statusCode(200)
                 .body("title", is("Wool socks"));
 
-        given().post(LISTS + "/" + listId + "/reset")
+        given().post(LISTS + "/" + listId + "/reset").then().statusCode(403);
+        given().get(LISTS + "/" + listId + "/items")
                 .then()
                 .statusCode(200)
-                .body("$", hasSize(2))
-                .body("[0].title", is("Wool socks"))
-                .body("[0].completedAt", nullValue())
-                .body("[1].title", is("Shoes"));
+                .body("[0].completedAt", is("2026-03-01T11:00:00Z"));
 
         given().delete(LISTS + "/" + listId + "/items/" + socks).then().statusCode(204);
         given().get(LISTS + "/" + listId + "/items")

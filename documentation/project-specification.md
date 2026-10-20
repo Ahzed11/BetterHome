@@ -34,6 +34,7 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 | Dismiss a task (with confirmation) | ✅ (any task) | ✅ (own tasks) |
 | Log a spontaneous (manual) task | ✅ | ✅ |
 | Add, edit, check, uncheck, delete list items | ✅ | ✅ |
+| Reset a list (uncheck all items) | ✅ | ❌ |
 
 ---
 
@@ -84,7 +85,9 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 
 - Every list is a checklist: items can be checked and unchecked. Checking awards no points.
 - Admins create, rename, and archive lists. Any member adds, edits, checks, unchecks, and deletes items (soft delete, with who and when).
-- A bulk reset action unchecks all items (useful for packing lists).
+- A bulk reset action unchecks all items (useful for packing lists). Only admins can reset a list; a member gets 403.
+- Items of an archived list are frozen: adding, editing, checking, unchecking, deleting and resetting answer 409. Reading them stays allowed.
+- Checking an already checked item (or unchecking an unchecked one) is a no-op, so the first completer is kept.
 
 ---
 

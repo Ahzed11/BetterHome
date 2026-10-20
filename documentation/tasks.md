@@ -589,11 +589,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0061 · Spec: who may reset a list, and archived-list rules
 
-* Status: todo
+* Status: in-review
 * Issue / PR: #50
 * Depends on: T-0023
 * Spec: §2, §4
 * Acceptance criteria: Spec states who can bulk reset (T-0023 allows any active member), that items of an archived list are frozen (409), and that re-checking is a no-op; code follows if the decision differs.
+* Summary: Product owner decided on issue #50: admins only. `ItemService.reset` requires the admin role (403 for a member). Spec §2 permissions and §4 now state the reset rule, the frozen archived lists (409) and the no-op re-check. `resetList` documents 403 "Not an active admin" in the OpenAPI contract.
+* Decisions and deviations: The app (T-0024) still offers "Uncheck all" to every member, so a member now gets an error snackbar; hiding it for members is left to a follow-up.
+* Verification: lists-service tests (service, HTTP and authorization matrix: resetList is admin-only), see the pull request for the `make` runs.
+* Follow-ups: App: show "Uncheck all" to admins only (suggested issue, extends T-0024).
 
 ### T-0062 · tasks-service: body-less POST actions answer 415 without a Content-Type
 
