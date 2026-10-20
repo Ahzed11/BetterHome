@@ -229,6 +229,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signOut => 'Sign out';
 
   @override
+  String get deleteAccount => 'Delete my account';
+
+  @override
+  String get deleteAccountIntro =>
+      'Deleting your account removes your name and email and signs you out for good. You leave every household; one where you are the only member is deleted with you.';
+
+  @override
+  String get deleteAccountHistory =>
+      'What you did stays in your households, such as completed chores and points, but no longer carries your name.';
+
+  @override
+  String get deleteAccountConfirmTitle => 'Delete your account?';
+
+  @override
+  String get deleteAccountConfirmBody => 'This cannot be undone.';
+
+  @override
+  String get deleteAccountSoleAdmin =>
+      'You are the only admin of a household that has other members. Make another member an admin, or delete the household, then try again.';
+
+  @override
   String get createList => 'Create list';
 
   @override

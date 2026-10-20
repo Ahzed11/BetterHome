@@ -10,6 +10,7 @@ import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/chores_screen.dart';
 import 'package:betterhome/ui/screens/create_household_screen.dart';
+import 'package:betterhome/ui/screens/delete_account_screen.dart';
 import 'package:betterhome/ui/screens/home_shell.dart';
 import 'package:betterhome/ui/screens/household_detail_screen.dart';
 import 'package:betterhome/ui/screens/leaderboard_screen.dart';
@@ -115,6 +116,16 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
   await tester.tap(finder);
   await tester.pumpAndSettle();
+}
+
+/// Taps the delete-account button, scrolling to it first: at large text sizes it is below the fold.
+Future<void> _tapDeleteAccount(
+  WidgetTester tester,
+  AppLocalizations l10n,
+) async {
+  final button = find.widgetWithText(FilledButton, l10n.deleteAccount);
+  await tester.scrollUntilVisible(button, 100);
+  await _tap(tester, button);
 }
 
 /// A second person in the household, named by the members API, besides the signed-in one.
@@ -589,6 +600,37 @@ final List<_Scenario> _scenarios = [
     act: (tester, l10n) async {
       await _tap(tester, find.byTooltip(l10n.revertTask).first);
       await tester.enterText(find.byType(TextField), 'Not clean');
+      await tester.pumpAndSettle();
+    },
+  ),
+  _Scenario(
+    'delete_account',
+    () async =>
+        DeleteAccountScreen(session: await _sessionWith(), onDeleted: () {}),
+  ),
+  _Scenario(
+    'delete_account_confirm_dialog',
+    () async =>
+        DeleteAccountScreen(session: await _sessionWith(), onDeleted: () {}),
+    act: (tester, l10n) async {
+      await _tapDeleteAccount(tester, l10n);
+    },
+  ),
+  _Scenario(
+    'delete_account_sole_admin',
+    () async {
+      final session = await _sessionWith();
+      _addBob(session);
+      return DeleteAccountScreen(session: session, onDeleted: () {});
+    },
+    act: (tester, l10n) async {
+      await _tapDeleteAccount(tester, l10n);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(l10n.deleteAccount),
+        ),
+      );
       await tester.pumpAndSettle();
     },
   ),
