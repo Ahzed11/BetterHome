@@ -11,6 +11,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 
+import com.betterhome.common.openapi.ContractValidation;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -36,7 +37,8 @@ class ListsApiTest {
     }
 
     private String createList(String title) {
-        return given().contentType(ContentType.JSON)
+        return given().filter(ContractValidation.validRequests("lists"))
+                .contentType(ContentType.JSON)
                 .body(Map.of("title", title))
                 .post(LISTS)
                 .then()
@@ -46,7 +48,8 @@ class ListsApiTest {
     }
 
     private String addItem(String listId, String title) {
-        return given().contentType(ContentType.JSON)
+        return given().filter(ContractValidation.validRequests("lists"))
+                .contentType(ContentType.JSON)
                 .body(Map.of("title", title))
                 .post(LISTS + "/" + listId + "/items")
                 .then()
