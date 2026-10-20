@@ -74,7 +74,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * **M5 · Lists (spec Phase 5)** — T-0023 (done), T-0024 (done). Exit: The Groceries tab journey passes end to end. **Reached** (the tab is named "Lists" in the design; reached from the household screen until the bottom bar, T-0031).
 * **M6 · Notifications** — T-0025 (done), T-0026 (done), T-0027, T-0028, T-0086, T-0012, T-0077. Exit: Every notification type in spec §5 reaches a fake push gateway in the user's language, honoring preferences.
 * **M7 · Spec completeness and polish (spec Phase 6)** — T-0029, T-0030, T-0031, T-0088, T-0089, T-0090, T-0032, T-0033, T-0076, T-0078. Exit: Every rule in spec §2–§9 is implemented and covered by an end-to-end journey.
-* **M8 · Deploy and launch** — T-0004, T-0034, T-0035. Exit: The stack runs on OpenShift with migrations as Jobs, and signed store builds are produced. Blocked until an OpenShift cluster is available; until then Podman Compose is the target platform.
+* **M8 · Deploy and launch** — T-0004, T-0034, T-0035, T-0107, T-0108, T-0109, T-0110, T-0111, T-0112, T-0113. Exit: The stack runs on OpenShift with migrations as Jobs, and signed store builds are produced. Blocked until an OpenShift cluster is available; until then Podman Compose is the target platform.
 
 ## Todo
 
@@ -1005,3 +1005,61 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0032
 * Spec: §9 Privacy, AGENTS §8
 * Acceptance criteria: An e2e journey deletes an account against the real stack (Keycloak included): last-admin refusal, hand-over, deletion, the Keycloak login gone, history shown under the nil UUID. Checks that the `manage-users` grant in `realm-betterhome.json` and `KEYCLOAK_ADMIN_URL` work against a real Keycloak. App: delete-account screen and rendering the nil UUID as a former member.
+
+### T-0107 · ADR and design for the Caddy reverse proxy
+
+* Status: todo
+* Issue / PR: #117 / —
+* Depends on: —
+* Spec: §7
+* Acceptance criteria: ADR 0029 records the design: one Tailscale MagicDNS host, path routing (`/auth` to Keycloak, `/api/<service>` to each service with the prefix stripped), TLS from tailscaled certificates (fallback `tls internal`, root CA installed on the phone), Keycloak behind a proxy, and why not subdomains (MagicDNS has none) or a public domain (exposes Keycloak and the APIs). Spec §7 gets one line. No app code change: the app already takes one base URL per service (`app/lib/main.dart`).
+
+### T-0108 · NAS compose stack with Caddy
+
+* Status: todo
+* Issue / PR: #118 / —
+* Depends on: T-0107
+* Spec: §7, AGENTS §3
+* Acceptance criteria: `deploy/nas/compose.yml`, `Caddyfile`, `.env.example` and a README start Postgres, Keycloak, the Flyway one-shot jobs (as `deploy/migrate.sh`), the five services (GHCR images pinned by `IMAGE_TAG`, ADR 0026, `docker login ghcr.io` with a read-only token) and Caddy on a Docker Compose v2 host (x86_64). Only Caddy publishes a port; CORS stays off (the Android app is not a browser). Restart policies, healthchecks and a JVM heap cap for a NAS. Secrets only from an uncommitted `.env`. `docker compose config` passes.
+
+### T-0109 · Keycloak production mode behind Caddy
+
+* Status: todo
+* Issue / PR: #119 / —
+* Depends on: T-0108
+* Spec: §7, §9
+* Acceptance criteria: Keycloak runs with `start` on its own Postgres database, `KC_HTTP_RELATIVE_PATH=/auth`, public hostname, proxy headers and `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`, so the issuer seen by the app, the services and Keycloak is the same. The realm import takes the service-client secrets and the admin password from the environment instead of the committed placeholders. Checked with a real token accepted by a service.
+
+### T-0110 · Tailscale and HTTPS certificates on the NAS
+
+* Status: todo
+* Issue / PR: #120 / —
+* Depends on: T-0108
+* Spec: §7
+* Acceptance criteria: Documented and verified steps: tailscaled on the NAS, MagicDNS and HTTPS certificates enabled in the tailnet, Caddy reading the tailscaled socket, an ACL limiting access to the phone and the dev machine. Manual work on the NAS: needs the product owner (NAS model and OS, tailnet name).
+
+### T-0111 · Android build against the NAS (`make apk`)
+
+* Status: todo
+* Issue / PR: #121 / —
+* Depends on: T-0107
+* Spec: §1
+* Acceptance criteria: `make apk` builds a debug-signed APK with the `--dart-define`s derived from one `NAS_HOST` variable (Keycloak issuer and the five API base URLs). Install steps (adb or a download over the tailnet). Verified on a real phone: sign-in through Keycloak, the OIDC redirect returns to the app, a household can be created. Store signing stays T-0035.
+
+### T-0112 · NAS smoke check (`make nas-smoke`)
+
+* Status: todo
+* Issue / PR: #122 / —
+* Depends on: T-0108, T-0109
+* Spec: §7
+* Acceptance criteria: From any tailnet machine: the certificate is valid, the discovery issuer under `/auth` equals the public URL, each service answers `/q/health/ready` through its prefix, and one password-grant token is accepted by every service. Extends the pattern of `deploy/smoke.sh`.
+
+### T-0113 · NAS operations: updates and backups
+
+* Status: todo
+* Issue / PR: #123 / —
+* Depends on: T-0108
+* Spec: §7
+* Acceptance criteria: `deploy/nas/update.sh` pulls a new SHA tag, runs the migrations and restarts the services. A nightly `pg_dump` of every database to a NAS volume, with a documented restore that was tried once.
+
+Out of scope of T-0107 to T-0113, to be filed when wanted: Gotify for push on the NAS (ADR 0027; the in-app inbox works without it), Caddy in the dev compose behind a profile, iOS, release signing and stores (T-0035).
