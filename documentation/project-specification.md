@@ -94,7 +94,7 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 
 ## 5. Notifications
 
-- Push notifications via a dedicated push gateway (FCM / APNs). The data model keeps a channel field for later email or in-app channels.
+- Push notifications are delivered through a self-hosted Gotify server (ADR 0027). A user receives them by registering the application token of their own Gotify application (`PUT /v1/push-target`); without one they get the in-app inbox only. The data model keeps a channel field for later email or in-app channels.
 - Types: task assigned, reassigned, due reminder, overdue, dismissed, superseded, reverted (only if reopened), marked away, invitation.
 - Reminder default: on the day of the task at 08:00 household time. Configurable per household (`reminder_days_before`, `reminder_time`). `due_reminder_sent_at` prevents duplicates.
 - Users can toggle each notification type. Messages are rendered server-side in the user's language, with minimal personal data in the payload.
@@ -142,7 +142,7 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 
 Flutter app ──► OpenShift Route / Ingress ──► Quarkus Microservices ──► Managed PostgreSQL
 │                                                │
-└── Keycloak (RHBK / OIDC) ◄─────────────────────┴── Push Gateway (FCM/APNs)
+└── Keycloak (RHBK / OIDC) ◄─────────────────────┴── Gotify push server
 
 ```
 
@@ -153,7 +153,7 @@ Flutter app ──► OpenShift Route / Ingress ──► Quarkus Microservices 
 | **Database** | Managed PostgreSQL (EU). Microservice-isolated schemas managed via **Flyway** migrations |
 | **Platform** | **Red Hat OpenShift Platform (OCP)** using OpenShift Routes, Deployments, ConfigMaps, Secrets, and Health Probes |
 | **Auth** | **Keycloak** (OIDC / OAuth2) behind an `AuthVerifier` interface. Validated via `quarkus-oidc` |
-| **Push** | Dedicated push gateway behind a `PushSender` interface, fed by transactional outbox tables |
+| **Push** | Gotify (self-hosted) behind a `PushSender` interface, fed by transactional outbox tables |
 | **Scheduling** | Quarkus Scheduler / Quartz loop on Postgres: claims due rows with `FOR UPDATE SKIP LOCKED`, one transaction per job |
 | **Packaging** | Container images built via Quarkus container extensions / Jib, deployed via Helm / Kustomize on OpenShift |
 | **API style** | REST with OpenAPI (SmallRye) and a generated Dart client |
@@ -168,6 +168,7 @@ Flutter app ──► OpenShift Route / Ingress ──► Quarkus Microservices 
 - **0007** — A parsed-document check against OpenAPI drift
 - **0011** — Recurrence computation in Quarkus services
 - **0013** — Push notification gateway behind a `PushSender` seam
+- **0027** — Push notifications are delivered through Gotify
 
 ### Repository layout (Monorepo)
 

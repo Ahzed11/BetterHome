@@ -54,7 +54,7 @@ make client && cd app && flutter pub get && flutter run -d chrome --web-port 809
   --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome
 ```
 
-To try the app by hand in one command, run `make run-app`: it starts the stack, creates the users `alice` and `bob` (password `demo`) and serves the web build on http://localhost:8090. Sign in as `alice`, create a household, then add chore templates from the household screen and log chores with "I just did…". `RUN_APP_SEED=1 make run-app` also loads the demo household. Ctrl-C stops the app, `make down` stops the stack. Push notifications are not delivered locally.
+To try the app by hand in one command, run `make run-app`: it starts the stack, creates the users `alice` and `bob` (password `demo`) and serves the web build on http://localhost:8090. Sign in as `alice`, create a household, then add chore templates from the household screen and log chores with "I just did…". `RUN_APP_SEED=1 make run-app` also loads the demo household. Ctrl-C stops the app, `make down` stops the stack. Push notifications are not delivered locally unless you start the optional Gotify server (`podman compose -f deploy/podman-compose.yml --profile gotify up -d`, with `GOTIFY_URL=http://gotify:80` in the environment of `make up`; ADR 0027).
 
 Without `API_BASE_URL` and `KEYCLOAK_ISSUER` the app runs in demo mode on in-memory data. `make seed` creates the users `alice` and `bob` (password `demo`). On the Android emulator use `10.0.2.2` for the API URLs and run `adb reverse tcp:8180 tcp:8180`, because Keycloak advertises `localhost:8180`. After changing the realm file run `make down && make up`, since it is imported only once.
 

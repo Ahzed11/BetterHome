@@ -12,6 +12,7 @@ tags:
 - name: "notifications"
 - name: "points"
 - name: "preferences"
+- name: "push"
 - name: "recurrence"
 - name: "scoreboard"
 - name: "tasks"
@@ -2400,6 +2401,105 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
       security:
       - bearerAuth: []
+  /v1/push-target:
+    delete:
+      summary: "Remove my push target; pushes stop, the inbox is unaffected"
+      operationId: "removeMyPushTarget"
+      tags:
+      - "push"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "204":
+          description: "Removed, or there was none"
+      security:
+      - bearerAuth: []
+    put:
+      summary: "Register my Gotify application token, replacing the previous one"
+      operationId: "registerMyPushTarget"
+      tags:
+      - "push"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPushTargetRequest"
+        required: true
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushTargetResponse"
+        "400":
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
+    get:
+      summary: "Whether I have a push target"
+      operationId: "getMyPushTarget"
+      tags:
+      - "push"
+      responses:
+        "401":
+          description: "Not authenticated"
+        "403":
+          description: "Not allowed to do this"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: "A service this one depends on is unavailable"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PushTargetResponse"
+        "404":
+          description: "No push target"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      security:
+      - bearerAuth: []
 components:
   schemas:
     AdjustRequest:
@@ -2672,6 +2772,11 @@ components:
           $ref: "#/components/schemas/Channel"
         enabled:
           type: "boolean"
+    PushTargetResponse:
+      type: "object"
+      properties:
+        registeredAt:
+          $ref: "#/components/schemas/Instant"
     QuickLogRequest:
       type: "object"
       required:
@@ -2716,6 +2821,15 @@ components:
           $ref: "#/components/schemas/Instant"
         nextRunAt:
           $ref: "#/components/schemas/Instant"
+    RegisterPushTargetRequest:
+      type: "object"
+      required:
+      - "token"
+      properties:
+        token:
+          type: "string"
+          pattern: "[A-Za-z0-9._~-]*"
+          maxLength: 128
     RevertRequest:
       type: "object"
       required:

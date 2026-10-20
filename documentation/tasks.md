@@ -224,13 +224,25 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Verification: JDK 21, Podman. `make test-backend SERVICE=tasks-service` (73 tests: relay delivery, key and payload, backoff and retry with a fixed clock, parking, lost answer sent again with the same key, 4 concurrent relays send 40 rows once each, rollback leaves no event, HTTP gateway status mapping) and `SERVICE=households-service` (57 tests: both producers, rollback on a failed away change, relay suite, HTTP gateway) pass with Spotless, Checkstyle and the coverage floors. Live on `make up` + `make seed`: marking a member away, inviting an existing user and a spawned recurrence each produced the notification in the recipient's language; with notifications-service stopped an invite still answered 201, the event retried with backoff, and after the restart it was delivered once (no duplicate). `make e2e` and the full `make test-backend` are in the PR run. Not run: Android.
 * Follow-ups: T-0081 (producers for the other types), T-0082 (the away text says chores were passed on, they are dismissed), T-0083 (drop the unused title and body columns of tasks' outbox).
 
-### T-0027 · Real push delivery: FCM and APNs
+### T-0027 · Real push delivery through Gotify (was: FCM and APNs)
 
-* Status: todo
-* Issue / PR: #20
+* Status: in-review
+* Issue / PR: #20 / —
 * Depends on: T-0025
 * Spec: §5, AGENTS §8
-* Acceptance criteria: Device-token registration API, FCM/APNs implementation of `PushSender` in notifications-service, minimal payloads (IDs and short text), invalid-token cleanup. Tests use an in-memory fake of the vendor boundary; e2e uses the fake push endpoint from T-0021.
+* Acceptance criteria: Device-token registration API, FCM/APNs implementation of `PushSender` in notifications-service, minimal payloads (IDs and short text), invalid-token cleanup. Tests use an in-memory fake of the vendor boundary; e2e uses the fake push endpoint from T-0021. Changed by the issue owner's comment on #20, "Use Gotify for this": the vendor is Gotify, so "device token" becomes "the user's Gotify application token" and "vendor boundary" is the Gotify HTTP API.
+* Summary: `GotifyPushSender` (JDK `HttpClient`, `POST {GOTIFY_URL}/message`, token in `X-Gotify-Key`, body = rendered title and message, priority 5, `extras["betterhome::push"]` with the type and the short-string payload) replaces `NoOpPushSender` in notifications-service when `GOTIFY_URL` is set (empty by default: nothing is pushed, the inbox is unaffected). Registration API `PUT/GET/DELETE /v1/push-target` (one Gotify application token per user, write-only), table `push_target` (migration V3). A 401, 403 or 404 from Gotify deletes the target (only if it still holds the refused token); other statuses, timeouts and connection errors are logged without token or text and the push is dropped. Contract regenerated (`make openapi`). Optional `gotify` Compose profile.
+* Decisions and deviations: ADR 0027 (new) records the choice and the meaning of a "device registration" for Gotify; AGENTS §1/§3, spec §5/§6 figure and table, ADR 0013 and the README were amended from FCM/APNs to Gotify. Gotify cannot address a device: a message goes to the owner of the application token, so the target is the user's own application token and there is no global token. Token sent as a header, not `?token=`, to keep it out of URLs. Cleanup on 401/403/404 only, not on every 4xx: a 400 means our body was wrong, not that the user's token is. The token is stored in clear text (needed to replay it). Delivery stays at most once (ADR 0017). `GotifyPushSender` is an `@Alternative` at priority 1; the test `RecordingPushSender` moved to priority 2 so it still wins in tests. T-0086 and T-0077 reworded below.
+* Verification: JDK 21, Podman. `./mvnw verify -pl services/notifications-service -am` passes (73 tests, Spotless, enforcer, JaCoCo floor, OpenAPI drift test), `make test-docs` passes; new tests `GotifyPushSenderTest` (request shape and token header, payload minimality, no target, no URL, 401/403/404 cleanup, other statuses and unreachable server keep the target, logs hold no token or text) against `FakeGotifyServer` (JDK `HttpServer`), and `PushTargetApiTest` (register, replace, read, remove, validation, per-user isolation, no profile 403, service account 403, anonymous 401, DB CHECK). Not run: a real Gotify server (the Compose profile was only validated with `podman compose config`), `make check`, `make e2e`.
+* Follow-ups: T-0105 (delivery state and retries for push, so a Gotify outage does not drop pushes), T-0086 and T-0077 adapted to Gotify.
+
+### T-0105 · Push delivery state and retries
+
+* Status: todo
+* Issue / PR: — (suggested: "Retry pushes that Gotify could not take")
+* Depends on: T-0027
+* Spec: §5
+* Acceptance criteria: ADR 0017 left push at most once "until delivery state and retries". A push that failed with a timeout, connection error or 5xx from Gotify is recorded and retried with backoff (like the relays), a refused token is never retried, and a duplicate event never pushes twice. Tests with `FakeGotifyServer` and a fixed clock.
 
 ### T-0028 · App: notification inbox and preferences
 
@@ -735,7 +747,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: — (suggested: "Fake push gateway for e2e")
 * Depends on: T-0021, T-0027
 * Spec: AGENTS §6.2, §3 Push
-* Acceptance criteria: The local and e2e stack runs a fake push gateway endpoint that records what notifications-service sends; e2e journeys assert on it (type, language, minimal payload). Needed by the M6 exit.
+* Acceptance criteria: (Gotify since T-0027, ADR 0027: the fake is a Gotify-compatible `POST /message` endpoint, `GOTIFY_URL` points at it, and the journey registers a token through `PUT /v1/push-target`.) The local and e2e stack runs a fake push gateway endpoint that records what notifications-service sends; e2e journeys assert on it (type, language, minimal payload). Needed by the M6 exit.
 
 ### T-0078 · `make check` runs the e2e suite
 
@@ -825,7 +837,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: — (suggested: "Register the device for push")
 * Depends on: T-0027, T-0028
 * Spec: §5
-* Acceptance criteria: Split from T-0028 on 2026-10-14. The app asks for push permission at a sensible moment (not at first launch), obtains the FCM or APNs token and registers it through the device-token API of T-0027, and removes it on sign-out. FR/EN, widget tests with a fake of the vendor boundary, e2e against the fake push endpoint (T-0077). Android only until iOS signing exists.
+* Acceptance criteria: Split from T-0028 on 2026-10-14. The app asks for push permission at a sensible moment (not at first launch), obtains the FCM or APNs token and registers it through the device-token API of T-0027, and removes it on sign-out. (Gotify since T-0027, ADR 0027: there is no OS token or permission prompt; the user pastes the application token of their Gotify app, the app registers it with `PUT /v1/push-target` and removes it with `DELETE` on sign-out.) FR/EN, widget tests with a fake of the vendor boundary, e2e against the fake push endpoint (T-0077). Android only until iOS signing exists.
 
 ### T-0087 · The ledger sum can go below zero after an adjustment followed by a reversal
 
