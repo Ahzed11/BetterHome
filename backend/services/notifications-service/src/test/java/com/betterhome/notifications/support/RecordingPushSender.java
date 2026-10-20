@@ -9,7 +9,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /** The push gateway boundary in tests: remembers what it was asked to send. */
 @Alternative
-@Priority(1)
+@Priority(2)
 @ApplicationScoped
 public class RecordingPushSender implements PushSender {
 

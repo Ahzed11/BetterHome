@@ -4,7 +4,7 @@ Instructions for AI agents (and humans) working on this repository. Read this fi
 
 ## 1. Project in one paragraph
 
-A mobile app (Flutter) for people sharing a home. It spreads recurring chores fairly (round robin), rewards effort with points on a friendly scoreboard, and offers shared checklists. Backend: a set of **Java / Quarkus microservices** (`households`, `tasks`, `scoring`, `lists`, `notifications`) orchestrated on **Red Hat OpenShift** with **managed PostgreSQL**, packaged as container images. Identity and access management are handled by **Keycloak** (OIDC / OAuth2), behind an interface so it can be replaced. Push notifications (FCM / APNs) are sent via a dedicated notification gateway. The [product specification](documentation/project-specification.md) is the **source of truth** for behavior. Code, tests, and spec must always agree.
+A mobile app (Flutter) for people sharing a home. It spreads recurring chores fairly (round robin), rewards effort with points on a friendly scoreboard, and offers shared checklists. Backend: a set of **Java / Quarkus microservices** (`households`, `tasks`, `scoring`, `lists`, `notifications`) orchestrated on **Red Hat OpenShift** with **managed PostgreSQL**, packaged as container images. Identity and access management are handled by **Keycloak** (OIDC / OAuth2), behind an interface so it can be replaced. Push notifications are delivered through a Gotify server (ADR 0027) by the notifications service. The [product specification](documentation/project-specification.md) is the **source of truth** for behavior. Code, tests, and spec must always agree.
 
 ## 2. Non-negotiable principles
 
@@ -42,7 +42,7 @@ A mobile app (Flutter) for people sharing a home. It spreads recurring chores fa
 | Database | PostgreSQL (managed, EU). Per-service database isolation. Schema migrations via **Flyway** (SQL files, forward-only) |
 | Platform | **Red Hat OpenShift Platform** (OCP) using OpenShift Deployments, Routes, ConfigMaps, Secrets, Keycloak Operator, and Health Probes |
 | Auth | **Keycloak** (OIDC / OAuth2 JWT bearer tokens), behind the `AuthVerifier` interface. Token validation via Quarkus OIDC security layer. Our own `USER.id` is the only identity used in tables. Keycloak `sub` (subject UUID) is stored once as `auth_subject` |
-| Push | Push Notification Gateway behind the `PushSender` interface, fed by an **outbox table** written in the same transaction as the change |
+| Push | **Gotify** (self-hosted push server, ADR 0027) behind the `PushSender` interface, fed by an **outbox table** written in the same transaction as the change |
 | Scheduling | Quarkus Scheduler / Quartz loop on Postgres per service: claims due rows with `FOR UPDATE SKIP LOCKED`, one transaction per job |
 | Time | `Clock` interface / CDI bean. All timestamps in UTC. Recurrence computed in the household timezone |
 | Packaging | Container images built via Quarkus container extensions / Jib, deployed locally with Podman / `oc` CLI or OpenShift Local (CRC) |

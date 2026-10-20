@@ -5,8 +5,10 @@ import com.betterhome.notifications.domain.Notification;
 import com.betterhome.notifications.domain.NotificationType;
 import com.betterhome.notifications.service.IngestService;
 import com.betterhome.notifications.service.PreferenceService;
+import com.betterhome.notifications.service.PushTargetService;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.Map;
@@ -52,6 +54,18 @@ public final class NotificationDtos {
     }
 
     public record UpdatePreferenceRequest(@NotNull Boolean enabled) {}
+
+    /** A Gotify application token. Characters are limited so it cannot break a header. */
+    public record RegisterPushTargetRequest(
+            @NotBlank @Size(max = 128) @Pattern(regexp = "[A-Za-z0-9._~-]*") String token) {}
+
+    /** Says that a target exists and since when; the token is never returned. */
+    public record PushTargetResponse(Instant registeredAt) {
+
+        public static PushTargetResponse from(PushTargetService.Registration registration) {
+            return new PushTargetResponse(registration.registeredAt());
+        }
+    }
 
     /** An event from another service. {@code type} is validated against the spec §5 list. */
     public record IngestRequest(

@@ -143,6 +143,8 @@ services:
       DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_notifications
       HOUSEHOLDS_SERVICE_URL: http://households-service:8081
       OIDC_SERVICE_CLIENT_ID: betterhome-notifications-service
+      # Empty means no push (ADR 0027). With the gotify profile: GOTIFY_URL=http://gotify:80
+      GOTIFY_URL: ${GOTIFY_URL:-}
       # Local-dev placeholder, same value as the secret in realm-betterhome.json
       OIDC_SERVICE_CLIENT_SECRET: ${OIDC_SERVICE_CLIENT_SECRET:-local-dev-only-change-me}
     ports:
@@ -155,5 +157,19 @@ services:
     ports:
       - "16686:16686"
 
+  # Optional local push server; only started with --profile gotify (ADR 0027). Sign in on
+  # http://localhost:8070 as admin / admin (local only), create an application, and register its token
+  # with PUT /v1/push-target.
+  gotify:
+    profiles: ["gotify"]
+    image: docker.io/gotify/server:2.6.1
+    environment:
+      GOTIFY_DEFAULTUSER_PASS: admin
+    ports:
+      - "8070:80"
+    volumes:
+      - gotify-data:/app/data
+
 volumes:
   postgres-data:
+  gotify-data:
