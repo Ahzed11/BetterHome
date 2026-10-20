@@ -37,11 +37,15 @@ class ScreenHeader extends StatelessWidget {
         if (actions.isNotEmpty)
           Flexible(
             flex: 3,
-            child: Wrap(
-              alignment: WrapAlignment.end,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: AppTokens.spaceSm,
-              children: actions,
+            // The Wrap is as wide as its content; the Align sends it to the far right.
+            child: Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: AppTokens.spaceSm,
+                children: actions,
+              ),
             ),
           ),
       ],
