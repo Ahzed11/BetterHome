@@ -983,6 +983,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DismissedCount"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       security:
       - bearerAuth:
         - service

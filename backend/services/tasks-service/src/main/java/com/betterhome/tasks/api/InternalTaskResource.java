@@ -41,6 +41,10 @@ public class InternalTaskResource {
             responseCode = "200",
             description = "OK",
             content = @Content(schema = @Schema(implementation = DismissedCount.class)))
+    @APIResponse(
+            responseCode = "400",
+            description = "Invalid input",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     @POST
     @Path("/dismiss-away/{userId}")
     public DismissedCount dismissAway(
