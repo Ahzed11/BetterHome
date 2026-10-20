@@ -47,6 +47,10 @@ for s in households tasks scoring lists notifications; do curl -s -o /dev/null -
 curl -s $H/gotify/health
 ```
 
+## The app
+
+Install the APK from `make apk` ([README](../../README.md)), open it and enter the address `https://<host>` (the same host as above). The phone must be on the tailnet.
+
 ## First user
 
 Registration is open in the realm, so a user can sign up from the app's sign-in page. To create one by hand, open `https://<host>/auth` (admin console, user `admin`), realm `betterhome`, Users, and give the user the `member` role.

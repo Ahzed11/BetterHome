@@ -159,7 +159,7 @@ Flutter app ──► OpenShift Route / Ingress ──► Quarkus Microservices 
 | **Packaging** | Container images built via Quarkus container extensions / Jib, deployed via Helm / Kustomize on OpenShift |
 | **API style** | REST with OpenAPI (SmallRye) and a generated Dart client |
 
-A self-hosted test deployment (Docker Compose on a home server) sits behind the server's existing Caddy reverse proxy, which fronts Keycloak, the five services and Gotify, on a single host name reached through Tailscale: `/auth` is Keycloak, `/api/<service>` each service, `/gotify` Gotify (ADR 0029).
+A self-hosted test deployment (Docker Compose on a home server) sits behind the server's existing Caddy reverse proxy, which fronts Keycloak, the five services and Gotify, on a single host name reached through Tailscale: `/auth` is Keycloak, `/api/<service>` each service, `/gotify` Gotify (ADR 0029). The app asks for the server address on first launch, checks it and remembers it, and derives the Keycloak issuer and the service URLs from it.
 
 ### Architecture Decision Records (ADRs)
 - **0001** — Token values that can carry text

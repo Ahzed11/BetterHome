@@ -1,21 +1,18 @@
 import 'package:betterhome/app.dart';
-import 'package:betterhome/auth/oidc_auth_service.dart';
-import 'package:betterhome/data/households_repository.dart';
-import 'package:betterhome/data/lists_repository.dart';
-import 'package:betterhome/data/notifications_repository.dart';
-import 'package:betterhome/data/scoring_repository.dart';
-import 'package:betterhome/data/tasks_repository.dart';
-import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/server_app.dart';
+import 'package:betterhome/server_stack.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Entry point. Runs in demo mode (in-memory repositories) unless both are set:
-/// API: `--dart-define=API_BASE_URL=http://localhost:8081` (households), optionally
-///   `TASKS_API_BASE_URL` (:8082) and `SCORING_API_BASE_URL` (:8083), which default to API_BASE_URL.
-///   `LISTS_API_BASE_URL` (:8084) and `NOTIFICATIONS_API_BASE_URL` (:8085), which also default to
-///   API_BASE_URL.
-/// Sign-in: `--dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome`,
-///   optionally `KEYCLOAK_CLIENT_ID` (default `betterhome-app`).
+/// Entry point. The server is chosen in one of three ways:
+/// - Build time, for development and the end-to-end journeys: both `--dart-define`s below set.
+///   API: `--dart-define=API_BASE_URL=http://localhost:8081` (households), optionally
+///   `TASKS_API_BASE_URL` (:8082), `SCORING_API_BASE_URL` (:8083), `LISTS_API_BASE_URL` (:8084) and
+///   `NOTIFICATIONS_API_BASE_URL` (:8085), which default to API_BASE_URL. Sign-in:
+///   `--dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome`.
+/// - At run time, when they are not set: the app asks for the server address on first launch
+///   (T-0115, ADR 0029) and remembers it. This is what a published build does, with no host inside.
+/// Either way `KEYCLOAK_CLIENT_ID` (default `betterhome-app`) names the client.
 /// On the Android emulator use 10.0.2.2 for the API and run `adb reverse tcp:8180 tcp:8180`, because
 /// Keycloak advertises `localhost:8180` in its discovery document.
 Future<void> main() async {
@@ -36,48 +33,26 @@ Future<void> main() async {
 
   if (apiBaseUrl.isEmpty || keycloakIssuer.isEmpty) {
     runApp(
-      BetterHomeApp(
-        session: AppSession(
-          repository: FakeHouseholdsRepository(),
-          preferences: preferences,
-        ),
+      ServerApp(
+        preferences: preferences,
+        buildStack: (server) =>
+            buildStackForServer(server, keycloakClientId, preferences),
       ),
     );
     return;
   }
 
-  final auth = OidcAuthService.forPlatform(
-    issuer: Uri.parse(keycloakIssuer),
+  final stack = buildStackFromUrls(
+    issuer: keycloakIssuer,
     clientId: keycloakClientId,
+    householdsUrl: apiBaseUrl,
+    tasksUrl: tasksApiBaseUrl.isEmpty ? apiBaseUrl : tasksApiBaseUrl,
+    scoringUrl: scoringApiBaseUrl.isEmpty ? apiBaseUrl : scoringApiBaseUrl,
+    listsUrl: listsApiBaseUrl.isEmpty ? apiBaseUrl : listsApiBaseUrl,
+    notificationsUrl: notificationsApiBaseUrl.isEmpty
+        ? apiBaseUrl
+        : notificationsApiBaseUrl,
+    preferences: preferences,
   );
-  runApp(
-    BetterHomeApp(
-      auth: auth,
-      session: AppSession(
-        preferences: preferences,
-        repository: HttpHouseholdsRepository(
-          baseUrl: apiBaseUrl,
-          accessToken: auth.accessToken,
-        ),
-        tasksRepository: HttpTasksRepository(
-          baseUrl: tasksApiBaseUrl.isEmpty ? apiBaseUrl : tasksApiBaseUrl,
-          accessToken: auth.accessToken,
-        ),
-        scoringRepository: HttpScoringRepository(
-          baseUrl: scoringApiBaseUrl.isEmpty ? apiBaseUrl : scoringApiBaseUrl,
-          accessToken: auth.accessToken,
-        ),
-        listsRepository: HttpListsRepository(
-          baseUrl: listsApiBaseUrl.isEmpty ? apiBaseUrl : listsApiBaseUrl,
-          accessToken: auth.accessToken,
-        ),
-        notificationsRepository: HttpNotificationsRepository(
-          baseUrl: notificationsApiBaseUrl.isEmpty
-              ? apiBaseUrl
-              : notificationsApiBaseUrl,
-          accessToken: auth.accessToken,
-        ),
-      ),
-    ),
-  );
+  runApp(BetterHomeApp(auth: stack.auth, session: stack.session));
 }

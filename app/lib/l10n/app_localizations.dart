@@ -518,6 +518,60 @@ abstract class AppLocalizations {
   /// **'Sign out'**
   String get signOut;
 
+  /// No description provided for @serverSetupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to your server'**
+  String get serverSetupTitle;
+
+  /// No description provided for @serverSetupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'BetterHome runs on a server that you or a housemate host. Enter its address to sign in.'**
+  String get serverSetupBody;
+
+  /// No description provided for @serverAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Server address'**
+  String get serverAddress;
+
+  /// No description provided for @serverAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://home.example.com'**
+  String get serverAddressHint;
+
+  /// No description provided for @serverChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get serverChecking;
+
+  /// No description provided for @serverInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a web address, such as https://home.example.com'**
+  String get serverInvalid;
+
+  /// No description provided for @serverUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'No BetterHome server answered at this address. Check it and your connection.'**
+  String get serverUnreachable;
+
+  /// No description provided for @serverChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Change server'**
+  String get serverChange;
+
+  /// No description provided for @serverCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Server: {host}'**
+  String serverCurrent(String host);
+
   /// No description provided for @createList.
   ///
   /// In en, this message translates to:
