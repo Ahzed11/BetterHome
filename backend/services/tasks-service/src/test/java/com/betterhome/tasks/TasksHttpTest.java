@@ -4,9 +4,11 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
 
+import com.betterhome.tasks.domain.Task;
 import com.betterhome.tasks.membership.InMemoryMembershipGateway;
 import com.betterhome.tasks.membership.MembershipGateway.HouseholdSettings;
 import com.betterhome.tasks.membership.MembershipGateway.MemberView;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
@@ -41,6 +43,7 @@ class TasksHttpTest {
 
     @BeforeEach
     void seedMembers() {
+        QuarkusTransaction.requiringNew().run(() -> Task.delete("householdId", HOUSEHOLD));
         membershipGateway.replaceHouseholdMembers(
                 HOUSEHOLD,
                 List.of(
@@ -137,6 +140,177 @@ class TasksHttpTest {
     @TestSecurity(user = OUTSIDER_SUBJECT, roles = "member")
     void aNonMemberCannotListTasks() {
         json().get(TASKS).then().statusCode(403).body("code", is("forbidden"));
+    }
+
+    @Test
+    @TestSecurity(user = ADMIN_SUBJECT, roles = "admin")
+    void dismissAwayDismissesTheOpenTasksOfTheMemberAndCountsThem() {
+        String templateId = createTemplate("Floors");
+        createOpenTask(templateId);
+        createOpenTask(templateId);
+
+        json().post(TASKS + "/dismiss-away/" + MEMBER_USER)
+                .then()
+                .statusCode(200)
+                .body("dismissed", is(2));
+        json().post(TASKS + "/dismiss-away/" + MEMBER_USER)
+                .then()
+                .statusCode(200)
+                .body("dismissed", is(0));
+        json().get(TASKS + "?status=dismissed")
+                .then()
+                .statusCode(200)
+                .body("$", hasSize(2))
+                .body("[0].dismissalReason", is("assignee_away"));
+        json().get(TASKS + "?status=open").then().statusCode(200).body("$", hasSize(0));
+    }
+
+    @Test
+    @TestSecurity(user = ADMIN_SUBJECT, roles = "admin")
+    void reassignAwayHandsOpenTasksToTheNextMemberOrConflictsWhenNobodyIsEligible() {
+        String templateId = createTemplate("Windows");
+        createOpenTask(templateId);
+
+        json().post(TASKS + "/reassign-away/" + MEMBER_USER)
+                .then()
+                .statusCode(200)
+                .body("reassigned", is(1));
+        json().get(TASKS + "?status=open")
+                .then()
+                .statusCode(200)
+                .body("[0].assigneeId", is(ADMIN_USER.toString()));
+
+        membershipGateway.replaceHouseholdMembers(
+                HOUSEHOLD,
+                List.of(
+                        new MemberView(ADMIN_USER, UUID.fromString(ADMIN_SUBJECT), true, true, 1),
+                        new MemberView(
+                                MEMBER_USER, UUID.fromString(MEMBER_SUBJECT), false, true, 2)));
+        json().post(TASKS + "/reassign-away/" + ADMIN_USER)
+                .then()
+                .statusCode(409)
+                .body("code", is("conflict"));
+    }
+
+    @Test
+    @TestSecurity(user = MEMBER_SUBJECT, roles = "member")
+    void aMemberCannotDismissOrReassignAwayTasks() {
+        json().post(TASKS + "/dismiss-away/" + MEMBER_USER)
+                .then()
+                .statusCode(403)
+                .body("code", is("forbidden"));
+        json().post(TASKS + "/reassign-away/" + MEMBER_USER)
+                .then()
+                .statusCode(403)
+                .body("code", is("forbidden"));
+    }
+
+    @Test
+    @TestSecurity(user = OUTSIDER_SUBJECT, roles = "member")
+    void aNonMemberCannotDismissOrReassignAwayTasks() {
+        json().post(TASKS + "/dismiss-away/" + MEMBER_USER).then().statusCode(403);
+        json().post(TASKS + "/reassign-away/" + MEMBER_USER).then().statusCode(403);
+    }
+
+    @Test
+    void anonymousCallersCannotDismissOrReassignAwayTasks() {
+        given().post(TASKS + "/dismiss-away/" + MEMBER_USER).then().statusCode(401);
+        given().post(TASKS + "/reassign-away/" + MEMBER_USER).then().statusCode(401);
+    }
+
+    @Test
+    @TestSecurity(user = ADMIN_SUBJECT, roles = "admin")
+    void tasksInTheWrongStateAnswerConflict() {
+        String templateId = createTemplate("Laundry");
+        String doneId = createOpenTask(templateId);
+        json().post(TASKS + "/" + doneId + "/complete").then().statusCode(200);
+
+        json().post(TASKS + "/" + doneId + "/complete")
+                .then()
+                .statusCode(409)
+                .body("code", is("conflict"));
+        json().post(TASKS + "/" + doneId + "/dismiss").then().statusCode(409);
+        json().post(TASKS + "/" + doneId + "/reassign").then().statusCode(409);
+
+        String openId = createOpenTask(templateId);
+        json().body(Map.of("reason", "Too early"))
+                .post(TASKS + "/" + openId + "/revert")
+                .then()
+                .statusCode(409);
+        json().body(Map.of("reason", " "))
+                .post(TASKS + "/" + doneId + "/revert")
+                .then()
+                .statusCode(400)
+                .body("code", is("bad_request"));
+    }
+
+    @Test
+    @TestSecurity(user = ADMIN_SUBJECT, roles = "admin")
+    void unknownTemplatesAndTasksAnswerNotFound() {
+        UUID missing = UUID.randomUUID();
+        json().body(Map.of("templateId", missing))
+                .post(TASKS)
+                .then()
+                .statusCode(404)
+                .body("code", is("not_found"));
+        json().body(Map.of("templateId", missing)).post(TASKS + "/manual").then().statusCode(404);
+        json().post(TASKS + "/" + missing + "/dismiss").then().statusCode(404);
+        json().post(TASKS + "/" + missing + "/reassign").then().statusCode(404);
+        json().body(Map.of("reason", "Because"))
+                .post(TASKS + "/" + missing + "/revert")
+                .then()
+                .statusCode(404);
+        json().body(Map.of("points", 3)).patch(TEMPLATES + "/" + missing).then().statusCode(404);
+        json().post(TEMPLATES + "/" + missing + "/archive").then().statusCode(404);
+    }
+
+    @Test
+    @TestSecurity(user = ADMIN_SUBJECT, roles = "admin")
+    void invalidBodiesAnswerBadRequest() {
+        String templateId = createTemplate("Plants");
+        json().body(Map.of("assigneeId", MEMBER_USER)).post(TASKS).then().statusCode(400);
+        json().body(Map.of()).post(TASKS + "/manual").then().statusCode(400);
+        json().body(Map.of("points", -1))
+                .patch(TEMPLATES + "/" + templateId)
+                .then()
+                .statusCode(400);
+        json().body(Map.of("rrule", "NOT A RULE", "assignmentMode", "round_robin"))
+                .put(TEMPLATES + "/" + templateId + "/recurrence")
+                .then()
+                .statusCode(400)
+                .body("code", is("bad_request"));
+    }
+
+    @Test
+    @TestSecurity(user = MEMBER_SUBJECT, roles = "member")
+    void aMemberCannotManageTemplatesRecurrencesOrOthersTasks() {
+        UUID missing = UUID.randomUUID();
+        json().body(Map.of("points", 3))
+                .patch(TEMPLATES + "/" + missing)
+                .then()
+                .statusCode(403)
+                .body("code", is("forbidden"));
+        json().post(TEMPLATES + "/" + missing + "/archive").then().statusCode(403);
+        json().body(Map.of("rrule", "FREQ=DAILY", "assignmentMode", "round_robin"))
+                .put(TEMPLATES + "/" + missing + "/recurrence")
+                .then()
+                .statusCode(403);
+        json().body(Map.of("templateId", missing)).post(TASKS).then().statusCode(403);
+    }
+
+    @TestSecurity(user = ADMIN_SUBJECT, roles = "admin")
+    void anInvalidStatusFilterIsRejected() {
+        json().get(TASKS + "?status=nonsense").then().statusCode(400);
+    }
+
+    @Test
+    @TestSecurity(user = OUTSIDER_SUBJECT, roles = "member")
+    void aNonMemberIsForbiddenEverywhereElse() {
+        UUID missing = UUID.randomUUID();
+        json().get(TEMPLATES).then().statusCode(403);
+        json().get(TEMPLATES + "/" + missing + "/recurrence").then().statusCode(403);
+        json().post(TASKS + "/" + missing + "/complete").then().statusCode(403);
+        json().body(Map.of("templateId", missing)).post(TASKS + "/manual").then().statusCode(403);
     }
 
     @Test

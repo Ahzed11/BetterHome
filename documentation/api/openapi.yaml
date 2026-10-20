@@ -1558,7 +1558,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/TaskResponse"
         "400":
-          description: "Bad Request"
+          description: "Invalid input"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
       security:
       - bearerAuth: []
   /v1/households/{householdId}/tasks/reassign-away/{userId}:
