@@ -74,6 +74,64 @@ class RecurrenceController extends ChangeNotifier {
   }
 }
 
+/// A short name for how often [recurrence] comes back: "Weekly", or "Every 2 weeks".
+String recurrenceLabel(AppLocalizations l10n, TaskRecurrence recurrence) {
+  final c = RecurrenceController()..load(recurrence);
+  if (c.interval == 1) {
+    return switch (c.freq) {
+      RecurrenceFreq.daily => l10n.recurrenceDaily,
+      RecurrenceFreq.weekly => l10n.recurrenceWeekly,
+      RecurrenceFreq.monthly => l10n.recurrenceMonthly,
+    };
+  }
+  final every = switch (c.freq) {
+    RecurrenceFreq.daily => l10n.intervalDays(c.interval),
+    RecurrenceFreq.weekly => l10n.intervalWeeks(c.interval),
+    RecurrenceFreq.monthly => l10n.intervalMonths(c.interval),
+  };
+  return '${l10n.every} $every';
+}
+
+/// The small green pill that marks a chore as recurring, with how often.
+class RecurringPill extends StatelessWidget {
+  const RecurringPill({super.key, required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const ShapeDecoration(
+        color: AppTokens.brandTint,
+        shape: StadiumBorder(),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTokens.spaceSm + AppTokens.spaceXs,
+          vertical: AppTokens.spaceXs + 2,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.sync, size: 14, color: AppTokens.deepBrand),
+            const SizedBox(width: AppTokens.spaceXs + 2),
+            Flexible(
+              child: Text(
+                label,
+                style: AppTypography.label.copyWith(
+                  fontSize: 13,
+                  color: AppTokens.deepBrand,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// The "When" and "Who does it" sections of the design's "New recurring chore" board.
 class RecurrenceSections extends StatelessWidget {
   const RecurrenceSections({

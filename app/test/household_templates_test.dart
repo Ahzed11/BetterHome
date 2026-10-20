@@ -4,6 +4,7 @@ import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/household_detail_screen.dart';
 import 'package:betterhome/ui/widgets/chore_form_sections.dart';
+import 'package:betterhome/ui/widgets/recurrence_sections.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -275,6 +276,61 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     expect(find.text('WHEN'), findsOneWidget);
+  });
+
+  testWidgets('a template that repeats shows how often on its card', (
+    tester,
+  ) async {
+    await _setUp();
+    final tasks = _session.tasksRepository;
+    final dishes = (await tasks.listTemplates(_household)).single;
+    await tasks.upsertRecurrence(
+      householdId: _household,
+      templateId: dishes.id,
+      rrule: 'FREQ=WEEKLY;BYDAY=MO',
+      assignmentMode: AssignmentMode.roundRobin,
+    );
+    final bins = await tasks.createTemplate(
+      householdId: _household,
+      title: 'Bins',
+      points: 3,
+      latePoints: 1,
+    );
+    await tasks.upsertRecurrence(
+      householdId: _household,
+      templateId: bins.id,
+      rrule: 'FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=1',
+      assignmentMode: AssignmentMode.roundRobin,
+    );
+    await tasks.createTemplate(
+      householdId: _household,
+      title: 'Once',
+      points: 1,
+      latePoints: 0,
+    );
+    await _pump(tester);
+    await tester.scrollUntilVisible(find.text('Once'), 200);
+
+    expect(find.text('Weekly'), findsOneWidget);
+    expect(find.text('Every 2 months'), findsOneWidget);
+    expect(find.byType(RecurringPill), findsNWidgets(2));
+  });
+
+  testWidgets('the repeat pill is in French in French', (tester) async {
+    await _setUp();
+    final tasks = _session.tasksRepository;
+    final dishes = (await tasks.listTemplates(_household)).single;
+    await tasks.upsertRecurrence(
+      householdId: _household,
+      templateId: dishes.id,
+      rrule: 'FREQ=DAILY;INTERVAL=3',
+      assignmentMode: AssignmentMode.roundRobin,
+    );
+    await _pump(tester, locale: const Locale('fr'), textScale: 2);
+    await tester.scrollUntilVisible(find.text('Dishes'), 200);
+
+    expect(find.text('Tous les 3 jours'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('a member sees the templates but cannot change them', (

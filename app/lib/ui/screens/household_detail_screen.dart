@@ -6,6 +6,7 @@ import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/member_avatar.dart';
+import 'package:betterhome/ui/widgets/recurrence_sections.dart';
 import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/app_toast.dart';
@@ -47,10 +48,21 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
       final templates = await widget.session.tasksRepository.listTemplates(
         widget.householdId,
       );
+      final recurrences = <String, TaskRecurrence>{};
+      for (final template in templates) {
+        final recurrence = await widget.session.tasksRepository.getRecurrence(
+          widget.householdId,
+          template.id,
+        );
+        if (recurrence != null) {
+          recurrences[template.id] = recurrence;
+        }
+      }
       return _DetailData(
         household: household,
         members: members,
         templates: templates,
+        recurrences: recurrences,
       );
     }();
   }
@@ -310,15 +322,14 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                         title: Text(template.title, style: AppTypography.body),
-                        subtitle: Text(
-                          l10n.templatePointsSummary(
-                            template.points,
-                            template.latePoints,
-                          ),
-                          style: AppTypography.eyebrow.copyWith(
-                            fontWeight: FontWeight.w400,
-                          ),
+                        subtitle: _templateSubtitle(
+                          l10n,
+                          template,
+                          data.recurrences[template.id],
                         ),
+                        trailing: _stackPill(context)
+                            ? null
+                            : _pillFor(l10n, data.recurrences[template.id]),
                         onTap: isAdmin
                             ? () => _saveTemplate(template: template)
                             : null,
@@ -350,6 +361,39 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
           );
         },
       ),
+    );
+  }
+
+  /// At large text sizes the pill goes under the points instead of squeezing the title.
+  bool _stackPill(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(16) > 22;
+
+  Widget? _pillFor(AppLocalizations l10n, TaskRecurrence? recurrence) =>
+      switch (recurrence) {
+        final r? => RecurringPill(label: recurrenceLabel(l10n, r)),
+        null => null,
+      };
+
+  Widget _templateSubtitle(
+    AppLocalizations l10n,
+    TaskTemplate template,
+    TaskRecurrence? recurrence,
+  ) {
+    final points = Text(
+      l10n.templatePointsSummary(template.points, template.latePoints),
+      style: AppTypography.eyebrow.copyWith(fontWeight: FontWeight.w400),
+    );
+    final pill = _stackPill(context) ? _pillFor(l10n, recurrence) : null;
+    if (pill == null) {
+      return points;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        points,
+        const SizedBox(height: AppTokens.spaceXs),
+        pill,
+      ],
     );
   }
 
@@ -569,9 +613,13 @@ class _DetailData {
     required this.household,
     required this.members,
     required this.templates,
+    required this.recurrences,
   });
 
   final Household household;
   final List<Membership> members;
   final List<TaskTemplate> templates;
+
+  /// The recurrence of each template that has one, by template id.
+  final Map<String, TaskRecurrence> recurrences;
 }
