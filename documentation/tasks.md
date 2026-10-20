@@ -74,7 +74,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * **M5 · Lists (spec Phase 5)** — T-0023 (done), T-0024 (done). Exit: The Groceries tab journey passes end to end. **Reached** (the tab is named "Lists" in the design; reached from the household screen until the bottom bar, T-0031).
 * **M6 · Notifications** — T-0025 (done), T-0026 (done), T-0027, T-0028, T-0086, T-0012, T-0077. Exit: Every notification type in spec §5 reaches a fake push gateway in the user's language, honoring preferences.
 * **M7 · Spec completeness and polish (spec Phase 6)** — T-0029, T-0030, T-0031, T-0088, T-0089, T-0090, T-0032, T-0033, T-0076, T-0078. Exit: Every rule in spec §2–§9 is implemented and covered by an end-to-end journey.
-* **M8 · Deploy and launch** — T-0004, T-0034, T-0035, T-0107, T-0108, T-0109, T-0110, T-0111, T-0112, T-0113. Exit: The stack runs on OpenShift with migrations as Jobs, and signed store builds are produced. Blocked until an OpenShift cluster is available; until then Podman Compose is the target platform.
+* **M8 · Deploy and launch** — T-0004, T-0034, T-0035, T-0107, T-0108, T-0109, T-0110, T-0111, T-0112, T-0113, T-0114, T-0115, T-0116, T-0117 (and T-0086 for the push registration). Exit: The stack runs on OpenShift with migrations as Jobs, and signed store builds are produced. Blocked until an OpenShift cluster is available; until then Podman Compose is the target platform.
 
 ## Todo
 
@@ -842,7 +842,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 ### T-0086 · App: push permission prompt and device token registration
 
 * Status: todo
-* Issue / PR: — (suggested: "Register the device for push")
+* Issue / PR: #125 / —
 * Depends on: T-0027, T-0028
 * Spec: §5
 * Acceptance criteria: Split from T-0028 on 2026-10-14. The app asks for push permission at a sensible moment (not at first launch), obtains the FCM or APNs token and registers it through the device-token API of T-0027, and removes it on sign-out. (Gotify since T-0027, ADR 0027: there is no OS token or permission prompt; the user pastes the application token of their Gotify app, the app registers it with `PUT /v1/push-target` and removes it with `DELETE` on sign-out.) FR/EN, widget tests with a fake of the vendor boundary, e2e against the fake push endpoint (T-0077). Android only until iOS signing exists.
@@ -1012,7 +1012,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #117 / —
 * Depends on: —
 * Spec: §7
-* Acceptance criteria: ADR 0029 records the design: one Tailscale MagicDNS host, path routing (`/auth` to Keycloak, `/api/<service>` to each service with the prefix stripped), TLS from tailscaled certificates (fallback `tls internal`, root CA installed on the phone), Keycloak behind a proxy, and why not subdomains (MagicDNS has none) or a public domain (exposes Keycloak and the APIs). Spec §7 gets one line. No app code change: the app already takes one base URL per service (`app/lib/main.dart`).
+* Acceptance criteria: ADR 0029 records the design: one Tailscale MagicDNS host taken from configuration (`NAS_HOST`; the tailnet name is never written in the repository, examples use `nas.example.ts.net`), path routing (`/auth` to Keycloak, `/api/<service>` to each service with the prefix stripped), TLS from tailscaled certificates (fallback `tls internal`, root CA installed on the phone), Keycloak behind a proxy, where Gotify is reached from the phone (decided there: a path under the same host or a second port; the Gotify app and its web UI must work), and why not subdomains (MagicDNS has none) or a public domain (exposes Keycloak and the APIs). Spec §7 gets one line. The app needs one base URL: it derives the Keycloak issuer (`/auth/realms/betterhome`) and the five service URLs from it (T-0115).
 
 ### T-0108 · NAS compose stack with Caddy
 
@@ -1020,7 +1020,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #118 / —
 * Depends on: T-0107
 * Spec: §7, AGENTS §3
-* Acceptance criteria: `deploy/nas/compose.yml`, `Caddyfile`, `.env.example` and a README start Postgres, Keycloak, the Flyway one-shot jobs (as `deploy/migrate.sh`), the five services (GHCR images pinned by `IMAGE_TAG`, ADR 0026, `docker login ghcr.io` with a read-only token) and Caddy on a Docker Compose v2 host (x86_64). Only Caddy publishes a port; CORS stays off (the Android app is not a browser). Restart policies, healthchecks and a JVM heap cap for a NAS. Secrets only from an uncommitted `.env`. `docker compose config` passes.
+* Acceptance criteria: `deploy/nas/compose.yml`, `Caddyfile` (host from `{$NAS_HOST}`), `.env.example` (placeholder host only; `deploy/nas/.env` is git-ignored) and a README start Postgres, Keycloak, the Flyway one-shot jobs (as `deploy/migrate.sh`), the five services (GHCR images pinned by `IMAGE_TAG`, ADR 0026, `docker login ghcr.io` with a read-only token) and Caddy on a UGREEN NAS (UGOS Pro, x86_64, Docker with Compose v2; how to load a compose project and its `.env` in the UGOS Docker app or over SSH is written down after trying it). Only Caddy publishes a port; CORS stays off (the Android app is not a browser). Restart policies, healthchecks and a JVM heap cap for a NAS. Secrets only from the uncommitted `.env`. `docker compose config` passes and a check proves no real hostname or secret is committed.
 
 ### T-0109 · Keycloak production mode behind Caddy
 
@@ -1028,7 +1028,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #119 / —
 * Depends on: T-0108
 * Spec: §7, §9
-* Acceptance criteria: Keycloak runs with `start` on its own Postgres database, `KC_HTTP_RELATIVE_PATH=/auth`, public hostname, proxy headers and `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`, so the issuer seen by the app, the services and Keycloak is the same. The realm import takes the service-client secrets and the admin password from the environment instead of the committed placeholders. Checked with a real token accepted by a service.
+* Acceptance criteria: Keycloak runs with `start` on its own Postgres database, `KC_HTTP_RELATIVE_PATH=/auth`, hostname built from `NAS_HOST`, proxy headers and `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`, so the issuer seen by the app, the services and Keycloak is the same. The realm import takes the service-client secrets and the admin password from the environment instead of the committed placeholders. Checked with a real token accepted by a service.
 
 ### T-0110 · Tailscale and HTTPS certificates on the NAS
 
@@ -1036,7 +1036,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #120 / —
 * Depends on: T-0108
 * Spec: §7
-* Acceptance criteria: Documented and verified steps: tailscaled on the NAS, MagicDNS and HTTPS certificates enabled in the tailnet, Caddy reading the tailscaled socket, an ACL limiting access to the phone and the dev machine. Manual work on the NAS: needs the product owner (NAS model and OS, tailnet name).
+* Acceptance criteria: Tailscale runs as a service of the NAS compose stack (UGOS has no Tailscale app: `tailscale/tailscale` container with `/dev/net/tun`, auth key from the uncommitted `.env`), its socket shared with Caddy so Caddy gets the certificate of the `ts.net` name. Documented and verified steps: MagicDNS and HTTPS certificates enabled in the tailnet, an ACL limiting access to the phone and the dev machine, the phone on the tailnet with the Tailscale app. The tailnet name is only ever in `.env`. Manual work on the NAS and in the Tailscale admin: needs the product owner.
 
 ### T-0111 · Android build against the NAS (`make apk`)
 
@@ -1044,7 +1044,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #121 / —
 * Depends on: T-0107
 * Spec: §1
-* Acceptance criteria: `make apk` builds a debug-signed APK with the `--dart-define`s derived from one `NAS_HOST` variable (Keycloak issuer and the five API base URLs). Install steps (adb or a download over the tailnet). Verified on a real phone: sign-in through Keycloak, the OIDC redirect returns to the app, a household can be created. Store signing stays T-0035.
+* Acceptance criteria: `make apk` builds a debug-signed APK for the dev phone, with no host baked in: the server URL is entered in the app (T-0115). Install steps (adb or a download over the tailnet). Verified on a real phone: after entering the server URL, sign-in through Keycloak works, the OIDC redirect returns to the app, a household can be created. The tailnet name is never written to a committed file or to an APK that is published. Release signing is T-0116.
 
 ### T-0112 · NAS smoke check (`make nas-smoke`)
 
@@ -1052,7 +1052,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #122 / —
 * Depends on: T-0108, T-0109
 * Spec: §7
-* Acceptance criteria: From any tailnet machine: the certificate is valid, the discovery issuer under `/auth` equals the public URL, each service answers `/q/health/ready` through its prefix, and one password-grant token is accepted by every service. Extends the pattern of `deploy/smoke.sh`.
+* Acceptance criteria: From any tailnet machine: the certificate is valid, the discovery issuer under `/auth` equals the public URL, each service answers `/q/health/ready` through its prefix, Gotify answers its health endpoint, and one password-grant token is accepted by every service. Extends the pattern of `deploy/smoke.sh`.
 
 ### T-0113 · NAS operations: updates and backups
 
@@ -1060,6 +1060,38 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #123 / —
 * Depends on: T-0108
 * Spec: §7
-* Acceptance criteria: `deploy/nas/update.sh` pulls a new SHA tag, runs the migrations and restarts the services. A nightly `pg_dump` of every database to a NAS volume, with a documented restore that was tried once.
+* Acceptance criteria: `deploy/nas/update.sh` pulls a new SHA tag, runs the migrations and restarts the services. A nightly `pg_dump` of every database, plus the Gotify data volume, to a NAS volume, with a documented restore that was tried once.
 
-Out of scope of T-0107 to T-0113, to be filed when wanted: Gotify for push on the NAS (ADR 0027; the in-app inbox works without it), Caddy in the dev compose behind a profile, iOS, release signing and stores (T-0035).
+### T-0114 · Gotify push server on the NAS
+
+* Status: todo
+* Issue / PR: #126 / —
+* Depends on: T-0108, T-0109, T-0110
+* Spec: §5, §7
+* Acceptance criteria: Gotify (`gotify/server`, as the optional `gotify` profile of `deploy/podman-compose.yml`) runs in the NAS stack behind Caddy, reachable from the phone through Tailscale in the way T-0107 decides, with its data in a volume and the admin password from `.env`. notifications-service gets `GOTIFY_URL` pointing at it (ADR 0027). Documented: create a Gotify user and application, install the Gotify Android app, point it at the public URL, exempt it from battery optimisation. Verified on the phone: an event (for example an admin marking a member away, or a due reminder) arrives as a push. Until T-0086 exists the application token is registered with `PUT /v1/push-target` (curl command in the README).
+
+### T-0115 · App: server URL entered in the app
+
+* Status: todo
+* Issue / PR: #127 / —
+* Depends on: T-0107
+* Spec: §1, §7
+* Acceptance criteria: The app asks for the server URL on first launch (typed or pasted; a QR code if cheap), stores it, and derives from it the Keycloak issuer and the five service base URLs using the path layout of T-0107. The build-time `--dart-define`s stay as the default so dev, `make run-app` and e2e do not change. Validation and an error state, a way to change the server from the signed-out screen, FR/EN strings, widget tests for the screen and for the URL derivation, goldens and accessibility checks. No host is baked into any build. Needed before any APK is published (T-0116).
+
+### T-0116 · Release workflow: signed APK as a GitHub Release
+
+* Status: todo
+* Issue / PR: #128 / —
+* Depends on: T-0115
+* Spec: §1, §10 Phase 6
+* Acceptance criteria: A workflow builds a release APK signed with a new BetterHome keystore (created by the product owner and stored as GitHub secrets, never committed) and publishes it as a GitHub Release with exactly one `.apk` asset, the layout the F-Droid repo expects, version taken from `pubspec.yaml`. The certificate fingerprint is recorded for the F-Droid pin (T-0117). Replaces the debug signing of the release build type (`app/android/app/build.gradle.kts`). The Android part of T-0035.
+
+### T-0117 · List BetterHome in the F-Droid repository
+
+* Status: todo
+* Issue / PR: #129 / —
+* Depends on: T-0116
+* Spec: §1
+* Acceptance criteria: In `Ahzed11/chore-app-fdroid` (public; a separate repository, so this is a pull request there): an `apps.yaml` entry for `Ahzed11/BetterHome`, and `check_signatures.py` changed to pin a signing certificate per app (today one `signing_cert.sha256` applies to every APK, so a second key would block ChoreApp updates too), with ChoreApp's pin and behaviour unchanged and tested. The README table and metadata (name, description, categories, icon) for BetterHome. Merged only after T-0116 has produced a release; verified by adding the repo in an F-Droid client and installing the app.
+
+Out of scope of T-0107 to T-0117, to be filed when wanted: Caddy in the dev compose behind a profile, iOS, the App Store and Play Store listings (T-0035).
