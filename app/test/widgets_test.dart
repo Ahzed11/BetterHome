@@ -117,14 +117,6 @@ void main() {
   for (final locale in baselineLocales) {
     final id = locale.languageCode;
 
-    testWidgets('golden: widgets showcase ($id)', (tester) async {
-      await pumpScreen(tester, home: const _Showcase(), locale: locale);
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('goldens/widgets_showcase_$id.png'),
-      );
-    });
-
     testWidgets('accessibility: widgets showcase ($id)', (tester) async {
       await pumpScreen(tester, home: const _Showcase(), locale: locale);
       await expectAccessible(tester);
@@ -140,6 +132,23 @@ void main() {
         textScale: 2,
       );
       expect(tester.takeException(), isNull);
+    });
+  }
+
+  for (final locale in baselineLocales) {
+    final id = locale.languageCode;
+
+    testWidgets('golden: widgets showcase ($id)', (tester) async {
+      await pumpScreen(
+        tester,
+        home: const _Showcase(),
+        locale: locale,
+        realFonts: true,
+      );
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/widgets_showcase_$id.png'),
+      );
     });
   }
 

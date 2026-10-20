@@ -581,11 +581,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0057 · Render readable text and icons in app golden images
 
-* Status: todo
-* Issue / PR: #44
+* Status: in-review
+* Issue / PR: #44 / (pull request to follow)
 * Depends on: T-0022
 * Spec: AGENTS §5.2
 * Acceptance criteria: Goldens show real text and icons by loading a bundled test font in `app/test/support/screen_harness.dart`; regenerated on Linux (ADR 0012).
+* Summary: `pumpScreen(realFonts: true)` loads every font in the app's `FontManifest.json` (Figtree, Bricolage Grotesque, Material and Cupertino icons) with `FontLoader`; the three golden tests (`screens_baseline_test`, `widgets_test`, `design_system_test`) set it. All goldens regenerated on Linux.
+* Decisions and deviations: No binary added and no Roboto: the theme uses Figtree and Bricolage Grotesque (OFL, licenses already in `app/assets/fonts`, T-0079) and Flutter bundles Material Icons through `uses-material-design`, so the goldens show the fonts the app really ships. Fonts cannot be unloaded and `textContrastGuideline` samples anti-aliased pixels, so it reports false failures (for example 1.06:1) on real glyphs; real fonts are therefore opt-in and each file declares its golden tests after its accessibility tests (a misordering fails loudly, never silently passes). Emoji in chore titles still render as empty boxes (no emoji font bundled).
+* Verification: `make client`, `make update-goldens`, then `flutter test` (441 pass), `flutter analyze` and `dart format --set-exit-if-changed .` clean, on Linux. Not run: the rest of `make check`, e2e.
+* Follow-ups: Optionally bundle an emoji font for the golden tests (large binary, product owner's call); a contrast check that does not depend on glyph pixels.
 
 ### T-0058 · Externalize remaining hard-coded strings and raw ids in app screens
 
@@ -597,11 +601,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0059 · Golden and accessibility coverage for dialogs and non-admin views
 
-* Status: todo
-* Issue / PR: #46
-* Depends on: T-0022
+* Status: in-review
+* Issue / PR: #46 / (pull request to follow; stacked on #107, T-0057)
+* Depends on: T-0022, T-0057
 * Spec: AGENTS §5.2
 * Acceptance criteria: Scenarios for the non-admin household detail and chores views and for every dialog and snackbar, with goldens and accessibility checks in FR and EN.
+* Summary: `screens_baseline_test.dart` gains 13 scenarios (accessibility, 200% text scale and golden, FR and EN): household detail and chores as a plain member (a test double lists an admin plus the signed-in member, since `FakeHouseholdsRepository` only knows its own user), the invite, invite-created, accept-invitation, dismiss-confirmation and revert dialogs (opened through the UI, fields filled), and the toasts (spawned count, recurrence saved, quick-log with undo, error). A scenario can now run an `act` step after the screen is pumped. 32 new goldens, no existing golden changed.
+* Decisions and deviations: Create-template and make-recurring are full screens, not dialogs, and already have the `template_form` and `recurring_form` scenarios, so none was added. The new checks found two real defects in production code, fixed minimally: `AlertDialog` buttons in household detail and chores had 4.26:1 contrast on the default tinted dialog surface (they now use `AppTokens.card`, as a white dialog gives enough contrast), and the revert dialog overflowed by 14 px at 200% text (its content now scrolls). A global `dialogTheme` would have been simpler but also changes the month-recap dialog, hence the `leaderboard_recap` goldens, so it was not used. Toast scenarios advance a fixed 500 ms so the countdown bar is deterministic.
+* Verification: `make client`, `make update-goldens`, then `flutter test`, `flutter analyze` and `dart format --set-exit-if-changed .` in `app/` on Linux. Not run: the rest of `make check`, e2e.
+* Follow-ups: see Discovered (dialog contrast in lists and the text prompt).
 
 ### T-0061 · Spec: who may reset a list, and archived-list rules
 
@@ -929,6 +937,13 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Verification: `tooling/build-images.sh` built all five images locally from the real jars; the workflow parses as YAML (no `actionlint` installed). Not verified: the login and push to GHCR, which only run on `master` after the merge; the run on `master` after this PR is the check.
 * Follow-ups: image signing and vulnerability scan before push; image pull secret and deployment (T-0004).
 
+### T-0103 · App: contrast of the dialog buttons in lists and the text prompt
+
+* Status: todo
+* Issue / PR: — (suggested: "App: AlertDialog buttons below 4.5:1 contrast")
+* Depends on: T-0059
+* Spec: AGENTS §5.2
+* Acceptance criteria: The archive-list confirmation (`lists_screen.dart`) and `promptForText` use the same dialog surface as the dialogs fixed in T-0059 (or the theme sets it for all dialogs, with the month-recap golden regenerated), and scenarios open them with the accessibility checks.
 ### T-0101 · Recurrence: an occurrence in a daylight-saving gap at the end of the day moved to the next day
 
 * Status: in-review
