@@ -14,7 +14,7 @@ export PATH := $(JAVA_HOME)/bin:$(PATH)
 export DOCKER_HOST ?= unix://$(XDG_RUNTIME_DIR)/podman/podman.sock
 export TESTCONTAINERS_RYUK_DISABLED ?= true
 
-.PHONY: mutation client doctor up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-guard e2e check update-goldens run-app
+.PHONY: mutation client doctor up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-images test-openshift-ports test-openshift test-guard e2e check update-goldens run-app
 
 doctor: ## Check the pinned toolchain (JDK, Podman, Flutter, Android) is installed
 	@bash $(ROOT)/tooling/doctor.sh
@@ -64,6 +64,17 @@ test-docs: ## Resolve documentation relative links
 test-policy: ## Dependency policy checks (Phase 0 stub)
 	@echo "test-policy: OWASP dependency-check wiring deferred; backend tests still run"
 
+test-images: ## Every Dockerfile EXPOSEs its service's port, then build the five images from the packaged jars (SKIP_PACKAGE=1: jars already built)
+	@bash $(ROOT)/tooling/check-image-ports.sh
+	$(if $(SKIP_PACKAGE),@echo "test-images: using the jars already built",cd $(BACKEND) && ./mvnw -B -q -DskipTests package)
+	@bash $(ROOT)/tooling/build-images.sh localhost/betterhome-check check
+
+test-openshift-ports: ## OpenShift manifests match each service: port, /q/health probes, image, migration Job (no cluster, no tooling)
+	@bash $(ROOT)/tooling/check-openshift-ports.sh
+
+test-openshift: ## Optional, not in `make check`: render deploy/openshift/crc offline and schema-check it (needs kustomize, oc or kubectl; kubeconform optional)
+	@bash $(ROOT)/tooling/check-openshift.sh
+
 test-guard: ## Prove the generated client breaks on a broken document or a drifted contract
 	@bash $(ROOT)/tooling/test-guard.sh
 
@@ -73,6 +84,6 @@ e2e: client ## Journeys against the real stack; E2E_TARGET=web (default) or andr
 run-app: ## Try the app by hand: stack, demo users, web app on http://localhost:8090 (alice / demo; RUN_APP_SEED=1 adds the demo household)
 	@bash $(ROOT)/tooling/run-app.sh
 
-check: test-docs test-backend ## CI entrypoint (app/e2e when present)
+check: test-docs test-backend test-images test-openshift-ports ## CI entrypoint (app/e2e when present; `make smoke` runs inside `make up`, which `make e2e` calls)
 	@if [[ -d $(ROOT)/app ]]; then $(MAKE) test-app test-guard; fi
 	@echo "check: backend + docs OK (e2e not yet required for Phase 0)"

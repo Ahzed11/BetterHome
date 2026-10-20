@@ -12,8 +12,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Items of a list: any active member adds, edits, checks, unchecks, deletes and resets. Items of an
- * archived list cannot change.
+ * Items of a list: any active member adds, edits, checks, unchecks and deletes; only an admin
+ * resets the whole list. Items of an archived list cannot change.
  */
 @ApplicationScoped
 public class ItemService {
@@ -83,10 +83,12 @@ public class ItemService {
         item.softDelete(member.userId(), clock.now());
     }
 
-    /** Unchecks every live item of the list in one transaction and returns the list's items. */
+    /**
+     * Admin only: unchecks every live item of the list in one transaction and returns the items.
+     */
     @Transactional
     public List<ChecklistItem> reset(UUID householdId, UUID listId) {
-        callerService.requireMember(householdId);
+        callerService.requireAdmin(householdId);
         Checklist list = find(householdId, listId);
         list.requireActive();
         ChecklistItem.uncheckAll(list.id, clock.now());

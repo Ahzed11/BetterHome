@@ -38,6 +38,8 @@ Tokens from the host (`localhost:8180`) and services inside Compose (`keycloak:8
 
 CI: [.github/workflows/check.yml](.github/workflows/check.yml) runs the gates of `make check` (docs, one backend job per service, app) and the web end-to-end journeys (`e2e`, Podman Compose stack plus headless Chrome) as parallel jobs on every pull request and on `master`, joined by a `check` job ([ADR 0019](documentation/decisions/0019-ci-runs-the-gates-as-parallel-jobs.md)), with the toolchain versions from `tooling/versions.env` and Docker for Testcontainers. Image builds and the dependency audit are not part of it yet (T-0046, T-0038).
 
+OpenShift manifests (Kustomize, not exercised on a cluster yet): [deploy/openshift/README.md](deploy/openshift/README.md). `make test-openshift-ports` is part of `make check`; `make test-openshift` renders the overlay when kustomize, `oc` or `kubectl` is installed.
+
 Service HTTP ports: households `8081`, tasks `8082`, scoring `8083`, lists `8084`, notifications `8085`.
 
 Real API from the app, signing in through Keycloak (the app uses a Dart client generated from `documentation/api/openapi.yaml`: run `make client` once, and again after the API changes). Keycloak accepts the web redirect only from port 8090:

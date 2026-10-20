@@ -12,9 +12,11 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import io.restassured.filter.Filter;
+import io.restassured.http.ContentType;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir;
 @TestSecurity(user = "11111111-1111-1111-1111-111111111111", roles = "member")
 class ContractValidationTest {
 
+    private static final String LISTS = "/v1/households/22222222-2222-2222-2222-222222222222/lists";
     private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
 
     @TempDir Path tmp;
@@ -69,6 +72,31 @@ class ContractValidationTest {
         RuntimeException failure = failureOf(tampered);
 
         assertTrue(failure.getMessage().contains("200"), failure.getMessage());
+    }
+
+    @Test
+    void aRequestBodyMissingARequiredFieldFailsTheRequestFilter() {
+        RuntimeException failure =
+                assertThrows(
+                        RuntimeException.class,
+                        () ->
+                                given().filter(ContractValidation.validRequests("lists"))
+                                        .contentType(ContentType.JSON)
+                                        .body(Map.of("name", "Groceries"))
+                                        .post(LISTS));
+
+        assertTrue(failure.getMessage().contains("title"), failure.getMessage());
+    }
+
+    @Test
+    void aRequestToAnUndocumentedPathFailsTheRequestFilter() {
+        assertThrows(
+                RuntimeException.class,
+                () ->
+                        given().filter(ContractValidation.validRequests("lists"))
+                                .contentType(ContentType.JSON)
+                                .body(Map.of("title", "Groceries"))
+                                .post("/v1/nothing"));
     }
 
     private RuntimeException failureOf(Path tampered) {

@@ -5,6 +5,7 @@ import com.atlassian.oai.validator.model.Request;
 import com.atlassian.oai.validator.report.LevelResolver;
 import com.atlassian.oai.validator.report.ValidationReport;
 import com.atlassian.oai.validator.restassured.OpenApiValidationFilter;
+import com.atlassian.oai.validator.restassured.RestAssuredRequest;
 import com.atlassian.oai.validator.restassured.RestAssuredResponse;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,9 +31,11 @@ import java.util.concurrent.ConcurrentMap;
  * schema does not declare. {@link OpenApiContract} keeps the document equal to the code; this keeps
  * the answers equal to the document.
  *
- * <p>Only answers are judged: tests deliberately send invalid or unauthenticated requests to see
- * the error answers, so request content and credentials are not validated. A call to a path or
- * method the contract does not know still fails.
+ * <p>That filter only judges answers: tests deliberately send invalid or unauthenticated requests
+ * to see the error answers, so it never rejects a request. A call to a path or method the contract
+ * does not know still fails. The requests a test sends as valid are checked by opting in with
+ * {@link #validRequests(String)} in a happy-path helper; credentials are not part of that check
+ * because tests authenticate through {@code @TestSecurity} without a header.
  *
  * <p>SmallRye does not emit {@code additionalProperties: false}, and the validator only rejects
  * unknown fields on schemas that declare it. The contract is therefore closed in memory before it
@@ -44,6 +47,7 @@ public final class ContractValidation {
     private static final ObjectMapper YAML = new ObjectMapper(new YAMLFactory());
     private static final String INFRASTRUCTURE_PREFIX = "/q/";
     private static final ConcurrentMap<String, Filter> FILTERS = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Filter> REQUEST_FILTERS = new ConcurrentHashMap<>();
 
     private ContractValidation() {}
 
@@ -93,6 +97,35 @@ public final class ContractValidation {
                 throw new OpenApiValidationFilter.OpenApiValidationException(report);
             }
             return answer;
+        };
+    }
+
+    /**
+     * Filter validating the request against the committed contract of {@code service} before it is
+     * sent: path, method, parameters, content type and body must match the documented request
+     * schemas, and a request the contract rejects fails the test. Use it only on requests the test
+     * means to be valid, in a happy-path helper; tests that send invalid requests on purpose simply
+     * do not add it. The answer is not judged here, {@link #installFor(String)} does that.
+     */
+    public static Filter validRequests(String service) {
+        return REQUEST_FILTERS.computeIfAbsent(service, s -> requestFilter(committedContract(s)));
+    }
+
+    private static Filter requestFilter(Path contract) {
+        LevelResolver ignoreCredentials =
+                LevelResolver.create()
+                        .withLevel("validation.request.security", ValidationReport.Level.IGNORE)
+                        .build();
+        OpenApiInteractionValidator validator =
+                OpenApiInteractionValidator.createFor(closedCopy(contract).toUri().toString())
+                        .withLevelResolver(ignoreCredentials)
+                        .build();
+        return (request, response, context) -> {
+            ValidationReport report = validator.validateRequest(RestAssuredRequest.of(request));
+            if (report.hasErrors()) {
+                throw new OpenApiValidationFilter.OpenApiValidationException(report);
+            }
+            return context.next(request, response);
         };
     }
 

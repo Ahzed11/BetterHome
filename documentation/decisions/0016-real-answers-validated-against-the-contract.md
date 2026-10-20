@@ -12,4 +12,4 @@ Only answers are validated: tests send invalid requests on purpose and the valid
 
 ## Consequences
 
-An undocumented field, status code, wrong type or format in any real answer fails the build. New endpoints are covered as soon as a test calls them. Validating requests is a separate step (T-0041).
+An undocumented field, status code, wrong type or format in any real answer fails the build. New endpoints are covered as soon as a test calls them. Requests are validated only where a test opts in with `ContractValidation.validRequests(service)` in a happy-path helper (T-0041); tests that send invalid requests on purpose do not add it.

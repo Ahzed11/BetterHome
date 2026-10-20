@@ -44,7 +44,7 @@ public final class RruleEngine {
 
         for (int i = 0; i < 5000; i++) {
             if (matches(rule, startDate, day)) {
-                Instant occurrence = day.atTime(timeOfDay).atZone(zone).toInstant();
+                Instant occurrence = occurrenceOn(day, timeOfDay, zone);
                 if (!occurrence.isAfter(afterExclusive)) {
                     day = day.plusDays(1);
                     continue;
@@ -67,6 +67,19 @@ public final class RruleEngine {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * The instant of {@code timeOfDay} on {@code day}. A time that does not exist (daylight saving
+     * gap) moves forward by the length of the gap, except when that would land on the next calendar
+     * day: the occurrence then stays on {@code day}, at its last second.
+     */
+    private static Instant occurrenceOn(LocalDate day, LocalTime timeOfDay, ZoneId zone) {
+        ZonedDateTime resolved = day.atTime(timeOfDay).atZone(zone);
+        if (resolved.toLocalDate().equals(day)) {
+            return resolved.toInstant();
+        }
+        return day.plusDays(1).atStartOfDay(zone).toInstant().minusSeconds(1);
     }
 
     private static boolean matches(ParsedRule rule, LocalDate startDate, LocalDate date) {

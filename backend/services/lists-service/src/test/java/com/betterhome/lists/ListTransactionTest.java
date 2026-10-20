@@ -75,7 +75,7 @@ class ListTransactionTest {
         world.archive(list.id, T0);
 
         world.runAs(
-                MEMBER_SUBJECT,
+                ADMIN_SUBJECT,
                 () ->
                         assertThrows(
                                 ListException.Conflict.class,

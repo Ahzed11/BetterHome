@@ -365,11 +365,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0004 · OpenShift / CRC deploy manifests for microservices
 
-* Status: blocked (no OpenShift cluster available; blocker is environmental, decided by the product owner on 2026-10-13. Local runs use Podman Compose: ADR 0003, AGENTS §6.1)
+* Status: in-review (manifests written and rendered offline; never applied to a cluster, because none is available: product owner, 2026-10-13. Local runs stay on Podman Compose: ADR 0003, AGENTS §6.1)
 * Issue / PR: #1
 * Depends on: T-0001
 * Spec: §7, ADR 0003
 * Acceptance criteria: Deployments, Routes, ConfigMaps/Secrets, health probes, and migration Jobs for each service on OpenShift Local or a cluster.
+* Summary: Kustomize base `deploy/openshift/base` with, per service, a Deployment (2 replicas, startup/liveness `/q/health/live`, readiness `/q/health/ready`, restricted-SCC security context), Service, edge-TLS Route and a Flyway migration Job, plus ConfigMaps (shared and per service; the Flyway SQL is generated from `backend/**/db/migration`). Overlay `deploy/openshift/crc` sets the namespace, one replica, the Keycloak issuer URL. Secrets are not committed: `crc/secrets.example.yaml` is a placeholder template outside the kustomization. Images are the GHCR ones of T-0100. Usage in `deploy/openshift/README.md`.
+* Decisions and deviations: Health paths are `/q/health/*` (Quarkus default root), not `/health/*` as AGENTS §3 says in short. Migrations use the `flyway/flyway:11-alpine` image of the Compose stack with the SQL mounted from a ConfigMap, so the app images stay migration-free. The ConfigMap sources sit outside the kustomization root, so rendering needs `--load-restrictor=LoadRestrictionsNone`. PostgreSQL and Keycloak are prerequisites, not part of the overlay (T-0104). Every service gets a Route as the acceptance criteria say; internal endpoints stay protected by the `service` role. `make test-openshift-ports` (no tooling, in `make check`) checks ports, probe paths and images against `application.properties`; `make test-openshift` (kustomize/oc/kubectl, optional) renders and schema-checks, and is not in `make check` because CI has none of those tools.
+* Verification: `kustomize build` v5.8.3 renders `deploy/openshift/crc` (31 resources) and `kubeconform` v0.8.0 `-strict` finds 26 valid, 0 invalid, 5 skipped (the Routes, no schema). `make test-openshift-ports` passes. NOT verified: any `oc apply`, pod start, probe success, Flyway under an arbitrary UID, Route reachability, Keycloak/Postgres wiring, `oc kustomize` itself.
+* Follow-ups: T-0104.
 
 ### T-0005 · Generate OpenAPI from code and guard it against drift
 
@@ -508,11 +512,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0046 · Build the five container images in make check and CI
 
-* Status: todo
-* Issue / PR: #37
+* Status: in-review
+* Issue / PR: #37 / (this PR)
 * Depends on: T-0016, T-0018
 * Spec: AGENTS §5.3
 * Acceptance criteria: `make check` / CI builds the five images from the packaged jars and runs `make smoke`; the Dockerfiles' `EXPOSE 8080` matches the real service ports (8081-8085).
+* Summary: New `make test-images` (in `make check`) runs `tooling/check-image-ports.sh` (every `Dockerfile.*` must EXPOSE the service's `quarkus.http.port`), packages the jars and builds the five images with `tooling/build-images.sh`. `Dockerfile.jvm` now has `EXPOSE 8081-8085`; the unused variants' `EXPOSE`/`docker run` lines use the real port too. CI has a new `images` job (required by the `check` job).
+* Decisions and deviations: `make smoke` needs the whole stack (Postgres, Keycloak, migrations), so it is not run a second time in `images`: it already runs inside `make up`, which `make e2e` (the `e2e` job) calls.
+* Verification: `make test-images` with the jars packaged under JDK 21 (five images built with Podman 5.8, port check passes); `make -n check`; YAML parse of `check.yml`. NOT verified: the new CI job on GitHub, `make check` in full, `make smoke`/e2e.
+* Follow-ups: none.
 
 ### T-0045 · Headless Android emulator crashes on the development VM
 
@@ -529,19 +537,27 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0041 · Validate test requests against the contract
 
-* Status: todo
-* Issue / PR: #40
+* Status: in-review
+* Issue / PR: #40 / not opened yet
 * Depends on: T-0039
 * Spec: AGENTS §5.1 (API contract)
 * Acceptance criteria: Requests that tests send as valid are validated against the request schemas of the contract, while tests that send invalid requests on purpose are not rejected by the filter.
+* Summary: `ContractValidation.validRequests(service)` (common-domain test-jar, next to the response filter) validates a request against the committed contract before it is sent and fails on an undocumented path or method, a wrong parameter, content type or body. It is opt-in: the happy-path helpers `createList`/`addItem` in lists `ListsApiTest` and `validAs` in households `InvitationHttpTest` add it; the response filter stays installed for every call and is unchanged.
+* Decisions and deviations: opt-in rather than global because tests send invalid requests on purpose and the validator cannot tell them apart. Credentials (`validation.request.security`) are ignored, tests authenticate through `@TestSecurity` without a header. The same closed in-memory contract copy is used, so an unknown field in a valid request fails. Proofs in lists `ContractValidationTest` (missing required field and unknown path fail the filter). Only lists and households helpers adopt it; tasks, scoring and notifications helpers are not converted.
+* Verification: `./mvnw verify -pl common-domain,services/lists-service,services/households-service -am` (Spotless, Checkstyle, tests on real PostgreSQL, JaCoCo) passed. Not run: other services, Flutter, `make check`, e2e.
+* Follow-ups: adopt `validRequests` in the happy-path helpers of tasks, scoring, notifications (suggested issue).
 
 ### T-0042 · HTTP tests for endpoints without one
 
-* Status: todo
-* Issue / PR: #41
+* Status: in-review
+* Issue / PR: #41 / none yet
 * Depends on: T-0039
 * Spec: AGENTS §5.1 (API contract)
 * Acceptance criteria: Every endpoint of every service has at least one REST-assured call (success and error) so its answers are checked against the contract.
+* Summary: Audit of every resource: lists, notifications and scoring already had HTTP calls for all endpoints, success and error. The gaps were in households (`GET /v1/me`, `PATCH`/`DELETE /v1/households/{id}`, member role, away set/clear, leave errors, `/v1/me` validation) and tasks (`dismiss-away` and `reassign-away` errors and counts, state conflicts, 404s, 400s, 403s). Added `MembershipHttpTest` (households, real tokens, 12 tests) and 10 tests in `TasksHttpTest`. The contract filter checks every answer.
+* Decisions and deviations: The tests found `POST .../tasks/manual` answering 400 with an error body the contract did not document; `TaskResource.quickLog` now documents it and the OpenAPI files are regenerated (`make openapi`). `TasksHttpTest` now deletes the household's tasks before each test, because its list assertions share the database. The issue mentions a membership "remove" endpoint: none exists (members leave through `members/me/leave`), so nothing to test.
+* Verification: `./mvnw verify` for `households-service` and `tasks-service` (JDK 21, Testcontainers through `podman system service`). `make e2e` and the app launch were not run.
+* Follow-ups: `GET /v1/households/{id}/tasks?status=nonsense` answers 404 with no body instead of a 400 with the error body (suggested issue: "Reject an unknown task status filter with 400"); the test for it was left out until it is fixed.
 
 ### T-0053 · Require the CI `check` job on master
 
@@ -597,11 +613,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0061 · Spec: who may reset a list, and archived-list rules
 
-* Status: todo
+* Status: in-review
 * Issue / PR: #50
 * Depends on: T-0023
 * Spec: §2, §4
 * Acceptance criteria: Spec states who can bulk reset (T-0023 allows any active member), that items of an archived list are frozen (409), and that re-checking is a no-op; code follows if the decision differs.
+* Summary: Product owner decided on issue #50: admins only. `ItemService.reset` requires the admin role (403 for a member). Spec §2 permissions and §4 now state the reset rule, the frozen archived lists (409) and the no-op re-check. `resetList` documents 403 "Not an active admin" in the OpenAPI contract.
+* Decisions and deviations: The app (T-0024) still offers "Uncheck all" to every member, so a member now gets an error snackbar; hiding it for members is left to a follow-up.
+* Verification: lists-service tests (service, HTTP and authorization matrix: resetList is admin-only), see the pull request for the `make` runs.
+* Follow-ups: App: show "Uncheck all" to admins only (suggested issue, extends T-0024).
 
 ### T-0062 · tasks-service: body-less POST actions answer 415 without a Content-Type
 
@@ -613,7 +633,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Summary: `@Consumes(JSON)` now sits only on body-bearing methods in tasks (`TaskResource`, `TemplateResource`), households (`MembershipResource`; `InvitationAcceptResource` has none left) and scoring (`ScoreboardResource`). Tests post `complete`, `dismiss`, `reassign`, `dismiss-away`, `reassign-away`, `archive`, invitation accept, `leave` and `celebrate` with no Content-Type and expect 2xx (the tasks test failed with 415 before the change).
 * Decisions and deviations: lists and notifications have no body-less POST; `RecurrenceResource`, `PreferenceResource` and the other resources only have body-bearing writes, so they keep the class-level annotation.
 * Verification (local, GitHub Actions minutes exhausted; local PostgreSQL 16, no Docker): `make test-docs` OK; `spotless:check checkstyle:check` OK; `mvn verify` per service with coverage checks: households 57, scoring 86, lists 68, notifications 53 tests green; tasks 117 tests with 1 failure that also fails without this change (see Follow-ups). Not run: `make e2e`, `make test-app` (no Podman, Flutter or emulator here), so this is not `done`.
-* Follow-ups: `RruleEnginePropertiesTest.aMonthlyRuleOnADayThatSomeMonthsLackSkipsThoseMonthsInsteadOfClamping` fails deterministically on the parent commit too (expected 29, was 30), so `make check` is red on tasks-service independently of T-0062; needs its own task and fix.
+* Follow-ups: `RruleEnginePropertiesTest.aMonthlyRuleOnADayThatSomeMonthsLackSkipsThoseMonthsInsteadOfClamping` fails deterministically on the parent commit too (expected 29, was 30), so `make check` was red on tasks-service independently of T-0062. Fixed in T-0101.
 
 ### T-0063 · lists-service: anonymize user ids on account deletion
 
@@ -924,3 +944,32 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Depends on: T-0059
 * Spec: AGENTS §5.2
 * Acceptance criteria: The archive-list confirmation (`lists_screen.dart`) and `promptForText` use the same dialog surface as the dialogs fixed in T-0059 (or the theme sets it for all dialogs, with the month-recap golden regenerated), and scenarios open them with the accessibility checks.
+### T-0101 · Recurrence: an occurrence in a daylight-saving gap at the end of the day moved to the next day
+
+* Status: in-review
+* Issue / PR: — / —
+* Depends on: T-0011
+* Spec: §3.1 (recurrence)
+* Summary: `RruleEnginePropertiesTest` failed deterministically (seed `-4427577617696266686`: daily/monthly at 23:00 in `America/Godthab`, 2025-03-29, where local 23:00 does not exist). `RruleEngine` resolved the time with `atZone`, which shifts it forward by the gap, onto the 30th, so a rule on the 29th fired on the 30th and a daily rule fired twice on one calendar day. `occurrenceOn` now keeps the occurrence on its own day, at the day's last second, when the shift would cross midnight; other gaps keep the old forward shift. Spec §3.1 gets one sentence.
+* Decisions and deviations: last second of the day chosen (not skipping the day, not the next day) so a rule never loses or duplicates an occurrence; the property oracle applies the same rule. No product behavior outside this edge changes.
+* Verification: new `RruleEngineTest.anHourMissingAtTheEndOfTheDayKeepsTheOccurrenceOnItsOwnDay` failed before the fix; `mvn verify -pl services/tasks-service -am` green locally (118 tests, coverage checks met), `spotless:apply` clean. After merging master, the `check` job of the pull request passed on the fallback runner (docs, app, five backend jobs, e2e). Not run: Android target.
+* Follow-ups: none.
+
+### T-0102 · lists-service: anonymize a deleted user's id (part of T-0032)
+
+* Status: in-review
+* Issue / PR: #52 / —
+* Depends on: T-0016
+* Spec: §9 Privacy, AGENTS §8
+* Summary: `POST /v1/internal/users/{userId}/anonymize` (role `service`, as the other internal endpoints, ADR 0014) replaces the user's id in `list.created_by`, `item.creator`, `item.completer` and `item.deleted_by` with the nil UUID and answers 200 with the rows changed per column. Repeating it, or naming a user with no history, answers 200 with zeroes. The nil UUID itself is refused with 400.
+* Decisions and deviations: no migration. The columns are NOT NULL or tied to a timestamp by a CHECK and there are no foreign keys on them, so a sentinel id keeps the history ("someone checked it at 10:00") without making columns nullable. `updated_at` is left alone (anonymizing is not an edit). The sentinel is a constant in `AnonymizationService`; the app will see the nil UUID as the creator and should render it as "former member" (not done here, no app change). Spec §9 already says history is anonymized across services, so the spec is unchanged.
+* Verification: `AnonymizeUserTest` (service and HTTP: success, only the named user's columns change, idempotent, unknown user, sentinel refused, household admin and role-less user 403, anonymous 401); `make openapi`; `./mvnw verify -pl services/lists-service -am`. Not verified: a call with a real Keycloak service token (the `betterhome-households-service` client already holds the `service` role, ADR 0014, but no real-token test hits this endpoint), e2e.
+* Follow-ups: T-0032 still needs the households-side trigger and Keycloak Admin deletion, the call from households to this endpoint (it needs a REST client with the service token, failure policy so deletion is retried when lists is down), the same endpoint in tasks and scoring, the last-admin rule and the e2e journey. App: show the nil UUID as a former member.
+
+### T-0104 · CRC: PostgreSQL and Keycloak for the OpenShift Local overlay
+
+* Status: todo
+* Issue / PR: — (suggested: "Run PostgreSQL and Keycloak on OpenShift Local")
+* Depends on: T-0004
+* Spec: §7
+* Acceptance criteria: The CRC overlay (or a sibling) provides a `postgres` Service with the five databases and the Keycloak realm (Keycloak Operator, AGENTS §3), so `oc apply -k` gives a working stack. Needs a running cluster to verify.

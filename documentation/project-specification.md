@@ -34,6 +34,7 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 | Dismiss a task (with confirmation) | ✅ (any task) | ✅ (own tasks) |
 | Log a spontaneous (manual) task | ✅ | ✅ |
 | Add, edit, check, uncheck, delete list items | ✅ | ✅ |
+| Reset a list (uncheck all items) | ✅ | ❌ |
 
 ---
 
@@ -42,6 +43,7 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 ### 3.1 Templates and recurrence
 - A task template (admin-defined) has a title, description, points (on time), `late_points` (fixed amount when completed after the deadline), and a default due offset.
 - A template may have one recurrence: an RRULE schedule, start and end dates, and an assignment mode: `fixed` (one person) or `round_robin`.
+- Recurrence is computed in the household timezone. When the local time of an occurrence does not exist (daylight saving gap), it moves forward by the length of the gap, but never onto another calendar day: it then stays on its own day, at the last second.
 - Archiving a template stops its recurrence. Existing tasks are unaffected, since tasks are snapshots of the template.
 - Every task is based on a template.
 
@@ -84,7 +86,9 @@ A mobile app (Flutter) for people who share a home. It spreads recurring chores 
 
 - Every list is a checklist: items can be checked and unchecked. Checking awards no points.
 - Admins create, rename, and archive lists. Any member adds, edits, checks, unchecks, and deletes items (soft delete, with who and when).
-- A bulk reset action unchecks all items (useful for packing lists).
+- A bulk reset action unchecks all items (useful for packing lists). Only admins can reset a list; a member gets 403.
+- Items of an archived list are frozen: adding, editing, checking, unchecking, deleting and resetting answer 409. Reading them stays allowed.
+- Checking an already checked item (or unchecking an unchecked one) is a no-op, so the first completer is kept.
 
 ---
 
