@@ -105,17 +105,19 @@ void main() {
       expect(find.text('Title 23'), findsOneWidget);
       expect(find.text('Title 1'), findsNothing);
 
-      await tester.dragUntilVisible(
+      await tester.scrollUntilVisible(
         find.text('Load more'),
-        find.byType(ListView),
-        const Offset(0, -300),
+        100,
+        scrollable: find.byType(Scrollable),
       );
+      await tester.ensureVisible(find.text('Load more'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Load more'));
       await tester.pumpAndSettle();
-      await tester.dragUntilVisible(
+      await tester.scrollUntilVisible(
         find.text('Title 1'),
-        find.byType(ListView),
-        const Offset(0, -300),
+        100,
+        scrollable: find.byType(Scrollable),
       );
 
       expect(find.text('Title 1'), findsOneWidget);

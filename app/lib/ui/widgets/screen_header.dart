@@ -17,27 +17,31 @@ class ScreenHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (eyebrow != null) Text(eyebrow!, style: AppTypography.eyebrow),
-              Semantics(
-                container: true,
-                header: true,
-                child: Text(title, style: AppTypography.display),
-              ),
-            ],
-          ),
-        ),
-        if (actions.isNotEmpty)
+    return LayoutBuilder(
+      builder: (context, constraints) => Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
           Expanded(
-            // The Wrap is as wide as its content; the Align sends it to the far right.
-            child: Align(
-              alignment: AlignmentDirectional.centerEnd,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (eyebrow != null)
+                  Text(eyebrow!, style: AppTypography.eyebrow),
+                Semantics(
+                  container: true,
+                  header: true,
+                  child: Text(title, style: AppTypography.display),
+                ),
+              ],
+            ),
+          ),
+          if (actions.isNotEmpty)
+            // The actions take the room they need at the far right, up to two thirds of the
+            // header; they wrap beyond that and the title takes the rest.
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: constraints.maxWidth * 2 / 3,
+              ),
               child: Wrap(
                 alignment: WrapAlignment.end,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -45,8 +49,8 @@ class ScreenHeader extends StatelessWidget {
                 children: actions,
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
