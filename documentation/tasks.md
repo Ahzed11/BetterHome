@@ -365,11 +365,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0004 · OpenShift / CRC deploy manifests for microservices
 
-* Status: blocked (no OpenShift cluster available; blocker is environmental, decided by the product owner on 2026-10-13. Local runs use Podman Compose: ADR 0003, AGENTS §6.1)
+* Status: in-review (manifests written and rendered offline; never applied to a cluster, because none is available: product owner, 2026-10-13. Local runs stay on Podman Compose: ADR 0003, AGENTS §6.1)
 * Issue / PR: #1
 * Depends on: T-0001
 * Spec: §7, ADR 0003
 * Acceptance criteria: Deployments, Routes, ConfigMaps/Secrets, health probes, and migration Jobs for each service on OpenShift Local or a cluster.
+* Summary: Kustomize base `deploy/openshift/base` with, per service, a Deployment (2 replicas, startup/liveness `/q/health/live`, readiness `/q/health/ready`, restricted-SCC security context), Service, edge-TLS Route and a Flyway migration Job, plus ConfigMaps (shared and per service; the Flyway SQL is generated from `backend/**/db/migration`). Overlay `deploy/openshift/crc` sets the namespace, one replica, the Keycloak issuer URL. Secrets are not committed: `crc/secrets.example.yaml` is a placeholder template outside the kustomization. Images are the GHCR ones of T-0100. Usage in `deploy/openshift/README.md`.
+* Decisions and deviations: Health paths are `/q/health/*` (Quarkus default root), not `/health/*` as AGENTS §3 says in short. Migrations use the `flyway/flyway:11-alpine` image of the Compose stack with the SQL mounted from a ConfigMap, so the app images stay migration-free. The ConfigMap sources sit outside the kustomization root, so rendering needs `--load-restrictor=LoadRestrictionsNone`. PostgreSQL and Keycloak are prerequisites, not part of the overlay (T-0104). Every service gets a Route as the acceptance criteria say; internal endpoints stay protected by the `service` role. `make test-openshift-ports` (no tooling, in `make check`) checks ports, probe paths and images against `application.properties`; `make test-openshift` (kustomize/oc/kubectl, optional) renders and schema-checks, and is not in `make check` because CI has none of those tools.
+* Verification: `kustomize build` v5.8.3 renders `deploy/openshift/crc` (31 resources) and `kubeconform` v0.8.0 `-strict` finds 26 valid, 0 invalid, 5 skipped (the Routes, no schema). `make test-openshift-ports` passes. NOT verified: any `oc apply`, pod start, probe success, Flyway under an arbitrary UID, Route reachability, Keycloak/Postgres wiring, `oc kustomize` itself.
+* Follow-ups: T-0104.
 
 ### T-0005 · Generate OpenAPI from code and guard it against drift
 
@@ -935,3 +939,11 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: last second of the day chosen (not skipping the day, not the next day) so a rule never loses or duplicates an occurrence; the property oracle applies the same rule. No product behavior outside this edge changes.
 * Verification: new `RruleEngineTest.anHourMissingAtTheEndOfTheDayKeepsTheOccurrenceOnItsOwnDay` failed before the fix; `mvn verify -pl services/tasks-service -am` green locally (118 tests, coverage checks met), `spotless:apply` clean. After merging master, the `check` job of the pull request passed on the fallback runner (docs, app, five backend jobs, e2e). Not run: Android target.
 * Follow-ups: none.
+
+### T-0104 · CRC: PostgreSQL and Keycloak for the OpenShift Local overlay
+
+* Status: todo
+* Issue / PR: — (suggested: "Run PostgreSQL and Keycloak on OpenShift Local")
+* Depends on: T-0004
+* Spec: §7
+* Acceptance criteria: The CRC overlay (or a sibling) provides a `postgres` Service with the five databases and the Keycloak realm (Keycloak Operator, AGENTS §3), so `oc apply -k` gives a working stack. Needs a running cluster to verify.
