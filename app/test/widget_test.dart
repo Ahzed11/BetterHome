@@ -115,7 +115,9 @@ void main() {
     expect(find.text('Hall of winners'), findsOneWidget);
   });
 
-  testWidgets('admin sets daily recurrence from chores menu', (tester) async {
+  testWidgets('admin saves a daily recurring chore from the chores menu', (
+    tester,
+  ) async {
     final session = AppSession(repository: FakeHouseholdsRepository());
     await tester.pumpWidget(
       BetterHomeApp(session: session, initialLocale: const Locale('en')),
@@ -131,9 +133,20 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Make recurring'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Chore'));
-    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Bins');
+    await tester.scrollUntilVisible(
+      find.text('Daily'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Daily'));
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('Save chore'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Save chore'));
     await tester.pumpAndSettle();
     expect(find.text('Recurrence saved'), findsOneWidget);
   });

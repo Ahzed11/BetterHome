@@ -553,4 +553,138 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get close => 'Fermer';
+
+  @override
+  String get newRecurringTitle => 'Nouvelle tâche récurrente';
+
+  @override
+  String get newRecurringSubtitle =>
+      'Réglez-la une fois, le foyer prend ensuite le relais à tour de rôle.';
+
+  @override
+  String get adminsOnly => 'Réservé aux admins';
+
+  @override
+  String get choreIcon => 'Icône';
+
+  @override
+  String chooseEmoji(String emoji) {
+    return 'Choisir un emoji, actuel : $emoji';
+  }
+
+  @override
+  String get choreName => 'Nom de la tâche';
+
+  @override
+  String get choreNotes => 'Notes — facultatif';
+
+  @override
+  String get pointsSection => 'Points';
+
+  @override
+  String get onTimePoints => 'À temps';
+
+  @override
+  String get latePointsLabel => 'Si en retard, encore';
+
+  @override
+  String fewerPoints(String what) {
+    return 'Moins de $what';
+  }
+
+  @override
+  String morePoints(String what) {
+    return 'Plus de $what';
+  }
+
+  @override
+  String get pointsRule =>
+      'Les points de retard ne dépassent jamais ceux à temps, et personne ne perd jamais de points.';
+
+  @override
+  String get whenSection => 'Quand';
+
+  @override
+  String get every => 'Tous les';
+
+  @override
+  String intervalDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours',
+      one: '1 jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String intervalWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count semaines',
+      one: '1 semaine',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String intervalMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mois',
+      one: '1 mois',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get decreaseInterval => 'Diminuer l’intervalle';
+
+  @override
+  String get increaseInterval => 'Augmenter l’intervalle';
+
+  @override
+  String get onDays => 'Le';
+
+  @override
+  String get monthlyHint => 'Le 1er du mois.';
+
+  @override
+  String get whoSection => 'Qui s’en charge';
+
+  @override
+  String get takeTurns => 'À tour de rôle';
+
+  @override
+  String get takeTurnsHint => 'Tourne équitablement entre les membres';
+
+  @override
+  String get onePerson => 'Une personne';
+
+  @override
+  String get onePersonHint => 'Toujours le même membre';
+
+  @override
+  String get saveChore => 'Enregistrer la tâche';
+
+  @override
+  String stripDayLabel(String date, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches',
+      one: '1 tâche',
+      zero: 'aucune tâche',
+    );
+    return '$date, $_temp0';
+  }
+
+  @override
+  String get stripToday => 'Auj.';
+
+  @override
+  String get thisWeekLabel => 'Cette semaine';
 }

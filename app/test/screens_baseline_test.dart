@@ -10,6 +10,7 @@ import 'package:betterhome/ui/screens/home_shell.dart';
 import 'package:betterhome/ui/screens/household_detail_screen.dart';
 import 'package:betterhome/ui/screens/leaderboard_screen.dart';
 import 'package:betterhome/ui/screens/lists_screen.dart';
+import 'package:betterhome/ui/screens/new_recurring_screen.dart';
 import 'package:betterhome/ui/screens/notification_preferences_screen.dart';
 import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
@@ -188,6 +189,13 @@ final List<_Scenario> _scenarios = [
       session: await _choresSession(populated: true),
       householdId: _household,
       mine: true,
+    ),
+  ),
+  _Scenario(
+    'new_recurring',
+    () async => NewRecurringScreen(
+      session: await _sessionWith(),
+      householdId: _household,
     ),
   ),
   _Scenario(

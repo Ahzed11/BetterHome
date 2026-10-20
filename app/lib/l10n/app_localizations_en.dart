@@ -549,4 +549,138 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get close => 'Close';
+
+  @override
+  String get newRecurringTitle => 'New recurring chore';
+
+  @override
+  String get newRecurringSubtitle =>
+      'Set it once — the household takes turns from there.';
+
+  @override
+  String get adminsOnly => 'Admins only';
+
+  @override
+  String get choreIcon => 'Icon';
+
+  @override
+  String chooseEmoji(String emoji) {
+    return 'Choose an emoji, current: $emoji';
+  }
+
+  @override
+  String get choreName => 'Chore name';
+
+  @override
+  String get choreNotes => 'Notes — optional';
+
+  @override
+  String get pointsSection => 'Points';
+
+  @override
+  String get onTimePoints => 'On time';
+
+  @override
+  String get latePointsLabel => 'If late, still';
+
+  @override
+  String fewerPoints(String what) {
+    return 'Fewer $what';
+  }
+
+  @override
+  String morePoints(String what) {
+    return 'More $what';
+  }
+
+  @override
+  String get pointsRule =>
+      'Late points never go above on-time points, and no one ever loses points.';
+
+  @override
+  String get whenSection => 'When';
+
+  @override
+  String get every => 'Every';
+
+  @override
+  String intervalDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String intervalWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count weeks',
+      one: '1 week',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String intervalMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count months',
+      one: '1 month',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get decreaseInterval => 'Decrease interval';
+
+  @override
+  String get increaseInterval => 'Increase interval';
+
+  @override
+  String get onDays => 'On';
+
+  @override
+  String get monthlyHint => 'On the 1st of the month.';
+
+  @override
+  String get whoSection => 'Who does it';
+
+  @override
+  String get takeTurns => 'Take turns';
+
+  @override
+  String get takeTurnsHint => 'Rotates fairly between members';
+
+  @override
+  String get onePerson => 'One person';
+
+  @override
+  String get onePersonHint => 'Always the same member';
+
+  @override
+  String get saveChore => 'Save chore';
+
+  @override
+  String stripDayLabel(String date, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count chores',
+      one: '1 chore',
+      zero: 'no chores',
+    );
+    return '$date, $_temp0';
+  }
+
+  @override
+  String get stripToday => 'Today';
+
+  @override
+  String get thisWeekLabel => 'This week';
 }

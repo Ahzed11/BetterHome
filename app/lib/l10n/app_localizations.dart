@@ -1033,6 +1033,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get close;
+
+  /// No description provided for @newRecurringTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New recurring chore'**
+  String get newRecurringTitle;
+
+  /// No description provided for @newRecurringSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set it once — the household takes turns from there.'**
+  String get newRecurringSubtitle;
+
+  /// No description provided for @adminsOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Admins only'**
+  String get adminsOnly;
+
+  /// No description provided for @choreIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get choreIcon;
+
+  /// No description provided for @chooseEmoji.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an emoji, current: {emoji}'**
+  String chooseEmoji(String emoji);
+
+  /// No description provided for @choreName.
+  ///
+  /// In en, this message translates to:
+  /// **'Chore name'**
+  String get choreName;
+
+  /// No description provided for @choreNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes — optional'**
+  String get choreNotes;
+
+  /// No description provided for @pointsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get pointsSection;
+
+  /// No description provided for @onTimePoints.
+  ///
+  /// In en, this message translates to:
+  /// **'On time'**
+  String get onTimePoints;
+
+  /// No description provided for @latePointsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'If late, still'**
+  String get latePointsLabel;
+
+  /// No description provided for @fewerPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer {what}'**
+  String fewerPoints(String what);
+
+  /// No description provided for @morePoints.
+  ///
+  /// In en, this message translates to:
+  /// **'More {what}'**
+  String morePoints(String what);
+
+  /// No description provided for @pointsRule.
+  ///
+  /// In en, this message translates to:
+  /// **'Late points never go above on-time points, and no one ever loses points.'**
+  String get pointsRule;
+
+  /// No description provided for @whenSection.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get whenSection;
+
+  /// No description provided for @every.
+  ///
+  /// In en, this message translates to:
+  /// **'Every'**
+  String get every;
+
+  /// No description provided for @intervalDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String intervalDays(int count);
+
+  /// No description provided for @intervalWeeks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 week} other{{count} weeks}}'**
+  String intervalWeeks(int count);
+
+  /// No description provided for @intervalMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 month} other{{count} months}}'**
+  String intervalMonths(int count);
+
+  /// No description provided for @decreaseInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease interval'**
+  String get decreaseInterval;
+
+  /// No description provided for @increaseInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase interval'**
+  String get increaseInterval;
+
+  /// No description provided for @onDays.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get onDays;
+
+  /// No description provided for @monthlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'On the 1st of the month.'**
+  String get monthlyHint;
+
+  /// No description provided for @whoSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Who does it'**
+  String get whoSection;
+
+  /// No description provided for @takeTurns.
+  ///
+  /// In en, this message translates to:
+  /// **'Take turns'**
+  String get takeTurns;
+
+  /// No description provided for @takeTurnsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotates fairly between members'**
+  String get takeTurnsHint;
+
+  /// No description provided for @onePerson.
+  ///
+  /// In en, this message translates to:
+  /// **'One person'**
+  String get onePerson;
+
+  /// No description provided for @onePersonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Always the same member'**
+  String get onePersonHint;
+
+  /// No description provided for @saveChore.
+  ///
+  /// In en, this message translates to:
+  /// **'Save chore'**
+  String get saveChore;
+
+  /// No description provided for @stripDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{date}, {count, plural, =0{no chores} =1{1 chore} other{{count} chores}}'**
+  String stripDayLabel(String date, int count);
+
+  /// No description provided for @stripToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get stripToday;
+
+  /// No description provided for @thisWeekLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get thisWeekLabel;
 }
 
 class _AppLocalizationsDelegate

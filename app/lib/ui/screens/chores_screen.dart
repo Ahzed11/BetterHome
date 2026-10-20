@@ -3,6 +3,7 @@ import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/ui/screens/new_recurring_screen.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/chore_card.dart';
@@ -10,6 +11,7 @@ import 'package:betterhome/ui/widgets/overdue_badge.dart';
 import 'package:betterhome/ui/widgets/quick_log_sheet.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/undoable_action.dart';
+import 'package:betterhome/ui/widgets/week_strip.dart';
 import 'package:betterhome/ui/widgets/week_summary_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -44,6 +46,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
   bool _isAdmin = false;
   _Filter _filter = _Filter.all;
   String? _household;
+  DateTime? _selectedDay;
 
   @override
   void initState() {
@@ -208,81 +211,20 @@ class _ChoresScreenState extends State<ChoresScreen> {
   }
 
   Future<void> _makeRecurring() async {
-    final l10n = AppLocalizations.of(context);
-    var templates = await widget.session.tasksRepository.listTemplates(
-      widget.householdId,
-    );
-    if (!mounted) {
-      return;
-    }
-    if (templates.isEmpty) {
-      await widget.session.tasksRepository.createTemplate(
-        householdId: widget.householdId,
-        title: 'Chore',
-        points: 5,
-        latePoints: 2,
-      );
-      templates = await widget.session.tasksRepository.listTemplates(
-        widget.householdId,
-      );
-    }
-    if (!mounted || templates.isEmpty) {
-      return;
-    }
-    final templateId = await showDialog<String>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l10n.makeRecurring),
-        children: templates
-            .map(
-              (t) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, t.id),
-                child: Text('${t.emoji ?? ''} ${t.title}'.trim()),
-              ),
-            )
-            .toList(),
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => NewRecurringScreen(
+          session: widget.session,
+          householdId: widget.householdId,
+        ),
       ),
     );
-    if (templateId == null || !mounted) {
+    if (saved != true || !mounted) {
       return;
     }
-    final rrule = await showDialog<String>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l10n.makeRecurring),
-        children: [
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, 'FREQ=DAILY'),
-            child: Text(l10n.recurrenceDaily),
-          ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, 'FREQ=WEEKLY;BYDAY=MO'),
-            child: Text(l10n.recurrenceWeekly),
-          ),
-          SimpleDialogOption(
-            onPressed: () =>
-                Navigator.pop(context, 'FREQ=MONTHLY;BYMONTHDAY=1'),
-            child: Text(l10n.recurrenceMonthly),
-          ),
-        ],
-      ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).recurrenceSet)),
     );
-    if (rrule == null || !mounted) {
-      return;
-    }
-    await widget.session.tasksRepository.upsertRecurrence(
-      householdId: widget.householdId,
-      templateId: templateId,
-      rrule: rrule,
-      assignmentMode: AssignmentMode.roundRobin,
-      startsAt: DateTime.now().toUtc().subtract(const Duration(minutes: 1)),
-    );
-    if (!mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(l10n.recurrenceSet)));
   }
 
   Future<void> _revert(ChoreTask task) async {
@@ -442,6 +384,55 @@ class _ChoresScreenState extends State<ChoresScreen> {
     );
   }
 
+  Widget _strip(List<ChoreTask> tasks, AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context).toString();
+    final today = _dayOf(widget.now());
+    final monday = DateTime(
+      today.year,
+      today.month,
+      today.day - today.weekday + 1,
+    );
+    final days = [
+      for (var i = 0; i < 7; i++)
+        DateTime(monday.year, monday.month, monday.day + i),
+    ];
+    final range = DateFormat.MMMd(locale);
+    return WeekStrip(
+      title: '${range.format(days.first)} – ${range.format(days.last)}',
+      days: [
+        for (final day in days)
+          () {
+            final due = tasks.where(
+              (t) => t.dueAt != null && _dayOf(t.dueAt!.toLocal()) == day,
+            );
+            return StripDay(
+              weekday: day == today
+                  ? l10n.stripToday
+                  : DateFormat.E(locale).format(day),
+              number: '${day.day}',
+              dots: [
+                for (final t in due)
+                  t.status == TaskStatus.done
+                      ? StripDot.done
+                      : _isOverdue(t)
+                      ? StripDot.overdue
+                      : StripDot.upcoming,
+              ],
+              selected:
+                  _selectedDay == day || (_selectedDay == null && day == today),
+              semanticLabel: l10n.stripDayLabel(
+                DateFormat.MMMMEEEEd(locale).format(day),
+                due.length,
+              ),
+              onTap: () => setState(
+                () => _selectedDay = _selectedDay == day ? null : day,
+              ),
+            );
+          }(),
+      ],
+    );
+  }
+
   Widget _sectionHeader(String title, String? hint) {
     return Padding(
       padding: const EdgeInsets.only(top: AppTokens.spaceSm),
@@ -541,12 +532,21 @@ class _ChoresScreenState extends State<ChoresScreen> {
           final tasks = snapshot.data ?? const <ChoreTask>[];
           final me = widget.session.profile?.id;
           final mineTasks = tasks.where((t) => t.assigneeId == me).toList();
-          final shown = switch (_filter) {
+          final byFilter = switch (_filter) {
             _Filter.all => tasks,
             _Filter.mine => mineTasks,
             _Filter.done =>
               tasks.where((t) => t.status == TaskStatus.done).toList(),
           };
+          final day = _selectedDay;
+          final shown = day == null || widget.mine
+              ? byFilter
+              : byFilter
+                    .where(
+                      (t) =>
+                          t.dueAt != null && _dayOf(t.dueAt!.toLocal()) == day,
+                    )
+                    .toList();
           return ListView(
             padding: const EdgeInsets.only(bottom: 96),
             children: [
@@ -594,6 +594,16 @@ class _ChoresScreenState extends State<ChoresScreen> {
                 ),
               ),
               if (widget.mine) _summary(tasks, l10n),
+              if (!widget.mine)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppTokens.spaceMd,
+                    0,
+                    AppTokens.spaceMd,
+                    AppTokens.spaceSm + 2,
+                  ),
+                  child: _strip(tasks, l10n),
+                ),
               if (!widget.mine)
                 Padding(
                   padding: const EdgeInsets.symmetric(
