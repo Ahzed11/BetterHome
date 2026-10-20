@@ -20,13 +20,15 @@ fi
 for svc in "${SERVICES[@]}"; do
   migrations="$ROOT/backend/services/${svc}-service/src/main/resources/db/migration"
   echo "Migrating betterhome_${svc}..."
-  # :Z relabels the bind mount for rootless Podman/SELinux
+  # :Z relabels the bind mount for rootless Podman/SELinux. Flyway retries the connection (once a
+  # second) because `compose up -d` returns before Postgres accepts connections.
   podman run --rm --network "$NETWORK" \
     -v "${migrations}:/flyway/sql:ro,Z" \
     "$FLYWAY_IMAGE" \
     -url="jdbc:postgresql://postgres:5432/betterhome_${svc}" \
     -user="$DB_USER" -password="$DB_PASSWORD" \
     -locations=filesystem:/flyway/sql \
+    -connectRetries=60 \
     migrate
 done
 

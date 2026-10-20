@@ -1,12 +1,13 @@
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
+import 'package:betterhome/ui/widgets/app_toast.dart';
 import 'package:flutter/material.dart';
 
-/// Shows [message] with an Undo button for [window] and runs [action] only when the window passes
-/// without the person undoing. Nothing has happened yet while the message is up, so undoing
-/// leaves no trace. [action] still runs when the screen is left within the window.
+/// Shows [message] in a toast with an Undo button for [window] and runs [action] only when the
+/// window passes without the person undoing. Nothing has happened yet while the toast is up, so
+/// undoing leaves no trace. [action] still runs when the screen is left within the window.
 ///
-/// Returns whether [action] ran and finished without failing; a failure shows a snackbar.
+/// Returns whether [action] ran and finished without failing; a failure shows a toast.
 Future<bool> runUnlessUndone(
   BuildContext context, {
   required String message,
@@ -14,25 +15,22 @@ Future<bool> runUnlessUndone(
   Duration window = const Duration(seconds: 5),
 }) async {
   final l10n = AppLocalizations.of(context);
-  final messenger = ScaffoldMessenger.of(context);
-  final closed = await messenger
-      .showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: window,
-          persist: false,
-          action: SnackBarAction(label: l10n.undo, onPressed: () {}),
-        ),
-      )
-      .closed;
-  if (closed == SnackBarClosedReason.action) {
+  final undone = await showAppToast(
+    context,
+    message: message,
+    actionLabel: l10n.undo,
+    duration: window,
+  );
+  if (undone) {
     return false;
   }
   try {
     await action();
     return true;
   } on ApiException catch (_) {
-    messenger.showSnackBar(SnackBar(content: Text(l10n.errorGeneric)));
+    if (context.mounted) {
+      showAppToast(context, message: l10n.errorGeneric, error: true);
+    }
     return false;
   }
 }

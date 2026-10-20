@@ -66,6 +66,9 @@ class _AddFieldState extends State<AddField> {
                 onSubmitted: (_) => _submit(),
                 style: AppTypography.body,
                 decoration: InputDecoration(
+                  // The box around the field already has the padding and the fill.
+                  filled: false,
+                  contentPadding: EdgeInsets.zero,
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,

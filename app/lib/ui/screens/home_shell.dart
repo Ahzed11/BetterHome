@@ -179,16 +179,22 @@ class _HomeShellState extends State<HomeShell> {
             ),
           );
         }
+        final onChores = _tab == _Tab.allChores;
         return Scaffold(
-          appBar: AppBar(
-            title: HouseholdSwitcher(
-              current: current,
-              households: households,
-              onChoice: (choice) => _choose(choice, current.id),
-            ),
-            actions: _actions(l10n),
-          ),
-          body: _tabBody(current.id),
+          // Only the Chores tab has the switcher bar; the other tabs have their own headers.
+          appBar: onChores
+              ? AppBar(
+                  title: HouseholdSwitcher(
+                    current: current,
+                    households: households,
+                    onChoice: (choice) => _choose(choice, current.id),
+                  ),
+                  actions: _actions(l10n),
+                )
+              : null,
+          body: onChores
+              ? _tabBody(current.id)
+              : SafeArea(bottom: false, child: _tabBody(current.id)),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _tab.index,
             onDestinationSelected: (index) =>

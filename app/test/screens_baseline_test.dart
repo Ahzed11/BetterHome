@@ -14,6 +14,7 @@ import 'package:betterhome/ui/screens/notification_preferences_screen.dart';
 import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
 import 'package:betterhome/ui/screens/sign_in_screen.dart';
+import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/ui/widgets/household_switcher.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -191,6 +192,21 @@ final List<_Scenario> _scenarios = [
     ),
   ),
   _Scenario(
+    'template_form',
+    () async => TemplateFormScreen(
+      session: await _sessionWith(),
+      householdId: _household,
+    ),
+  ),
+  _Scenario(
+    'recurring_form',
+    () async => TemplateFormScreen(
+      session: await _sessionWith(),
+      householdId: _household,
+      startRecurring: true,
+    ),
+  ),
+  _Scenario(
     'create_household',
     () async => CreateHouseholdScreen(session: await _sessionWith()),
   ),
@@ -215,6 +231,24 @@ final List<_Scenario> _scenarios = [
       householdId: _household,
     ),
   ),
+  _Scenario('household_detail_templates', () async {
+    final session = await _sessionWith();
+    final tasks = session.tasksRepository;
+    await tasks.createTemplate(
+      householdId: _household,
+      title: 'Vacuum',
+      emoji: '🧹',
+      points: 5,
+      latePoints: 2,
+    );
+    await tasks.createTemplate(
+      householdId: _household,
+      title: 'Dishes',
+      points: 3,
+      latePoints: 1,
+    );
+    return HouseholdDetailScreen(session: session, householdId: _household);
+  }),
   _Scenario('household_detail_member_away', () async {
     final session = await _sessionWith();
     await session.repository.setAway(_household, 'user-1');

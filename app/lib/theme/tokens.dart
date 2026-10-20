@@ -6,8 +6,12 @@ abstract final class AppTokens {
   static const Color overdue = Color(0xFFE07A5F);
 
   /// Soft background for overdue labels: dark text on it keeps the contrast the coral alone lacks.
-  static const Color overdueTint = Color(0xFFFBE7E1);
-  static const Color surface = Color(0xFFF7FAF9);
+  static const Color overdueTint = Color(0xFFFCEBE4);
+
+  /// Ring of the check circle of an overdue chore and the dark coral of its due date (4.5:1 on white).
+  static const Color overdueRing = Color(0xFFE08A70);
+  static const Color overdueText = Color(0xFFA9432A);
+  static const Color surface = Color(0xFFF3F5F1);
   static const Color onBrand = Color(0xFFFFFFFF);
   static const Color ink = Color(0xFF12201D);
   static const Color inkMuted = Color(0xFF5A6A66);
@@ -18,7 +22,29 @@ abstract final class AppTokens {
 
   /// Outline of an empty check box: dark enough for the 3:1 contrast of a control boundary.
   static const Color controlOutline = Color(0xFF7F8F8A);
+
+  /// Avatar colors, handed out in a household's joining order (spec §8.2); white text on each is
+  /// at least 4.5:1.
+  static const List<Color> memberColors = [
+    Color(0xFF6A4FD6),
+    Color(0xFFB45309),
+    Color(0xFF0B6B8A),
+    Color(0xFFB3366B),
+    Color(0xFF4D7C0F),
+    Color(0xFF7C3AED),
+  ];
+
+  /// Segmented control track and podium colors of the leaderboard board.
+  static const Color track = Color(0xFFE6EBE6);
+  static const Color podiumSilver = Color(0xFFE1E7E3);
+  static const Color podiumGold = Color(0xFFFBEBC0);
+  static const Color podiumGoldInk = Color(0xFF8A5A00);
+  static const Color goldRing = Color(0xFFF2B632);
+  static const Color deepBrand = Color(0xFF075D55);
+  static const Color toastAccent = Color(0xFF8FE3D6);
+  static const double radiusHero = 40;
   static const double radiusMd = 16;
+  static const double radiusCard = 20;
   static const double radiusLg = 20;
   static const double radiusPill = 999;
   static const double spaceXs = 4;
@@ -32,12 +58,17 @@ abstract final class AppTokens {
   static const double pillHeight = 40;
   static const double fieldHeight = 52;
   static const double checkBoxSize = 24;
+  static const double checkCircleSize = 44;
 }
 
-/// Text styles of the design. The design uses Bricolage Grotesque for titles and Figtree for text;
-/// until those fonts are bundled, the platform font is used and only these styles change.
+/// Text styles of the design: Bricolage Grotesque for titles, Figtree for text (bundled in
+/// `assets/fonts`, SIL Open Font License).
 abstract final class AppTypography {
+  static const String titleFont = 'BricolageGrotesque';
+  static const String textFont = 'Figtree';
+
   static const TextStyle display = TextStyle(
+    fontFamily: titleFont,
     fontSize: 32,
     fontWeight: FontWeight.w800,
     height: 1.1,
@@ -45,25 +76,30 @@ abstract final class AppTypography {
     color: AppTokens.ink,
   );
   static const TextStyle eyebrow = TextStyle(
+    fontFamily: textFont,
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppTokens.inkMuted,
   );
   static const TextStyle body = TextStyle(
+    fontFamily: textFont,
     fontSize: 16,
     fontWeight: FontWeight.w500,
     color: AppTokens.ink,
   );
   static const TextStyle bodyMuted = TextStyle(
+    fontFamily: textFont,
     fontSize: 16,
     color: AppTokens.inkMuted,
   );
   static const TextStyle label = TextStyle(
+    fontFamily: textFont,
     fontSize: 14,
     fontWeight: FontWeight.w600,
     color: AppTokens.ink,
   );
   static const TextStyle sectionLabel = TextStyle(
+    fontFamily: textFont,
     fontSize: 13,
     fontWeight: FontWeight.w700,
     letterSpacing: 0.5,

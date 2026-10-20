@@ -420,11 +420,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0012 · Dismiss open tasks when a future-dated away period starts
 
-* Status: todo
-* Issue / PR: #5
+* Status: in-review
+* Issue / PR: #5 / #59
 * Depends on: T-0003
 * Spec: §2 Away, §3.3 Away
 * Acceptance criteria: A member marked away with a future `away_from` has their open tasks dismissed (`assignee_away`) when that instant arrives. Needs a households scheduler (claims due rows with `FOR UPDATE SKIP LOCKED`, one transaction per job) and a way to call tasks-service without a user token, which means a write-capable service role that ADR 0014 does not grant yet; decide that first. The job must also mark what it has handled so a restart does not repeat it.
+* Summary: households-service Flyway V4 adds `membership.away_tasks_dismissed_at`. `AwayStartScheduler` (every 30 s) runs `AwayStartDismissal`, which claims one due membership at a time (`FOR UPDATE SKIP LOCKED`, own transaction), calls tasks-service with households' own client-credentials token and sets the marker. tasks-service gets `POST /v1/internal/households/{id}/tasks/dismiss-away/{userId}?dismissedBy=` (`service` role). Setting away again resets the marker; a request that dismisses immediately sets it, so the job never repeats it. New Keycloak client `betterhome-households-service`, compose env, spec §3.3 and data model, OpenAPI for both services regenerated.
+* Decisions and deviations: ADR 0014 addendum: reuse the existing `service` role rather than add a write role (all service accounts are equally trusted); the endpoint trusts `dismissedBy` (= `away_set_by`). Added extensions `quarkus-oidc-client`, `quarkus-rest-client-oidc-filter` (attaches the service token, keeps the job testable without a token endpoint) and `quarkus-scheduler` to households. A failed call ends the run and leaves the period due (retry in 30 s); a persistently failing head row blocks later rows until it succeeds. Periods that were cleared, ended (`away_until` past) or whose member left are never dismissed. No notification is sent (spec defines none).
+* Verification: `./mvnw -B verify` in `backend/` on JDK 21 (spotless, checkstyle, all five services, Postgres Dev Services): re-run after merging master (tasks and households, with their dependencies): all green, 121 tasks tests, none skipped. CI exposed one gap, fixed: the 400 of the new endpoint was missing from the OpenAPI document (the contract test refuses undocumented answers). New tests: households `FutureAwayDismissalTest` (due/not due, once only, reschedule, cleared, ended, left, unreachable and refused tasks-service, two-replica SKIP LOCKED with a blocked first run, TestClock), tasks `InternalAwayDismissalTest` (service allowed, admin/member 403, anonymous 401, missing `dismissedBy` 400). Not run: `make` targets (make not installed), the real Keycloak/token path for the new client (the running Podman stack was left untouched and does not have the new realm client), live scheduler against the compose stack, dependency audit, Flutter checks, e2e.
+* Follow-ups: the realm export must be re-imported (`make down`/`up`) before households can fetch its token locally; households-openapi.yaml lists REST client interfaces as endpoints (existing `TasksClient` and now `TasksInternalClient`), suggest an issue to exclude clients from OpenAPI scanning; an e2e journey for a future-dated away period needs the controllable clock in households.
 
 ### T-0013 · Services reject every real Keycloak user: principal is not the `sub` UUID
 
@@ -601,7 +605,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Summary: `@Consumes(JSON)` now sits only on body-bearing methods in tasks (`TaskResource`, `TemplateResource`), households (`MembershipResource`; `InvitationAcceptResource` has none left) and scoring (`ScoreboardResource`). Tests post `complete`, `dismiss`, `reassign`, `dismiss-away`, `reassign-away`, `archive`, invitation accept, `leave` and `celebrate` with no Content-Type and expect 2xx (the tasks test failed with 415 before the change).
 * Decisions and deviations: lists and notifications have no body-less POST; `RecurrenceResource`, `PreferenceResource` and the other resources only have body-bearing writes, so they keep the class-level annotation.
 * Verification (local, GitHub Actions minutes exhausted; local PostgreSQL 16, no Docker): `make test-docs` OK; `spotless:check checkstyle:check` OK; `mvn verify` per service with coverage checks: households 57, scoring 86, lists 68, notifications 53 tests green; tasks 117 tests with 1 failure that also fails without this change (see Follow-ups). Not run: `make e2e`, `make test-app` (no Podman, Flutter or emulator here), so this is not `done`.
-* Follow-ups: `RruleEnginePropertiesTest.aMonthlyRuleOnADayThatSomeMonthsLackSkipsThoseMonthsInsteadOfClamping` fails deterministically on the parent commit too (expected 29, was 30), so `make check` was red on tasks-service independently of T-0062. Fixed in T-0092.
+* Follow-ups: `RruleEnginePropertiesTest.aMonthlyRuleOnADayThatSomeMonthsLackSkipsThoseMonthsInsteadOfClamping` fails deterministically on the parent commit too (expected 29, was 30), so `make check` was red on tasks-service independently of T-0062. Fixed in T-0101.
 
 ### T-0063 · lists-service: anonymize user ids on account deletion
 
@@ -711,19 +715,21 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0079 · Bundle the design fonts
 
-* Status: todo
+* Status: in-review
 * Issue / PR: — (suggested: "Use Bricolage Grotesque and Figtree")
 * Depends on: T-0024
 * Spec: §8, ADR 0021
 * Acceptance criteria: Bricolage Grotesque (titles) and Figtree (text) from the design canvas are bundled with the app (their licenses allow it) and set in `AppTypography`; goldens use a readable test font (T-0057) so they show the real look. Decide first: bundle files, or fetch at runtime.
+* Decisions and deviations: bundled files (no runtime fetch, works offline): static instances cut from the Google Fonts variable files, Figtree 400–700 and Bricolage Grotesque 600–800 (opsz 36), in `app/assets/fonts` with their OFL licenses. `flutter test` loads them from the pubspec, so goldens show the real fonts. Verified: `flutter analyze`, `flutter test` (goldens regenerated), `dart format`, `make test-docs`. Not run: `make check` and `make e2e`. ADR 0021 deviation "Fonts" no longer applies.
 
 ### T-0080 · Restyle the existing screens with the shared widgets
 
-* Status: todo
+* Status: in-progress
 * Issue / PR: — (suggested: "Apply the Claude Design canvas to chores, leaderboard, households")
 * Depends on: T-0024
 * Spec: §8, ADR 0021
 * Acceptance criteria: Households, chores, quick log, leaderboard and household screens follow their boards in the design canvas, using the widgets and tokens of ADR 0021 (add new shared widgets where several screens need them). Goldens regenerated, accessibility baseline and e2e journeys still pass.
+* Progress (first slice): colors and radii of the canvas in `AppTokens`; `ChoreCard` (check circle: open, dashed coral when overdue, filled when done); the Chores and My chores screens follow the Chores board (header, All / Mine / Done filters on All chores, "Catch up" and per-day sections, "I just did…" button); the household switcher and the navigation bar are styled after the canvas. The design's tab labels (Chores, Mine, Scores) are not applied: tests and e2e journeys find the tabs by their current names. Second slice: the Leaderboard follows its board (period tabs, podium 2-1-3 with gold ring and a "room for one more" place, shared effort card, hall of winners cards); avatar colors come from the joining order (`memberColor`). The "Podium" heading is gone (the design has none). Tabs keep a 48 px target, so the track is 8 px taller than drawn. Third slice: sign-in has the green hero of the Log in board; buttons (54 px, radius 16) and text fields (white, radius 16, outlined) take the design's look through the theme, so every form gets them; errors use the coral text. The design's in-app email/password forms (Log in, Register) do not exist because sign-in goes through Keycloak. Fourth slice: the household screen follows the Household board (big name with member count and time zone, members card with colored avatars and "Set away" pills, soft green invite row, chore templates as cards, leave as a coral text action). The invite row keeps the tooltip "Invite" that the journeys use. Fifth slice: My chores has the "Hey {name} · {household}" header and the green week card (points, rank, progress, points within reach), fed by the weekly scoreboard. Sixth slice (covers T-0091): "I just did…" opens the Quick log board's bottom sheet (search, two-column template tiles, footnote); same one-tap behavior and 5-second undo; unit tests and the journey tap the tile instead of the dialog option. The undo bar of the board is the existing snackbar. Seventh slice: the week strip of the Chores board (week range, a button per day with dots for done / overdue / upcoming chores; picking a day filters the list, picking it again clears it; the board's "Month" link is not built, there is no month view) and the New recurring chore screen (admin menu "Make recurring" now opens it: chore name, emoji, notes, on-time and late points with the late <= on-time rule, Daily / Weekly / Monthly with interval and weekdays, take turns or one person; it creates the template and its recurrence together, monthly is always the 1st). This replaces the old two-step dialogs, so an existing template can no longer be made recurring from the app (the API still allows it). Eighth slice (review of the first run): the switcher bar is on the Chores tab only; the week strip puts a quick-logged chore on the day it was done; the shared effort bar is visible; every message (undo, errors, confirmations) is the design's toast, a dark rounded box at the top with a countdown bar, instead of a bottom snackbar (`showAppToast`). Ninth slice: creating and editing a chore template is a full screen (`TemplateFormScreen`: icon, name, notes, on-time and late points) built from the same sections as New recurring chore (`ChoreDetailsCard`, `PointsSection`); it replaces the template dialog (household screen, and the first quick-log with no template). The icon is picked from a short list or none, no longer free text. Tenth slice (review of the second run): no title and no menu on the All chores list; the admin actions moved to the household screen's "House rules" card ("Chores & rotations" opens the chore form with repeating on; "Run due chores now"). One form (`TemplateFormScreen`, `RecurrenceSections`) creates or edits a template and says whether it repeats, how often and who does it, replacing the separate New recurring screen; an existing recurrence is loaded and can be changed but not turned off (the API has no delete). Icon picker: a sheet of about 120 household emoji in six categories plus "No icon" (curated, no new dependency; a full Unicode picker would need `emoji_picker_flutter`, to be decided). Header, member row and stepper alignment fixed. On the household screen a template that repeats shows a green pill on the right of its card with how often ("Weekly", "Every 2 months"); at large text it goes under the points. The leaderboard has the household name above its title like the other tabs; the lists rename and archive actions are two round icon buttons instead of a three-dot menu (`RoundIconButton`). Left for the next slices: create-household and profile-sync screens (no board in the canvas beyond the Join or start a household one).
 
 ### T-0081 · Producers for the remaining notification types
 
@@ -799,13 +805,111 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0091 · App: restyle the quick-log picker after the design
 
-* Status: todo
+* Status: in-review
 * Issue / PR: — (suggested: "Quick-log picker after the design's Quick log board")
 * Depends on: T-0090
 * Spec: §8.2
 * Acceptance criteria: The template picker opened by "+ I just did…" follows the design canvas' Quick log board (shared widgets and tokens, ADR 0021) instead of a stock `SimpleDialog`, with the same behavior (one tap on a template starts the 5-second cancel window). Update the widget tests, goldens and the e2e journeys that tap the dialog options.
+* Decisions and deviations: delivered in the T-0080 pull request (sixth slice), see its entry. The stock `SimpleDialog` remains for the two "make recurring" pickers (New recurring board, still to do).
 
-### T-0092 · Recurrence: an occurrence in a daylight-saving gap at the end of the day moved to the next day
+### T-0092 · Self-hosted fallback runner for CI
+
+* Status: in-review
+* Issue / PR: — (suggested: "CI minutes quota") / this PR
+* Depends on: T-0070
+* Spec: AGENTS §6.2, ADR 0024
+* Summary: Installed a GitHub runner (label `fallback`) on the dev machine as a user systemd service with the Podman socket as Docker API. `check.yml` takes its runner from the repository variable `CI_RUNNER`, defaulting to `ubuntu-24.04`.
+* Decisions and deviations: Manual switch instead of an automatic fallback (ADR 0024). The workflow-level `DOCKER_HOST` was removed; the runner service provides it. `CI_RUNNER=fallback` is set from the start of this PR, so CI runs on the fallback runner; `gh variable unset CI_RUNNER` returns to hosted. One runner is enabled (label `fallback` plus `fallback-e2e`, which the `e2e` job requires because its stack uses fixed ports), so the jobs run one after another. Two more are installed but disabled: parallel jobs collided on port 8081 (fixed by T-0093), then made `e2e` and the Testcontainers start-up unreliable on this machine (ADR 0024). The `e2e` job now runs `make down` in an `always()` step: `make e2e` leaves the stack up and the second run on the same host failed on taken ports.
+* Verification: PR #90 checks (docs, app with goldens, five backend jobs, e2e, check) all passed on the fallback runner, with one runner, about 15 minutes in sequence. A run with three runners failed on the port collision above. Not run: `make check` locally as a whole.
+* Follow-ups: T-0097 (flaky first e2e journey).
+
+### T-0096 · `deploy/migrate.sh` waits for Postgres
+
+* Status: in-review
+* Issue / PR: — (suggested: "e2e fails with 'Connection to postgres:5432 refused' in migrate") / this PR
+* Depends on: —
+* Spec: AGENTS §3 (migrations as a one-shot job)
+* Summary: `compose up -d postgres keycloak` returns before Postgres accepts connections and Flyway does not retry by default, so the migration step raced Postgres startup. It failed the `e2e` job on master (run 38911989381) and on #91 (run 38912473405) on the self-hosted runner, where warm images make the race easy to lose; hosted runners mostly won it. `migrate.sh` now passes `-connectRetries=60` to Flyway.
+* Decisions and deviations: Flyway's own retry (one try per second, up to a minute) rather than a separate wait loop: one flag, and the same behaviour an init container would want on OpenShift.
+* Verification: a throwaway Postgres (own network, no published port) started right before `migrate.sh`: before the change it exits 1 with `Connection to postgres:5432 refused`; after it, two runs end with `All databases migrated.` Not run: `make e2e`, `make check`.
+* Follow-ups: none.
+
+### T-0093 · Backend tests bind a random port so jobs can share a host
+
+* Status: in-review
+* Issue / PR: — (suggested: "Backend tests collide on port 8081 on a shared CI host") / this PR
+* Depends on: —
+* Spec: AGENTS §5.1
+* Summary: `quarkus.http.test-port=0` in the five services. Quarkus' default test port is 8081 for every service, so two backend jobs on one host (or a backend job beside the `e2e` stack, which publishes 8081-8085) failed with `Port already bound: 8081` (run 38908224906 on the self-hosted fallback runner). Hosted runners hid it because each job has its own VM.
+* Decisions and deviations: Test configuration only; production ports are unchanged. No test hardcoded a service port.
+* Verification: see the PR description.
+* Follow-ups: once merged, enable the other fallback runners (`systemctl --user enable --now github-runner-2 github-runner-3`, ADR 0024) and check the `e2e` job beside backend jobs.
+
+### T-0094 · App: manage chore templates from the household screen
+
+* Status: in-review
+* Issue / PR: — (suggested: "Add and edit templates in the app") / this PR
+* Depends on: —
+* Spec: §3.1, §8.2
+* Summary: The household screen has a "Chore templates" section: cards with emoji, title and points, an "Add a template" button for admins, and an edit form opened by tapping a card (title, emoji, description, points, late points). `TasksRepository.updateTemplate` was added (HTTP through the generated client, and the fake); the backend already had `PATCH /templates/{id}`. Members see the list read-only. Failures show the generic snackbar.
+* Decisions and deviations: Product decision from the owner: templates live in the household management screen, not in the quick-log picker. Covers the template part of T-0075; creating open tasks and accepting an invitation without a household are still open there. Archiving a template from the app was not asked for and is not included. The quick-log stub that creates a "Chore" template when none exists is left as is.
+* Verification: `flutter analyze` clean, `flutter test` 394 passed (new: `household_templates_test.dart` for add, edit, clear emoji, cancel, validation, refused save, member view, French at 200% text, accessibility guidelines; fake and contract tests for `updateTemplate`; new golden `household_detail_templates` in EN and FR; two existing household goldens regenerated). Not run: `make check` as a whole, `make e2e`.
+* Follow-ups: an `integration_test` step for adding and editing a template; archive action; member names instead of ids on the same screen (T-0058). `app/test/failures/*.png` are tracked in git, which looks accidental.
+
+* Decisions and deviations: Manual switch instead of an automatic fallback (ADR 0024). The workflow-level `DOCKER_HOST` was removed; the runner service provides it. `CI_RUNNER=fallback` is set from the start of this PR, so CI runs on the fallback runner; `gh variable unset CI_RUNNER` returns to hosted. Three runners (labels `fallback`; the first also `fallback-e2e`, which the `e2e` job requires because its stack uses fixed ports) so the jobs run in parallel. The `e2e` job now runs `make down` in an `always()` step: `make e2e` leaves the stack up and the second run on the same host failed on taken ports.
+* Verification: PR #90 checks (docs, app with goldens, five backend jobs, e2e, check) all passed on the fallback runner, with one runner, about 10 minutes in sequence; rerun with three runners to be confirmed in the PR. Not run: `make check` locally as a whole.
+* Follow-ups: watch memory (15 GB) when `e2e` runs beside `app` and backend jobs.
+
+### T-0095 · `make run-app`: try the app by hand against the local stack
+
+* Status: in-review
+* Issue / PR: — (suggested: "One command to run the app locally") / this PR
+* Depends on: —
+* Spec: AGENTS §6.1
+* Summary: `make run-app` (`tooling/run-app.sh`) starts the stack (`make up` with the web port in CORS), creates the Keycloak users `alice` and `bob` (password `demo`, local only), and serves the release web build on http://localhost:8090 until Ctrl-C. `RUN_APP_SEED=1` also runs `make seed`; `RUN_APP_STACK=running` reuses a stack that is already up. README and the AGENTS §6.1 table document it.
+* Decisions and deviations: Same dart-defines and web build as `tooling/e2e.sh`, but without chromedriver or journeys. Push notifications are not delivered locally (stated in the README), as the owner accepted.
+* Verification: `make run-app` from a clean machine: stack up and smoke-checked, app compiled and served on :8090, real browser sign-in as `alice` through Keycloak (`test_driver/web_sign_in.dart`: OK). Against the running services, with alice's token: create a household, create a template, edit it (emoji cleared), quick-log it; the logged task carried the edited title and 7 points. Not run: the templates screen in a real browser by hand (covered by widget tests), `make check`.
+* Follow-ups: none.
+
+### T-0097 · e2e: the first journey fails intermittently when creating the household
+
+* Status: todo
+* Issue / PR: — (suggested: "e2e first journey flaky: household not found after creation")
+* Depends on: T-0021
+* Spec: AGENTS §6.2
+* Acceptance criteria: `household_journey_test.dart` "sign in profile sync, create a household…" sometimes fails at `firstWhere` (line 192, `Bad state: No element`: the household created through the UI is not in `listHouseholds()` yet) or with `FocusManager used after being disposed`, and every later journey then fails because they depend on its `householdId`. Seen on the self-hosted runner in runs 38925223407, 38936281427 and 38946063647 (a re-run of the same commit passed), and once on master on 2026-10-14 on a hosted runner (run 38611183796, cause not examined). Measured on 2026-10-16 on a quiet machine with a fresh stack per run (`make down`/`make up`; reusing one stack makes the second run fail on the first run's leftover notification, which is not this flake): 1 failure in 5 runs, so it is not caused by CI load. The failing run reports the first test as failed by `A FocusManager was used after being disposed` thrown after the test had completed, `householdId` is then never assigned, and the later journeys fail in cascade; the log has no per-step progress. One suspect, not confirmed: `_createHousehold` ends by waiting for `find.textContaining(name)`, which already matches the text field holding the typed name, so it can continue before Save has finished (this fits the `firstWhere` variant, not the `FocusManager` one). Instrument the steps, find the real first error, and make the journey wait for the real condition.
+
+### T-0098 · Service images on the Red Hat hardened OpenJDK image
+
+* Status: in-review
+* Issue / PR: — / (this PR)
+* Depends on: T-0004
+* Spec: —
+* Summary: The five `Dockerfile.jvm` use `registry.access.redhat.com/hi/openjdk:21.0-runtime` (non-root 65532, no shell) and start the jar with `java -jar` ([ADR 0025](decisions/0025-red-hat-hardened-base-image.md)).
+* Decisions and deviations: Unused generated Dockerfile variants left alone. The catalog image needs no registry login.
+* Verification: see the pull request.
+* Follow-ups: T-0099 (hardened PostgreSQL for the local stack, suggested issue: "Use hi/postgresql in the local Compose stack").
+
+### T-0099 · Local stack Postgres on the Red Hat hardened image
+
+* Status: todo
+* Issue / PR: — (suggested: "Use hi/postgresql in the local Compose stack")
+* Depends on: T-0098
+* Spec: —
+* Acceptance criteria: `deploy/podman-compose.yml` uses `registry.access.redhat.com/hi/postgresql` (17 is the lowest tag found) instead of `postgres:16-alpine`; init script, healthcheck (`pg_isready`) and volume path work; Testcontainers keeps its own image.
+
+### T-0100 · Publish the service images to GHCR when a pull request is merged
+
+* Status: in-review
+* Issue / PR: — / (this PR; stacked on T-0098)
+* Depends on: T-0098
+* Spec: —
+* Summary: `publish-images.yml` builds the jars and the five images on each push to `master` and pushes `ghcr.io/<owner>/betterhome-<service>:<sha>` and `:latest` with `GITHUB_TOKEN`. `tooling/build-images.sh` does the build and push; README section "Container images"; [ADR 0026](decisions/0026-publish-images-to-ghcr.md).
+* Decisions and deviations: Podman instead of Docker Buildx/actions so the same script runs on hosted and self-hosted runners. No test re-run, no signing or scanning (follow-ups).
+* Verification: `tooling/build-images.sh` built all five images locally from the real jars; the workflow parses as YAML (no `actionlint` installed). Not verified: the login and push to GHCR, which only run on `master` after the merge; the run on `master` after this PR is the check.
+* Follow-ups: image signing and vulnerability scan before push; image pull secret and deployment (T-0004).
+
+### T-0101 · Recurrence: an occurrence in a daylight-saving gap at the end of the day moved to the next day
 
 * Status: in-review
 * Issue / PR: — / —

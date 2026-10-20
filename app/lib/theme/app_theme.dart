@@ -11,17 +11,58 @@ ThemeData buildAppTheme() {
   return ThemeData(
     colorScheme: colorScheme,
     useMaterial3: true,
+    fontFamily: AppTypography.textFont,
     scaffoldBackgroundColor: AppTokens.surface,
     appBarTheme: AppBarTheme(
       backgroundColor: AppTokens.surface,
       foregroundColor: colorScheme.onSurface,
       elevation: 0,
+      titleTextStyle: AppTypography.display.copyWith(fontSize: 20),
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: AppTokens.brand,
+      foregroundColor: AppTokens.onBrand,
+      shape: StadiumBorder(),
+      elevation: 0,
+      focusElevation: 0,
+      hoverElevation: 0,
+      highlightElevation: 0,
+      extendedTextStyle: TextStyle(
+        fontFamily: AppTypography.textFont,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
+      ),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: AppTokens.card,
+      indicatorColor: AppTokens.brandTint,
+      indicatorShape: const StadiumBorder(),
+      surfaceTintColor: Colors.transparent,
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => AppTypography.label.copyWith(
+          fontSize: 12,
+          color: states.contains(WidgetState.selected)
+              ? AppTokens.brand
+              : AppTokens.inkMuted,
+          fontWeight: states.contains(WidgetState.selected)
+              ? FontWeight.w700
+              : FontWeight.w600,
+        ),
+      ),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          color: states.contains(WidgetState.selected)
+              ? AppTokens.brand
+              : AppTokens.inkMuted,
+        ),
+      ),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size(
-          AppTokens.minTouchTarget,
-          AppTokens.minTouchTarget,
+        minimumSize: const Size(AppTokens.minTapTarget, 54),
+        textStyle: AppTypography.body.copyWith(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
         ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppTokens.radiusMd),
@@ -29,8 +70,23 @@ ThemeData buildAppTheme() {
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppTokens.card,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: AppTokens.spaceMd,
+        vertical: AppTokens.spaceMd,
+      ),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+        borderSide: const BorderSide(color: AppTokens.outline),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+        borderSide: const BorderSide(color: AppTokens.outline),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+        borderSide: const BorderSide(color: AppTokens.brand, width: 2),
       ),
     ),
   );

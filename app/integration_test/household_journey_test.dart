@@ -9,6 +9,7 @@ import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/widgets/add_field.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
 import 'package:betterhome/ui/widgets/household_switcher.dart';
+import 'package:betterhome/ui/widgets/quick_log_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -103,6 +104,17 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.pump();
 }
 
+/// Taps [title] in the quick-log sheet once the sheet has finished sliding up: it is built at the
+/// bottom edge, where a tap would miss it.
+Future<void> _pickTemplate(WidgetTester tester, String title) async {
+  await _see(tester, find.byType(QuickLogSheet));
+  await tester.pumpAndSettle();
+  await _tap(
+    tester,
+    find.descendant(of: find.byType(QuickLogSheet), matching: find.text(title)),
+  );
+}
+
 /// Opens the app as [token]'s user, completes the profile step, and returns its session.
 Future<AppSession> _openAs(
   WidgetTester tester,
@@ -134,6 +146,11 @@ Future<AppSession> _openAs(
 
 /// Makes [name] the household every tab shows, through the switcher.
 Future<void> _selectHousehold(WidgetTester tester, String name) async {
+  // The switcher bar is on the All chores tab only.
+  if (find.byType(HouseholdSwitcher).evaluate().isEmpty &&
+      find.byType(NavigationBar).evaluate().isNotEmpty) {
+    await _tap(tester, find.text('All chores'));
+  }
   await _see(tester, find.byType(HouseholdSwitcher));
   final current = tester
       .widget<HouseholdSwitcher>(find.byType(HouseholdSwitcher))
@@ -197,9 +214,26 @@ void main() {
       // Admin creates a template (the household has none) and quick-logs a manual task.
       await _tap(tester, find.text('I just did…'));
       await _see(tester, find.text('New chore template'));
-      await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Dishes');
-      await _tap(tester, find.widgetWithText(FilledButton, 'Save'));
-      await _tap(tester, find.widgetWithText(SimpleDialogOption, 'Dishes'));
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Chore name'),
+        'Dishes',
+      );
+      // The form starts at 10 points (5 if late); the journey's figures are 5 and 2.
+      for (var i = 0; i < 5; i++) {
+        await tester.tap(find.byTooltip('Fewer On time'));
+        await tester.pump();
+      }
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(find.byTooltip('Fewer If late, still'));
+        await tester.pump();
+      }
+      await tester.scrollUntilVisible(
+        find.widgetWithText(FilledButton, 'Save chore'),
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await _tap(tester, find.widgetWithText(FilledButton, 'Save chore'));
+      await _pickTemplate(tester, 'Dishes');
 
       // The log can be cancelled for five seconds: nothing reaches the server.
       await _see(tester, find.text('Logging Dishes…'));
@@ -211,7 +245,7 @@ void main() {
 
       // Left alone, the log is sent when the five seconds pass.
       await _tap(tester, find.text('I just did…'));
-      await _tap(tester, find.widgetWithText(SimpleDialogOption, 'Dishes'));
+      await _pickTemplate(tester, 'Dishes');
       await _see(tester, find.text('done · 5 pts'));
 
       // The assignee completes an open task.
@@ -223,7 +257,7 @@ void main() {
         templateId: template.id,
       );
       await _tap(tester, find.text('My chores'));
-      await _see(tester, find.text('open · 5 pts'));
+      await _see(tester, find.text('+5'));
       await _tap(tester, find.byTooltip('Complete'));
       await _seeCount(tester, find.text('done · 5 pts'), 2);
 
@@ -280,8 +314,8 @@ void main() {
     await _selectHousehold(tester, householdName);
     await _see(tester, find.textContaining('pts'));
     expect(find.textContaining('No chores yet'), findsNothing);
-    await _tap(tester, find.text('Lists'));
     await _selectHousehold(tester, cabin);
+    await _tap(tester, find.text('Lists'));
     await _see(tester, find.text('No lists yet. An admin can create one.'));
   });
 

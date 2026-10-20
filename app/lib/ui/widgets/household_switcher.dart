@@ -65,18 +65,54 @@ class HouseholdSwitcher extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.home_rounded, color: AppTokens.brand),
-                const SizedBox(width: AppTokens.spaceSm),
-                Flexible(
-                  child: Text(
-                    current.name,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body.copyWith(
-                      fontWeight: FontWeight.w700,
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppTokens.brand,
+                    borderRadius: BorderRadius.all(Radius.circular(14)),
+                  ),
+                  child: SizedBox.square(
+                    dimension: AppTokens.pillHeight,
+                    child: Icon(
+                      Icons.home_outlined,
+                      size: 20,
+                      color: AppTokens.onBrand,
                     ),
                   ),
                 ),
-                const Icon(Icons.expand_more, color: AppTokens.inkMuted),
+                const SizedBox(width: AppTokens.spaceSm + 2),
+                Flexible(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.householdEyebrow,
+                        style: AppTypography.eyebrow.copyWith(fontSize: 12),
+                      ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              current.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.display.copyWith(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                          ),
+                          const Icon(
+                            Icons.expand_more,
+                            size: 18,
+                            color: AppTokens.ink,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

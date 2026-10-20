@@ -141,9 +141,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createTemplate => 'Nouveau modèle';
 
   @override
-  String get templateTitle => 'Titre';
-
-  @override
   String get leaderboardTitle => 'Classement';
 
   @override
@@ -157,9 +154,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get periodAll => 'Tout';
-
-  @override
-  String get podiumTitle => 'Podium';
 
   @override
   String get effortBarTitle => 'Effort partagé';
@@ -295,9 +289,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get basketTitle => 'Dans le panier';
 
   @override
-  String get listOptions => 'Options de la liste';
-
-  @override
   String checkItem(String title) {
     return 'Cocher $title';
   }
@@ -414,4 +405,315 @@ class AppLocalizationsFr extends AppLocalizations {
   String quickLogPending(String title) {
     return 'Enregistrement de $title…';
   }
+
+  @override
+  String get templatesSection => 'Modèles de tâches';
+
+  @override
+  String get templatesEmpty =>
+      'Aucun modèle pour l\'instant. Ajoutez-en un pour enregistrer des tâches.';
+
+  @override
+  String get addTemplate => 'Ajouter un modèle';
+
+  @override
+  String get editTemplate => 'Modifier le modèle';
+
+  @override
+  String templatePointsSummary(int points, int latePoints) {
+    return '$points pts · $latePoints si en retard';
+  }
+
+  @override
+  String get catchUp => 'À rattraper';
+
+  @override
+  String get catchUpHint => 'En retard, rapporte encore des points';
+
+  @override
+  String dueInDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'dans $days jours',
+      one: 'demain',
+      zero: 'aujourd’hui',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get noDueDate => 'Sans échéance';
+
+  @override
+  String get choresDone => 'Terminées';
+
+  @override
+  String filterAll(int count) {
+    return 'Toutes · $count';
+  }
+
+  @override
+  String filterMine(int count) {
+    return 'Mes tâches · $count';
+  }
+
+  @override
+  String get filterDone => 'Terminées';
+
+  @override
+  String get householdEyebrow => 'Foyer';
+
+  @override
+  String get podiumRoom => 'De la place pour un de plus';
+
+  @override
+  String effortTogether(int points) {
+    return '$points pts ensemble';
+  }
+
+  @override
+  String get inviteHousemate => 'Inviter un colocataire';
+
+  @override
+  String householdSummary(int count, String timezone) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count membres',
+      one: '1 membre',
+    );
+    return '$_temp0 · $timezone';
+  }
+
+  @override
+  String get yourChores => 'Vos tâches';
+
+  @override
+  String heyHousehold(String name, String household) {
+    return 'Salut $name · $household';
+  }
+
+  @override
+  String get thisWeek => 'Cette semaine';
+
+  @override
+  String rankBehind(int rank, int behind) {
+    return 'n°$rank · $behind de retard';
+  }
+
+  @override
+  String get rankFirst => 'n°1 · en tête';
+
+  @override
+  String withinReach(int points, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches restantes',
+      one: 'une tâche restante',
+      zero: 'plus rien à faire',
+    );
+    return '$points pts à portée cette semaine — $_temp0.';
+  }
+
+  @override
+  String get quickLogSubtitle =>
+      'Un tap et c’est noté. Tous les points, pour vous.';
+
+  @override
+  String get searchChores => 'Rechercher une tâche';
+
+  @override
+  String get quickLogFootnote => 'Ne change pas les tâches prévues des autres.';
+
+  @override
+  String get close => 'Fermer';
+
+  @override
+  String get newRecurringTitle => 'Nouvelle tâche récurrente';
+
+  @override
+  String get newRecurringSubtitle =>
+      'Réglez-la une fois, le foyer prend ensuite le relais à tour de rôle.';
+
+  @override
+  String get adminsOnly => 'Réservé aux admins';
+
+  @override
+  String get choreIcon => 'Icône';
+
+  @override
+  String chooseEmoji(String emoji) {
+    return 'Choisir un emoji, actuel : $emoji';
+  }
+
+  @override
+  String get choreName => 'Nom de la tâche';
+
+  @override
+  String get choreNotes => 'Notes — facultatif';
+
+  @override
+  String get pointsSection => 'Points';
+
+  @override
+  String get onTimePoints => 'À temps';
+
+  @override
+  String get latePointsLabel => 'Si en retard, encore';
+
+  @override
+  String fewerPoints(String what) {
+    return 'Moins de $what';
+  }
+
+  @override
+  String morePoints(String what) {
+    return 'Plus de $what';
+  }
+
+  @override
+  String get pointsRule =>
+      'Les points de retard ne dépassent jamais ceux à temps, et personne ne perd jamais de points.';
+
+  @override
+  String get whenSection => 'Quand';
+
+  @override
+  String get every => 'Tous les';
+
+  @override
+  String intervalDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours',
+      one: '1 jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String intervalWeeks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count semaines',
+      one: '1 semaine',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String intervalMonths(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mois',
+      one: '1 mois',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get decreaseInterval => 'Diminuer l’intervalle';
+
+  @override
+  String get increaseInterval => 'Augmenter l’intervalle';
+
+  @override
+  String get onDays => 'Le';
+
+  @override
+  String get monthlyHint => 'Le 1er du mois.';
+
+  @override
+  String get whoSection => 'Qui s’en charge';
+
+  @override
+  String get takeTurns => 'À tour de rôle';
+
+  @override
+  String get takeTurnsHint => 'Tourne équitablement entre les membres';
+
+  @override
+  String get onePerson => 'Une personne';
+
+  @override
+  String get onePersonHint => 'Toujours le même membre';
+
+  @override
+  String get saveChore => 'Enregistrer la tâche';
+
+  @override
+  String stripDayLabel(String date, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches',
+      one: '1 tâche',
+      zero: 'aucune tâche',
+    );
+    return '$date, $_temp0';
+  }
+
+  @override
+  String get stripToday => 'Auj.';
+
+  @override
+  String get thisWeekLabel => 'Cette semaine';
+
+  @override
+  String get dayEmpty => 'Rien ce jour-là.';
+
+  @override
+  String get noEmoji => 'aucun';
+
+  @override
+  String get templateFormSubtitle =>
+      'Les modèles alimentent « Je viens de… » et les tâches récurrentes.';
+
+  @override
+  String get saveTemplate => 'Enregistrer le modèle';
+
+  @override
+  String get pickEmojiTitle => 'Choisir une icône';
+
+  @override
+  String get noIcon => 'Aucune icône';
+
+  @override
+  String get emojiCleaning => 'Ménage';
+
+  @override
+  String get emojiKitchen => 'Cuisine';
+
+  @override
+  String get emojiHome => 'Maison';
+
+  @override
+  String get emojiLaundry => 'Linge';
+
+  @override
+  String get emojiOutdoors => 'Jardin et animaux';
+
+  @override
+  String get emojiErrands => 'Courses';
+
+  @override
+  String get recurringToggleTitle => 'Se répète selon un calendrier';
+
+  @override
+  String get recurringToggleHint =>
+      'À activer pour une tâche qui revient toute seule.';
+
+  @override
+  String get houseRules => 'Règles de la maison';
+
+  @override
+  String get choresAndRotations => 'Tâches et rotations';
+
+  @override
+  String get choresAndRotationsHint => 'Ajouter une tâche récurrente';
 }

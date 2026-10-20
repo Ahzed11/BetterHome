@@ -56,7 +56,7 @@ void main() {
     await tester.tap(find.text('Household details'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Members'), findsOneWidget);
+    expect(find.text('MEMBERS'), findsOneWidget);
     await tester.tap(find.byTooltip('Invite'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'friend@example.com');
@@ -90,11 +90,19 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('I just did…'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Save'));
+    await tester.enterText(find.byType(TextField).first, 'Chore');
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('Save chore'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Save chore'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Chore'));
-    await tester.pumpAndSettle();
+    await tester.pump();
     expect(find.textContaining('Chore'), findsWidgets);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('leaderboard shows podium and effort bar', (tester) async {
@@ -111,12 +119,19 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(NavigationDestination, 'Leaderboard'));
     await tester.pumpAndSettle();
-    expect(find.text('Podium'), findsOneWidget);
     expect(find.text('Shared effort'), findsOneWidget);
     expect(find.text('Hall of winners'), findsOneWidget);
+    final segment = find.descendant(
+      of: find.byKey(const ValueKey('effort-bar')),
+      matching: find.byType(ColoredBox),
+    );
+    expect(segment, findsWidgets);
+    expect(tester.getSize(segment.first).height, 14);
   });
 
-  testWidgets('admin sets daily recurrence from chores menu', (tester) async {
+  testWidgets('admin saves a daily recurring chore from the house rules', (
+    tester,
+  ) async {
     final session = AppSession(repository: FakeHouseholdsRepository());
     await tester.pumpWidget(
       BetterHomeApp(session: session, initialLocale: const Locale('en')),
@@ -128,14 +143,29 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Flat');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.tap(find.bySemanticsLabel('Household Flat, switch household'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Make recurring'));
+    await tester.tap(find.text('Household details'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Chore'));
+    await tester.tap(find.text('Chores & rotations'));
     await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Bins');
+    await tester.scrollUntilVisible(
+      find.text('Daily'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Daily'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.text('Save chore'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.tap(find.text('Save chore'));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(find.text('Recurrence saved'), findsOneWidget);
   });
 
@@ -153,7 +183,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(NavigationDestination, 'Classement'));
     await tester.pumpAndSettle();
-    expect(find.text('Podium'), findsOneWidget);
     expect(find.text('Effort partagé'), findsOneWidget);
     expect(find.text('Palmarès'), findsOneWidget);
   });

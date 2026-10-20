@@ -52,8 +52,14 @@ make client && cd app && flutter pub get && flutter run -d chrome --web-port 809
   --dart-define=KEYCLOAK_ISSUER=http://localhost:8180/realms/betterhome
 ```
 
+To try the app by hand in one command, run `make run-app`: it starts the stack, creates the users `alice` and `bob` (password `demo`) and serves the web build on http://localhost:8090. Sign in as `alice`, create a household, then add chore templates from the household screen and log chores with "I just did…". `RUN_APP_SEED=1 make run-app` also loads the demo household. Ctrl-C stops the app, `make down` stops the stack. Push notifications are not delivered locally.
+
 Without `API_BASE_URL` and `KEYCLOAK_ISSUER` the app runs in demo mode on in-memory data. `make seed` creates the users `alice` and `bob` (password `demo`). On the Android emulator use `10.0.2.2` for the API URLs and run `adb reverse tcp:8180 tcp:8180`, because Keycloak advertises `localhost:8180`. After changing the realm file run `make down && make up`, since it is imported only once.
 
 `make seed` creates its demo users itself. Manual Keycloak user setup: [deploy/keycloak/README.md](deploy/keycloak/README.md).
 
 End-to-end journeys: `make e2e` runs them on the web build in headless Chrome. Choose the target with `E2E_TARGET=web|android` and reuse a running stack with `E2E_STACK=running` (after `make up`).
+
+## Container images
+
+Every merge into `master` builds the five service images and pushes them to GitHub's container registry as `ghcr.io/<owner>/betterhome-<service>`, tagged with the commit SHA and `latest` ([publish-images.yml](.github/workflows/publish-images.yml), [ADR 0026](documentation/decisions/0026-publish-images-to-ghcr.md)). The packages are private, like the repository; pulling needs `podman login ghcr.io` with a token that has `read:packages`. To build them locally: `cd backend && ./mvnw -DskipTests package`, then `tooling/build-images.sh localhost/betterhome dev`.

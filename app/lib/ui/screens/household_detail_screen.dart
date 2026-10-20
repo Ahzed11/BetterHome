@@ -1,7 +1,16 @@
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/widgets/app_card.dart';
+import 'package:betterhome/ui/widgets/app_pill.dart';
+import 'package:betterhome/ui/widgets/member_avatar.dart';
+import 'package:betterhome/ui/widgets/recurrence_sections.dart';
+import 'package:betterhome/ui/screens/template_form_screen.dart';
+import 'package:betterhome/ui/widgets/section_label.dart';
+import 'package:betterhome/ui/widgets/app_toast.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -36,8 +45,76 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
       final members = await widget.session.repository.listMembers(
         widget.householdId,
       );
-      return _DetailData(household: household, members: members);
+      final templates = await widget.session.tasksRepository.listTemplates(
+        widget.householdId,
+      );
+      final recurrences = <String, TaskRecurrence>{};
+      for (final template in templates) {
+        final recurrence = await widget.session.tasksRepository.getRecurrence(
+          widget.householdId,
+          template.id,
+        );
+        if (recurrence != null) {
+          recurrences[template.id] = recurrence;
+        }
+      }
+      return _DetailData(
+        household: household,
+        members: members,
+        templates: templates,
+        recurrences: recurrences,
+      );
     }();
+  }
+
+  /// Opens the chore form (for a new chore, or to edit [template]) and saves what it returns.
+  Future<void> _saveTemplate({
+    TaskTemplate? template,
+    bool startRecurring = false,
+  }) async {
+    final draft = await Navigator.of(context).push<TemplateDraft>(
+      MaterialPageRoute(
+        builder: (_) => TemplateFormScreen(
+          session: widget.session,
+          householdId: widget.householdId,
+          template: template,
+          startRecurring: startRecurring,
+        ),
+      ),
+    );
+    if (draft == null || !mounted) {
+      return;
+    }
+    final saved = await saveTemplateDraft(
+      context,
+      widget.session,
+      widget.householdId,
+      draft,
+      template: template,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (saved && draft.recurrence != null) {
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context).recurrenceSet,
+      );
+    }
+    setState(_reload);
+  }
+
+  Future<void> _runDueNow() async {
+    final count = await widget.session.tasksRepository.runDueRecurrences(
+      widget.householdId,
+    );
+    if (!mounted) {
+      return;
+    }
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context).spawnedCount(count),
+    );
   }
 
   Future<void> _invite() async {
@@ -138,11 +215,6 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
             onPressed: _acceptInvite,
             icon: const Icon(Icons.mail_outline),
           ),
-          IconButton(
-            tooltip: l10n.invite,
-            onPressed: _invite,
-            icon: const Icon(Icons.person_add_alt_1),
-          ),
         ],
       ),
       body: FutureBuilder<_DetailData>(
@@ -158,93 +230,132 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
           final isAdmin = data.members.any(
             (m) => m.userId == me?.id && m.role == MembershipRole.admin,
           );
+          final ordered = [...data.members]
+            ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
           return ListView(
-            padding: const EdgeInsets.all(AppTokens.spaceLg),
+            padding: const EdgeInsets.all(AppTokens.spaceMd),
             children: [
-              Text(
-                data.household.name,
-                style: Theme.of(context).textTheme.headlineSmall,
+              Semantics(
+                container: true,
+                header: true,
+                child: Text(
+                  data.household.name,
+                  style: AppTypography.display.copyWith(fontSize: 34),
+                ),
               ),
-              Text(data.household.timezone),
-              const SizedBox(height: AppTokens.spaceLg),
               Text(
-                l10n.members,
-                style: Theme.of(context).textTheme.titleMedium,
+                l10n.householdSummary(
+                  data.members.length,
+                  data.household.timezone,
+                ),
+                style: AppTypography.eyebrow.copyWith(
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: AppTokens.spaceLg),
+              SectionLabel(l10n.members),
+              const SizedBox(height: AppTokens.spaceSm),
+              AppCard(
+                child: Column(
+                  children: [
+                    for (final member in data.members)
+                      _memberRow(member, ordered, isAdmin, me?.id, l10n),
+                  ],
+                ),
               ),
               const SizedBox(height: AppTokens.spaceSm),
-              ...data.members.map((member) {
-                final roleLabel = member.role == MembershipRole.admin
-                    ? l10n.roleAdmin
-                    : l10n.roleMember;
-                final action = isAdmin
-                    ? TextButton(
-                        onPressed: () async {
-                          if (member.isAway) {
-                            await widget.session.repository.clearAway(
-                              widget.householdId,
-                              member.userId,
-                            );
-                          } else {
-                            await widget.session.repository.setAway(
-                              widget.householdId,
-                              member.userId,
-                            );
-                          }
-                          if (mounted) {
-                            setState(_reload);
-                          }
-                        },
-                        child: Text(
-                          member.isAway ? l10n.clearAway : l10n.setAway,
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    : null;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppTokens.spaceSm,
-                  ),
-                  child: Row(
+              _InviteRow(
+                label: l10n.inviteHousemate,
+                tooltip: l10n.invite,
+                onTap: _invite,
+              ),
+              if (isAdmin) ...[
+                const SizedBox(height: AppTokens.spaceLg),
+                SectionLabel(l10n.houseRules),
+                const SizedBox(height: AppTokens.spaceSm),
+                AppCard(
+                  child: Column(
                     children: [
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              member.userId,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            Text(
-                              member.isAway
-                                  ? '$roleLabel · ${l10n.away}'
-                                  : roleLabel,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ],
-                        ),
+                      _RuleRow(
+                        icon: Icons.sync,
+                        title: l10n.choresAndRotations,
+                        hint: l10n.choresAndRotationsHint,
+                        onTap: () => _saveTemplate(startRecurring: true),
                       ),
-                      if (action != null) Flexible(child: action),
+                      const Divider(height: 1, color: AppTokens.divider),
+                      _RuleRow(
+                        icon: Icons.play_circle_outline,
+                        title: l10n.runDueNow,
+                        onTap: _runDueNow,
+                      ),
                     ],
                   ),
-                );
-              }),
+                ),
+              ],
               const SizedBox(height: AppTokens.spaceLg),
-              OutlinedButton(
-                onPressed: () async {
-                  final navigator = Navigator.of(context);
-                  await widget.session.repository.leave(widget.householdId);
-                  if (!mounted) {
-                    return;
-                  }
-                  navigator.pop();
-                },
-                child: Text(l10n.leaveHousehold),
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  SectionLabel(l10n.templatesSection),
+                  if (isAdmin)
+                    AppPill(
+                      label: l10n.addTemplate,
+                      icon: Icons.add,
+                      onPressed: _saveTemplate,
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppTokens.spaceSm),
+              if (data.templates.isEmpty)
+                Text(l10n.templatesEmpty, style: AppTypography.bodyMuted)
+              else
+                for (final template in data.templates) ...[
+                  AppCard(
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: ListTile(
+                        leading: template.emoji == null
+                            ? null
+                            : Text(
+                                template.emoji ?? '',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                        title: Text(template.title, style: AppTypography.body),
+                        subtitle: _templateSubtitle(
+                          l10n,
+                          template,
+                          data.recurrences[template.id],
+                        ),
+                        trailing: _stackPill(context)
+                            ? null
+                            : _pillFor(l10n, data.recurrences[template.id]),
+                        onTap: isAdmin
+                            ? () => _saveTemplate(template: template)
+                            : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTokens.spaceSm),
+                ],
+              const SizedBox(height: AppTokens.spaceMd),
+              Center(
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTokens.overdueText,
+                    minimumSize: const Size(0, AppTokens.minTapTarget),
+                  ),
+                  onPressed: () async {
+                    final navigator = Navigator.of(context);
+                    await widget.session.repository.leave(widget.householdId);
+                    if (!mounted) {
+                      return;
+                    }
+                    navigator.pop();
+                  },
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: Text(l10n.leaveHousehold),
+                ),
               ),
             ],
           );
@@ -252,11 +363,263 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
       ),
     );
   }
+
+  /// At large text sizes the pill goes under the points instead of squeezing the title.
+  bool _stackPill(BuildContext context) =>
+      MediaQuery.textScalerOf(context).scale(16) > 22;
+
+  Widget? _pillFor(AppLocalizations l10n, TaskRecurrence? recurrence) =>
+      switch (recurrence) {
+        final r? => RecurringPill(label: recurrenceLabel(l10n, r)),
+        null => null,
+      };
+
+  Widget _templateSubtitle(
+    AppLocalizations l10n,
+    TaskTemplate template,
+    TaskRecurrence? recurrence,
+  ) {
+    final points = Text(
+      l10n.templatePointsSummary(template.points, template.latePoints),
+      style: AppTypography.eyebrow.copyWith(fontWeight: FontWeight.w400),
+    );
+    final pill = _stackPill(context) ? _pillFor(l10n, recurrence) : null;
+    if (pill == null) {
+      return points;
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        points,
+        const SizedBox(height: AppTokens.spaceXs),
+        pill,
+      ],
+    );
+  }
+
+  Widget _memberRow(
+    Membership member,
+    List<Membership> ordered,
+    bool isAdmin,
+    String? meId,
+    AppLocalizations l10n,
+  ) {
+    final roleLabel = member.role == MembershipRole.admin
+        ? l10n.roleAdmin
+        : l10n.roleMember;
+    final label = member.userId == meId ? l10n.you : member.userId;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTokens.spaceSm + AppTokens.spaceXs,
+        vertical: AppTokens.spaceSm,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // At large text sizes the pill goes under the name instead of squeezing it.
+          final stacked = MediaQuery.textScalerOf(context).scale(16) > 22;
+          final who = Row(
+            children: [
+              MemberAvatar(
+                label: label,
+                color: memberColor(ordered.indexOf(member)),
+              ),
+              const SizedBox(width: AppTokens.spaceSm + AppTokens.spaceXs),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      member.isAway ? '$roleLabel · ${l10n.away}' : roleLabel,
+                      style: AppTypography.eyebrow.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+          final pill = AppPill(
+            label: member.isAway ? l10n.clearAway : l10n.setAway,
+            icon: Icons.dark_mode_outlined,
+            onPressed: () async {
+              if (member.isAway) {
+                await widget.session.repository.clearAway(
+                  widget.householdId,
+                  member.userId,
+                );
+              } else {
+                await widget.session.repository.setAway(
+                  widget.householdId,
+                  member.userId,
+                );
+              }
+              if (mounted) {
+                setState(_reload);
+              }
+            },
+          );
+          if (!isAdmin) {
+            return who;
+          }
+          return stacked
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [who, pill],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: who),
+                    const SizedBox(width: AppTokens.spaceSm),
+                    pill,
+                  ],
+                );
+        },
+      ),
+    );
+  }
+}
+
+/// One tappable row of the "House rules" card: an icon, a title, an optional hint and a chevron.
+class _RuleRow extends StatelessWidget {
+  const _RuleRow({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.hint,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? hint;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 60),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTokens.spaceMd - 2,
+            vertical: AppTokens.spaceSm,
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 20, color: AppTokens.brand),
+              const SizedBox(width: AppTokens.spaceSm + 4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTypography.body.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (hint != null)
+                      Text(
+                        hint ?? '',
+                        style: AppTypography.eyebrow.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                size: 18,
+                color: AppTokens.inkMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The soft green "invite" row under the members.
+class _InviteRow extends StatelessWidget {
+  const _InviteRow({
+    required this.label,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final String label;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: AppTokens.brandTint,
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTokens.spaceMd,
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.person_add_alt_1_outlined,
+                    size: 20,
+                    color: AppTokens.deepBrand,
+                  ),
+                  const SizedBox(width: AppTokens.spaceSm + 2),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: AppTypography.body.copyWith(
+                        color: AppTokens.deepBrand,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _DetailData {
-  const _DetailData({required this.household, required this.members});
+  const _DetailData({
+    required this.household,
+    required this.members,
+    required this.templates,
+    required this.recurrences,
+  });
 
   final Household household;
   final List<Membership> members;
+  final List<TaskTemplate> templates;
+
+  /// The recurrence of each template that has one, by template id.
+  final Map<String, TaskRecurrence> recurrences;
 }

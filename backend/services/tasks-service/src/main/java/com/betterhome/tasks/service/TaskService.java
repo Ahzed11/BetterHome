@@ -234,11 +234,25 @@ public class TaskService {
     @Transactional
     public int dismissOpenTasksForAwayMember(UUID householdId, UUID awayUserId) {
         MemberView admin = callerService.requireAdmin(householdId);
+        return dismissOpenTasksOfAwayMember(householdId, awayUserId, admin.userId());
+    }
+
+    /**
+     * Dismisses the open tasks of a member whose away period has started, for a service account.
+     * The caller is trusted; {@code dismissedBy} is the admin who set the member away.
+     */
+    @Transactional
+    public int dismissOpenTasksForAwayMemberAsService(
+            UUID householdId, UUID awayUserId, UUID dismissedBy) {
+        return dismissOpenTasksOfAwayMember(householdId, awayUserId, dismissedBy);
+    }
+
+    private int dismissOpenTasksOfAwayMember(UUID householdId, UUID awayUserId, UUID dismissedBy) {
         Instant now = clock.now();
         List<Task> open = Task.listOpenForAssignee(householdId, awayUserId);
         for (Task task : open) {
             task.status = TaskStatus.dismissed;
-            task.dismissedBy = admin.userId();
+            task.dismissedBy = dismissedBy;
             task.dismissalReason = DismissalReason.assignee_away;
             task.updatedAt = now;
         }
