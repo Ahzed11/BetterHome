@@ -246,7 +246,7 @@ void main() {
       // Left alone, the log is sent when the five seconds pass.
       await _tap(tester, find.text('I just did…'));
       await _pickTemplate(tester, 'Dishes');
-      await _see(tester, find.text('done · 5 pts'));
+      await _see(tester, find.text('Done · 5 pts'));
 
       // The assignee completes an open task.
       final template = (await session.tasksRepository.listTemplates(
@@ -259,7 +259,7 @@ void main() {
       await _tap(tester, find.text('My chores'));
       await _see(tester, find.text('+5'));
       await _tap(tester, find.byTooltip('Complete'));
-      await _seeCount(tester, find.text('done · 5 pts'), 2);
+      await _seeCount(tester, find.text('Done · 5 pts'), 2);
 
       // Both completions show on the leaderboard, through tasks -> scoring over HTTP.
       await _tap(tester, find.text('Leaderboard'));
@@ -279,7 +279,7 @@ void main() {
       await tester.tap(find.byTooltip('Dismiss').first);
       await _see(tester, find.text('Dismiss this chore?'));
       await _tap(tester, find.widgetWithText(FilledButton, 'Dismiss'));
-      await _see(tester, find.textContaining('dismissed · '));
+      await _see(tester, find.textContaining('Dismissed · '));
 
       // The admin reverts a completion with a reason; its points are taken back.
       await _tap(tester, find.byTooltip('Revert'));
