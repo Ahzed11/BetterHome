@@ -240,8 +240,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                 AppTokens.radiusPill,
                               ),
                               child: SizedBox(
+                                key: const ValueKey('effort-bar'),
                                 height: 14,
                                 child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   spacing: 3,
                                   children: [
                                     for (final e in board.entries.where(

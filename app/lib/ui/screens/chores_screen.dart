@@ -138,6 +138,13 @@ class _ChoresScreenState extends State<ChoresScreen> {
 
   static DateTime _dayOf(DateTime t) => DateTime(t.year, t.month, t.day);
 
+  /// The day a chore sits on in the week strip: its due day, or the day it was done when it has
+  /// no due date (a quick-logged chore).
+  static DateTime? _stripDay(ChoreTask task) {
+    final at = task.dueAt ?? task.completedAt;
+    return at == null ? null : _dayOf(at.toLocal());
+  }
+
   bool _isOverdue(ChoreTask task) {
     final due = task.dueAt;
     return task.status == TaskStatus.open &&
@@ -402,9 +409,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
       days: [
         for (final day in days)
           () {
-            final due = tasks.where(
-              (t) => t.dueAt != null && _dayOf(t.dueAt!.toLocal()) == day,
-            );
+            final due = tasks.where((t) => _stripDay(t) == day);
             return StripDay(
               weekday: day == today
                   ? l10n.stripToday
@@ -553,12 +558,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
           final day = _selectedDay;
           final shown = day == null || widget.mine
               ? byFilter
-              : byFilter
-                    .where(
-                      (t) =>
-                          t.dueAt != null && _dayOf(t.dueAt!.toLocal()) == day,
-                    )
-                    .toList();
+              : byFilter.where((t) => _stripDay(t) == day).toList();
           return ListView(
             padding: const EdgeInsets.only(bottom: 96),
             children: [
@@ -654,7 +654,13 @@ class _ChoresScreenState extends State<ChoresScreen> {
                     : snapshot.hasError
                     ? Center(child: Text(l10n.errorGeneric))
                     : shown.isEmpty
-                    ? Center(child: Text(l10n.choresEmpty))
+                    ? Center(
+                        child: Text(
+                          day == null || widget.mine
+                              ? l10n.choresEmpty
+                              : l10n.dayEmpty,
+                        ),
+                      )
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [

@@ -99,7 +99,7 @@ void main() {
     await tester.tap(find.text('17'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('No chores yet'), findsOneWidget);
+    expect(find.text('Nothing on this day.'), findsOneWidget);
   });
 
   testWidgets('the strip is in French in French', (tester) async {
@@ -107,5 +107,41 @@ void main() {
 
     expect(find.text('Auj.'), findsOneWidget);
     expect(find.text('12 oct. – 18 oct.'), findsOneWidget);
+  });
+
+  testWidgets('a quick-logged chore sits on the day it was done', (
+    tester,
+  ) async {
+    final session = AppSession(repository: FakeHouseholdsRepository());
+    await session.syncProfile(email: 'ada@example.com', givenName: 'Ada');
+    final household = await session.repository.createHousehold(
+      name: 'Flat',
+      timezone: 'UTC',
+    );
+    final tasks = session.tasksRepository;
+    final dishes = await tasks.createTemplate(
+      householdId: household.id,
+      title: 'Dishes',
+      points: 4,
+      latePoints: 1,
+    );
+    await tasks.quickLog(householdId: household.id, templateId: dishes.id);
+    await pumpScreen(
+      tester,
+      home: ChoresScreen(session: session, householdId: household.id),
+      locale: const Locale('en'),
+    );
+
+    await tester.tap(find.text('Today'));
+    await tester.pumpAndSettle();
+    expect(find.text('Dishes'), findsOneWidget);
+
+    final today = DateTime.now();
+    final other = today.weekday == DateTime.sunday
+        ? today.subtract(const Duration(days: 1))
+        : today.add(const Duration(days: 1));
+    await tester.tap(find.text('${other.day}'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nothing on this day.'), findsOneWidget);
   });
 }

@@ -683,4 +683,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thisWeekLabel => 'This week';
+
+  @override
+  String get dayEmpty => 'Nothing on this day.';
 }

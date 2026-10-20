@@ -1219,6 +1219,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This week'**
   String get thisWeekLabel;
+
+  /// No description provided for @dayEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on this day.'**
+  String get dayEmpty;
 }
 
 class _AppLocalizationsDelegate

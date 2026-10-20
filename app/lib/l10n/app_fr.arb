@@ -216,5 +216,6 @@
   "stripDayLabel": "{date}, {count, plural, =0{aucune tâche} =1{1 tâche} other{{count} tâches}}",
   "@stripDayLabel": {"placeholders": {"date": {"type": "String"}, "count": {"type": "int"}}},
   "stripToday": "Auj.",
-  "thisWeekLabel": "Cette semaine"
+  "thisWeekLabel": "Cette semaine",
+  "dayEmpty": "Rien ce jour-là."
 }

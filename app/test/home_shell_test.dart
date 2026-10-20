@@ -81,6 +81,22 @@ void main() {
       );
     });
 
+    testWidgets('only the chores tab has the switcher bar', (tester) async {
+      await _pumpShell(tester, await _session());
+      expect(find.byType(AppBar), findsOneWidget);
+      expect(find.byTooltip('Notifications'), findsOneWidget);
+
+      await _openTab(tester, 'My chores');
+      expect(find.byType(AppBar), findsNothing);
+      expect(find.byTooltip('Notifications'), findsNothing);
+
+      await _openTab(tester, 'Lists');
+      expect(find.byType(AppBar), findsNothing);
+
+      await _openTab(tester, 'All chores');
+      expect(find.byType(AppBar), findsOneWidget);
+    });
+
     testWidgets('each tab shows its own screen', (tester) async {
       await _pumpShell(tester, await _session());
 

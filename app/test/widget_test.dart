@@ -113,6 +113,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Shared effort'), findsOneWidget);
     expect(find.text('Hall of winners'), findsOneWidget);
+    final segment = find.descendant(
+      of: find.byKey(const ValueKey('effort-bar')),
+      matching: find.byType(ColoredBox),
+    );
+    expect(segment, findsWidgets);
+    expect(tester.getSize(segment.first).height, 14);
   });
 
   testWidgets('admin saves a daily recurring chore from the chores menu', (
