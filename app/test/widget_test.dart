@@ -56,7 +56,7 @@ void main() {
     await tester.tap(find.text('Household details'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Members'), findsOneWidget);
+    expect(find.text('MEMBERS'), findsOneWidget);
     await tester.tap(find.byTooltip('Invite'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'friend@example.com');

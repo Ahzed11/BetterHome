@@ -85,7 +85,7 @@ void main() {
     await _setUp();
     await _pump(tester);
 
-    expect(find.text('Chore templates'), findsOneWidget);
+    expect(find.text('CHORE TEMPLATES'), findsOneWidget);
     expect(find.text('Dishes'), findsOneWidget);
     expect(find.text('3 pts · 1 if late'), findsOneWidget);
     expect(find.text('Add a template'), findsOneWidget);
@@ -227,7 +227,7 @@ void main() {
     await _pump(tester, locale: const Locale('fr'), textScale: 2);
 
     await tester.scrollUntilVisible(find.text('Dishes'), 200);
-    expect(find.text('Modèles de tâches'), findsOneWidget);
+    expect(find.text('MODÈLES DE TÂCHES'), findsOneWidget);
     expect(find.text('3 pts · 1 si en retard'), findsOneWidget);
     await tester.tap(find.text('Dishes'));
     await tester.pumpAndSettle();

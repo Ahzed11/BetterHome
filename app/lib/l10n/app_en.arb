@@ -205,5 +205,8 @@
   "householdEyebrow": "Household",
   "podiumRoom": "Room for one more",
   "effortTogether": "{points} pts together",
-  "@effortTogether": {"placeholders": {"points": {"type": "int"}}}
+  "@effortTogether": {"placeholders": {"points": {"type": "int"}}},
+  "inviteHousemate": "Invite a housemate",
+  "householdSummary": "{count, plural, =1{1 member} other{{count} members}} · {timezone}",
+  "@householdSummary": {"placeholders": {"count": {"type": "int"}, "timezone": {"type": "String"}}}
 }

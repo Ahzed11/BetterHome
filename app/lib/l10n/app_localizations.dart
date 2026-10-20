@@ -961,6 +961,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{points} pts together'**
   String effortTogether(int points);
+
+  /// No description provided for @inviteHousemate.
+  ///
+  /// In en, this message translates to:
+  /// **'Invite a housemate'**
+  String get inviteHousemate;
+
+  /// No description provided for @householdSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 member} other{{count} members}} · {timezone}'**
+  String householdSummary(int count, String timezone);
 }
 
 class _AppLocalizationsDelegate

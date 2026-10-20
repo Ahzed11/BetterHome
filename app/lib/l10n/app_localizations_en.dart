@@ -491,4 +491,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String effortTogether(int points) {
     return '$points pts together';
   }
+
+  @override
+  String get inviteHousemate => 'Invite a housemate';
+
+  @override
+  String householdSummary(int count, String timezone) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count members',
+      one: '1 member',
+    );
+    return '$_temp0 · $timezone';
+  }
 }

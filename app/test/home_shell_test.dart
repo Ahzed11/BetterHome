@@ -213,7 +213,7 @@ void main() {
       await tester.pumpAndSettle();
       await _tapText(tester, 'Household details');
 
-      expect(find.text('Members'), findsOneWidget);
+      expect(find.text('MEMBERS'), findsOneWidget);
       expect(find.text('Leave household'), findsOneWidget);
     });
 

@@ -162,5 +162,8 @@
   "householdEyebrow": "Foyer",
   "podiumRoom": "De la place pour un de plus",
   "effortTogether": "{points} pts ensemble",
-  "@effortTogether": {"placeholders": {"points": {"type": "int"}}}
+  "@effortTogether": {"placeholders": {"points": {"type": "int"}}},
+  "inviteHousemate": "Inviter un colocataire",
+  "householdSummary": "{count, plural, =1{1 membre} other{{count} membres}} · {timezone}",
+  "@householdSummary": {"placeholders": {"count": {"type": "int"}, "timezone": {"type": "String"}}}
 }

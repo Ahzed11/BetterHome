@@ -4,6 +4,9 @@ import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
+import 'package:betterhome/ui/widgets/app_pill.dart';
+import 'package:betterhome/ui/widgets/member_avatar.dart';
+import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/template_form_dialog.dart';
 import 'package:flutter/material.dart';
@@ -182,11 +185,6 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
             onPressed: _acceptInvite,
             icon: const Icon(Icons.mail_outline),
           ),
-          IconButton(
-            tooltip: l10n.invite,
-            onPressed: _invite,
-            icon: const Icon(Icons.person_add_alt_1),
-          ),
         ],
       ),
       body: FutureBuilder<_DetailData>(
@@ -202,146 +200,246 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
           final isAdmin = data.members.any(
             (m) => m.userId == me?.id && m.role == MembershipRole.admin,
           );
+          final ordered = [...data.members]
+            ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
           return ListView(
-            padding: const EdgeInsets.all(AppTokens.spaceLg),
+            padding: const EdgeInsets.all(AppTokens.spaceMd),
             children: [
-              Text(
-                data.household.name,
-                style: Theme.of(context).textTheme.headlineSmall,
+              Semantics(
+                container: true,
+                header: true,
+                child: Text(
+                  data.household.name,
+                  style: AppTypography.display.copyWith(fontSize: 34),
+                ),
               ),
-              Text(data.household.timezone),
-              const SizedBox(height: AppTokens.spaceLg),
               Text(
-                l10n.members,
-                style: Theme.of(context).textTheme.titleMedium,
+                l10n.householdSummary(
+                  data.members.length,
+                  data.household.timezone,
+                ),
+                style: AppTypography.eyebrow.copyWith(
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: AppTokens.spaceLg),
+              SectionLabel(l10n.members),
+              const SizedBox(height: AppTokens.spaceSm),
+              AppCard(
+                child: Column(
+                  children: [
+                    for (final member in data.members)
+                      _memberRow(member, ordered, isAdmin, me?.id, l10n),
+                  ],
+                ),
               ),
               const SizedBox(height: AppTokens.spaceSm),
-              ...data.members.map((member) {
-                final roleLabel = member.role == MembershipRole.admin
-                    ? l10n.roleAdmin
-                    : l10n.roleMember;
-                final action = isAdmin
-                    ? TextButton(
-                        onPressed: () async {
-                          if (member.isAway) {
-                            await widget.session.repository.clearAway(
-                              widget.householdId,
-                              member.userId,
-                            );
-                          } else {
-                            await widget.session.repository.setAway(
-                              widget.householdId,
-                              member.userId,
-                            );
-                          }
-                          if (mounted) {
-                            setState(_reload);
-                          }
-                        },
-                        child: Text(
-                          member.isAway ? l10n.clearAway : l10n.setAway,
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                    : null;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: AppTokens.spaceSm,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              member.userId,
-                              style: Theme.of(context).textTheme.bodyLarge,
-                            ),
-                            Text(
-                              member.isAway
-                                  ? '$roleLabel · ${l10n.away}'
-                                  : roleLabel,
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (action != null) Flexible(child: action),
-                    ],
-                  ),
-                );
-              }),
+              _InviteRow(
+                label: l10n.inviteHousemate,
+                tooltip: l10n.invite,
+                onTap: _invite,
+              ),
               const SizedBox(height: AppTokens.spaceLg),
               Wrap(
                 alignment: WrapAlignment.spaceBetween,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text(
-                    l10n.templatesSection,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+                  SectionLabel(l10n.templatesSection),
                   if (isAdmin)
-                    TextButton.icon(
+                    AppPill(
+                      label: l10n.addTemplate,
+                      icon: Icons.add,
                       onPressed: _saveTemplate,
-                      icon: const Icon(Icons.add),
-                      label: Text(l10n.addTemplate),
                     ),
                 ],
               ),
               const SizedBox(height: AppTokens.spaceSm),
               if (data.templates.isEmpty)
-                Text(l10n.templatesEmpty)
+                Text(l10n.templatesEmpty, style: AppTypography.bodyMuted)
               else
-                ...data.templates.map(
-                  (template) => Padding(
-                    padding: const EdgeInsets.only(bottom: AppTokens.spaceSm),
-                    child: AppCard(
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: ListTile(
-                          leading: template.emoji == null
-                              ? null
-                              : Text(
-                                  template.emoji ?? '',
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                          title: Text(template.title),
-                          subtitle: Text(
-                            l10n.templatePointsSummary(
-                              template.points,
-                              template.latePoints,
-                            ),
+                for (final template in data.templates) ...[
+                  AppCard(
+                    child: Material(
+                      type: MaterialType.transparency,
+                      child: ListTile(
+                        leading: template.emoji == null
+                            ? null
+                            : Text(
+                                template.emoji ?? '',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                        title: Text(template.title, style: AppTypography.body),
+                        subtitle: Text(
+                          l10n.templatePointsSummary(
+                            template.points,
+                            template.latePoints,
                           ),
-                          onTap: isAdmin
-                              ? () => _saveTemplate(template: template)
-                              : null,
+                          style: AppTypography.eyebrow.copyWith(
+                            fontWeight: FontWeight.w400,
+                          ),
                         ),
+                        onTap: isAdmin
+                            ? () => _saveTemplate(template: template)
+                            : null,
                       ),
                     ),
                   ),
+                  const SizedBox(height: AppTokens.spaceSm),
+                ],
+              const SizedBox(height: AppTokens.spaceMd),
+              Center(
+                child: TextButton.icon(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTokens.overdueText,
+                    minimumSize: const Size(0, AppTokens.minTapTarget),
+                  ),
+                  onPressed: () async {
+                    final navigator = Navigator.of(context);
+                    await widget.session.repository.leave(widget.householdId);
+                    if (!mounted) {
+                      return;
+                    }
+                    navigator.pop();
+                  },
+                  icon: const Icon(Icons.logout, size: 18),
+                  label: Text(l10n.leaveHousehold),
                 ),
-              const SizedBox(height: AppTokens.spaceLg),
-              OutlinedButton(
-                onPressed: () async {
-                  final navigator = Navigator.of(context);
-                  await widget.session.repository.leave(widget.householdId);
-                  if (!mounted) {
-                    return;
-                  }
-                  navigator.pop();
-                },
-                child: Text(l10n.leaveHousehold),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _memberRow(
+    Membership member,
+    List<Membership> ordered,
+    bool isAdmin,
+    String? meId,
+    AppLocalizations l10n,
+  ) {
+    final roleLabel = member.role == MembershipRole.admin
+        ? l10n.roleAdmin
+        : l10n.roleMember;
+    final label = member.userId == meId ? l10n.you : member.userId;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTokens.spaceSm + AppTokens.spaceXs,
+        vertical: AppTokens.spaceSm,
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              MemberAvatar(
+                label: label,
+                color: memberColor(ordered.indexOf(member)),
+              ),
+              const SizedBox(width: AppTokens.spaceSm + AppTokens.spaceXs),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: AppTypography.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      member.isAway ? '$roleLabel · ${l10n.away}' : roleLabel,
+                      style: AppTypography.eyebrow.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (isAdmin)
+            AppPill(
+              label: member.isAway ? l10n.clearAway : l10n.setAway,
+              icon: Icons.dark_mode_outlined,
+              onPressed: () async {
+                if (member.isAway) {
+                  await widget.session.repository.clearAway(
+                    widget.householdId,
+                    member.userId,
+                  );
+                } else {
+                  await widget.session.repository.setAway(
+                    widget.householdId,
+                    member.userId,
+                  );
+                }
+                if (mounted) {
+                  setState(_reload);
+                }
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The soft green "invite" row under the members.
+class _InviteRow extends StatelessWidget {
+  const _InviteRow({
+    required this.label,
+    required this.tooltip,
+    required this.onTap,
+  });
+
+  final String label;
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: AppTokens.brandTint,
+        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTokens.spaceMd,
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.person_add_alt_1_outlined,
+                    size: 20,
+                    color: AppTokens.deepBrand,
+                  ),
+                  const SizedBox(width: AppTokens.spaceSm + 2),
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: AppTypography.body.copyWith(
+                        color: AppTokens.deepBrand,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
