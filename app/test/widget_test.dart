@@ -111,7 +111,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(NavigationDestination, 'Leaderboard'));
     await tester.pumpAndSettle();
-    expect(find.text('Podium'), findsOneWidget);
     expect(find.text('Shared effort'), findsOneWidget);
     expect(find.text('Hall of winners'), findsOneWidget);
   });
@@ -153,7 +152,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(NavigationDestination, 'Classement'));
     await tester.pumpAndSettle();
-    expect(find.text('Podium'), findsOneWidget);
     expect(find.text('Effort partagé'), findsOneWidget);
     expect(find.text('Palmarès'), findsOneWidget);
   });

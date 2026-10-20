@@ -53,7 +53,6 @@
   "periodMonth": "Month",
   "periodYear": "Year",
   "periodAll": "All time",
-  "podiumTitle": "Podium",
   "effortBarTitle": "Shared effort",
   "hallOfWinners": "Hall of winners",
   "leaderboardEmpty": "No points yet this period.",
@@ -203,5 +202,8 @@
   "filterMine": "Mine · {count}",
   "@filterMine": {"placeholders": {"count": {"type": "int"}}},
   "filterDone": "Done",
-  "householdEyebrow": "Household"
+  "householdEyebrow": "Household",
+  "podiumRoom": "Room for one more",
+  "effortTogether": "{points} pts together",
+  "@effortTogether": {"placeholders": {"points": {"type": "int"}}}
 }

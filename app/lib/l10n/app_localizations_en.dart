@@ -157,9 +157,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get periodAll => 'All time';
 
   @override
-  String get podiumTitle => 'Podium';
-
-  @override
   String get effortBarTitle => 'Shared effort';
 
   @override
@@ -486,4 +483,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get householdEyebrow => 'Household';
+
+  @override
+  String get podiumRoom => 'Room for one more';
+
+  @override
+  String effortTogether(int points) {
+    return '$points pts together';
+  }
 }

@@ -3,7 +3,11 @@ import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/widgets/app_card.dart';
+import 'package:betterhome/ui/widgets/member_avatar.dart';
+import 'package:betterhome/ui/widgets/podium.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
+import 'package:betterhome/ui/widgets/segmented_tabs.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/month_recap_dialog.dart';
 import 'package:flutter/material.dart';
@@ -134,149 +138,183 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     return userId;
   }
 
+  Color _colorFor(String userId, List<Membership> members) {
+    final ordered = [...members]
+      ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
+    final index = ordered.indexWhere((m) => m.userId == userId);
+    return memberColor(index < 0 ? 0 : index);
+  }
+
+  Widget _heading(String text) => Semantics(
+    container: true,
+    header: true,
+    child: Text(
+      text,
+      style: AppTypography.display.copyWith(fontSize: 17, height: 1.2),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.all(AppTokens.spaceMd),
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppTokens.spaceMd,
-              AppTokens.spaceSm,
-              AppTokens.spaceMd,
-              0,
-            ),
-            child: ScreenHeader(title: l10n.leaderboardTitle),
+          ScreenHeader(title: l10n.leaderboardTitle),
+          const SizedBox(height: AppTokens.spaceMd),
+          SegmentedTabs<ScorePeriod>(
+            labels: {
+              ScorePeriod.week: l10n.periodWeek,
+              ScorePeriod.month: l10n.periodMonth,
+              ScorePeriod.year: l10n.periodYear,
+              ScorePeriod.all: l10n.periodAll,
+            },
+            selected: _period,
+            onSelected: (value) {
+              setState(() {
+                _period = value;
+                _reload();
+              });
+            },
           ),
-          Padding(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
-            child: SegmentedButton<ScorePeriod>(
-              segments: [
-                ButtonSegment(
-                  value: ScorePeriod.week,
-                  label: Text(l10n.periodWeek),
-                ),
-                ButtonSegment(
-                  value: ScorePeriod.month,
-                  label: Text(l10n.periodMonth),
-                ),
-                ButtonSegment(
-                  value: ScorePeriod.year,
-                  label: Text(l10n.periodYear),
-                ),
-                ButtonSegment(
-                  value: ScorePeriod.all,
-                  label: Text(l10n.periodAll),
-                ),
-              ],
-              selected: {_period},
-              onSelectionChanged: (value) {
-                setState(() {
-                  _period = value.first;
-                  _reload();
-                });
-              },
-            ),
-          ),
-          Expanded(
-            child: FutureBuilder<_BoardData>(
-              future: _future,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
-                  return Center(child: Text(l10n.loading));
-                }
-                if (snapshot.hasError || !snapshot.hasData) {
-                  return Center(child: Text(l10n.errorGeneric));
-                }
-                final data = snapshot.data!;
-                final board = data.board;
-                return ListView(
-                  padding: const EdgeInsets.all(AppTokens.spaceMd),
-                  children: [
-                    Text(
-                      l10n.podiumTitle,
-                      style: Theme.of(context).textTheme.titleMedium,
+          const SizedBox(height: AppTokens.spaceMd),
+          FutureBuilder<_BoardData>(
+            future: _future,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return Center(child: Text(l10n.loading));
+              }
+              final data = snapshot.data;
+              if (snapshot.hasError || data == null) {
+                return Center(child: Text(l10n.errorGeneric));
+              }
+              final board = data.board;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (board.podium.isEmpty)
+                    Text(l10n.leaderboardEmpty)
+                  else
+                    Podium(
+                      emptyLabel: l10n.podiumRoom,
+                      places: [
+                        for (final entry in board.podium)
+                          PodiumPlace(
+                            rank: entry.rank,
+                            label: _labelFor(l10n, entry.userId, data.members),
+                            points: l10n.pointsLabel(entry.points),
+                            color: _colorFor(entry.userId, data.members),
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: AppTokens.spaceSm),
-                    if (board.podium.isEmpty)
-                      Text(l10n.leaderboardEmpty)
-                    else
-                      ...board.podium.map(
-                        (entry) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: CircleAvatar(
-                            backgroundColor: AppTokens.brand.withValues(
-                              alpha: 0.15,
+                  const SizedBox(height: AppTokens.spaceMd),
+                  AppCard(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppTokens.spaceMd),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Expanded(child: _heading(l10n.effortBarTitle)),
+                              Flexible(
+                                child: Text(
+                                  l10n.effortTogether(board.totalPoints),
+                                  style: AppTypography.eyebrow.copyWith(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: AppTokens.spaceSm + 4),
+                          if (board.totalPoints == 0)
+                            Text(l10n.leaderboardEmpty)
+                          else ...[
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                AppTokens.radiusPill,
+                              ),
+                              child: SizedBox(
+                                height: 14,
+                                child: Row(
+                                  spacing: 3,
+                                  children: [
+                                    for (final e in board.entries.where(
+                                      (e) => e.points > 0,
+                                    ))
+                                      Expanded(
+                                        flex: (e.effortShare * 1000)
+                                            .round()
+                                            .clamp(1, 1000),
+                                        child: ColoredBox(
+                                          color: _colorFor(
+                                            e.userId,
+                                            data.members,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            child: Text('${entry.rank}'),
-                          ),
+                            const SizedBox(height: AppTokens.spaceSm + 4),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              spacing: AppTokens.spaceXs,
+                              children: [
+                                for (final e in board.entries)
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: _colorFor(
+                                            e.userId,
+                                            data.members,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            3,
+                                          ),
+                                        ),
+                                        child: const SizedBox.square(
+                                          dimension: 10,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          '${_labelFor(l10n, e.userId, data.members)} · '
+                                          '${(e.effortShare * 100).round()}%',
+                                          style: AppTypography.label,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTokens.spaceMd),
+                  _heading(l10n.hallOfWinners),
+                  const SizedBox(height: AppTokens.spaceSm),
+                  if (data.winners.isEmpty)
+                    Text(l10n.noWinnersYet)
+                  else
+                    for (final w in data.winners) ...[
+                      AppCard(
+                        child: ListTile(
                           title: Text(
-                            _labelFor(l10n, entry.userId, data.members),
+                            _monthName(context, w.yearMonth),
+                            style: AppTypography.body,
                           ),
-                          trailing: Text(l10n.pointsLabel(entry.points)),
-                        ),
-                      ),
-                    const SizedBox(height: AppTokens.spaceLg),
-                    Text(
-                      l10n.effortBarTitle,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: AppTokens.spaceSm),
-                    if (board.totalPoints == 0)
-                      Text(l10n.leaderboardEmpty)
-                    else
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(AppTokens.radiusMd),
-                        child: SizedBox(
-                          height: 16,
-                          child: Row(
-                            children: board.entries
-                                .where((e) => e.points > 0)
-                                .map((e) {
-                                  final colors = [
-                                    AppTokens.brand,
-                                    const Color(0xFF5BA89F),
-                                    const Color(0xFF8FCFC7),
-                                    const Color(0xFFB8E0DB),
-                                  ];
-                                  final color =
-                                      colors[(e.rank - 1) % colors.length];
-                                  return Expanded(
-                                    flex: (e.effortShare * 1000).round().clamp(
-                                      1,
-                                      1000,
-                                    ),
-                                    child: ColoredBox(color: color),
-                                  );
-                                })
-                                .toList(),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: AppTokens.spaceSm),
-                    ...board.entries.map(
-                      (e) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Text(
-                          '${_labelFor(l10n, e.userId, data.members)} · '
-                          '${(e.effortShare * 100).round()}%',
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppTokens.spaceLg),
-                    Text(
-                      l10n.hallOfWinners,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: AppTokens.spaceSm),
-                    if (data.winners.isEmpty)
-                      Text(l10n.noWinnersYet)
-                    else
-                      ...data.winners.map(
-                        (w) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(w.yearMonth),
                           subtitle: Text(
                             w.winnerUserId == null
                                 ? l10n.leaderboardEmpty
@@ -286,13 +324,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                     data.members,
                                   ),
                           ),
-                          trailing: Text(l10n.pointsLabel(w.winnerPoints)),
+                          trailing: Text(
+                            l10n.pointsLabel(w.winnerPoints),
+                            style: AppTypography.label.copyWith(
+                              color: AppTokens.brand,
+                            ),
+                          ),
                         ),
                       ),
-                  ],
-                );
-              },
-            ),
+                      const SizedBox(height: AppTokens.spaceSm),
+                    ],
+                ],
+              );
+            },
           ),
         ],
       ),

@@ -48,7 +48,6 @@
   "periodMonth": "Mois",
   "periodYear": "Année",
   "periodAll": "Tout",
-  "podiumTitle": "Podium",
   "effortBarTitle": "Effort partagé",
   "hallOfWinners": "Palmarès",
   "leaderboardEmpty": "Aucun point pour cette période.",
@@ -160,5 +159,8 @@
   "filterMine": "Mes tâches · {count}",
   "@filterMine": {"placeholders": {"count": {"type": "int"}}},
   "filterDone": "Terminées",
-  "householdEyebrow": "Foyer"
+  "householdEyebrow": "Foyer",
+  "podiumRoom": "De la place pour un de plus",
+  "effortTogether": "{points} pts ensemble",
+  "@effortTogether": {"placeholders": {"points": {"type": "int"}}}
 }

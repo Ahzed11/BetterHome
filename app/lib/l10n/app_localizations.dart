@@ -386,12 +386,6 @@ abstract class AppLocalizations {
   /// **'All time'**
   String get periodAll;
 
-  /// No description provided for @podiumTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Podium'**
-  String get podiumTitle;
-
   /// No description provided for @effortBarTitle.
   ///
   /// In en, this message translates to:
@@ -955,6 +949,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Household'**
   String get householdEyebrow;
+
+  /// No description provided for @podiumRoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Room for one more'**
+  String get podiumRoom;
+
+  /// No description provided for @effortTogether.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} pts together'**
+  String effortTogether(int points);
 }
 
 class _AppLocalizationsDelegate

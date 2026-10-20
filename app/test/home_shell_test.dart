@@ -85,7 +85,7 @@ void main() {
       await _pumpShell(tester, await _session());
 
       await _openTab(tester, 'Leaderboard');
-      expect(find.text('Podium'), findsOneWidget);
+      expect(find.text('Shared effort'), findsOneWidget);
       await _tapText(tester, 'Nice!'); // the unseen month recap
 
       await _openTab(tester, 'Lists');

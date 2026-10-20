@@ -22,6 +22,24 @@ abstract final class AppTokens {
 
   /// Outline of an empty check box: dark enough for the 3:1 contrast of a control boundary.
   static const Color controlOutline = Color(0xFF7F8F8A);
+
+  /// Avatar colors, handed out in a household's joining order (spec §8.2); white text on each is
+  /// at least 4.5:1.
+  static const List<Color> memberColors = [
+    Color(0xFF6A4FD6),
+    Color(0xFFB45309),
+    Color(0xFF0B6B8A),
+    Color(0xFFB3366B),
+    Color(0xFF4D7C0F),
+    Color(0xFF7C3AED),
+  ];
+
+  /// Segmented control track and podium colors of the leaderboard board.
+  static const Color track = Color(0xFFE6EBE6);
+  static const Color podiumSilver = Color(0xFFE1E7E3);
+  static const Color podiumGold = Color(0xFFFBEBC0);
+  static const Color podiumGoldInk = Color(0xFF8A5A00);
+  static const Color goldRing = Color(0xFFF2B632);
   static const double radiusMd = 16;
   static const double radiusCard = 20;
   static const double radiusLg = 20;
