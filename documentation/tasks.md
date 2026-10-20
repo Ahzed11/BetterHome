@@ -1052,11 +1052,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0111 · Android build against the NAS (`make apk`)
 
-* Status: todo
-* Issue / PR: #121 / —
-* Depends on: T-0107
+* Status: in-review
+* Issue / PR: #121 / (pull request to follow; stacked on #132)
+* Depends on: T-0107 (the phone check also needs T-0115 and a running NAS stack)
 * Spec: §1
 * Acceptance criteria: `make apk` builds a debug-signed APK for the dev phone, with no host baked in: the server URL is entered in the app (T-0115). Install steps (adb or a download over the tailnet). Verified on a real phone: after entering the server URL, sign-in through Keycloak works, the OIDC redirect returns to the app, a household can be created. The tailnet name is never written to a committed file or to an APK that is published. Release signing is T-0116.
+* Summary: `make apk` (`tooling/build-apk.sh`) builds `app/build/app/outputs/flutter-apk/app-release.apk` in release mode, signed with the debug key as the release build type already is, and then checks the file: the `INTERNET` permission, the application id, the signer, and that no `.ts.net` name is inside a build made without `NAS_HOST`. `NAS_HOST=<host> make apk` makes a personal build with the URLs of ADR 0029 baked in through `--dart-define` (not part of the acceptance criteria: it lets the phone be tried before T-0115; never published). README has install steps. **Bug fixed on the way:** the main `AndroidManifest.xml` had no `INTERNET` permission (only the debug and profile manifests did), so any release APK, this one and the F-Droid one, had no network.
+* Decisions and deviations: release mode rather than `--debug` (60 MB, no debugger, the build users will get); the signing key stays the debug key until T-0116, so an APK built on another machine does not update this one (README). A fat APK (all ABIs) for simplicity. `make apk` depends on `make client` like `make e2e`.
+* Verification: `make apk` built the APK (60.7 MB, `aapt`: `INTERNET`, `com.betterhome.betterhome`, signer `CN=Android Debug`, no server inside); the same build without the manifest fix fails the check with "the INTERNET permission is missing"; `NAS_HOST=nas.example.ts.net make apk` baked `https://nas.example.ts.net/api/<service>` into the app. Not verified: installing and running it on a phone (the Android emulator still crashes on the dev VM, T-0045), signing in through Keycloak and the redirect back to the app, creating a household (needs the NAS stack, Tailscale and a phone: T-0110 and the product owner).
+* Follow-ups: T-0115 removes the need for `NAS_HOST`; T-0116 replaces the signing key.
 
 ### T-0112 · NAS smoke check (`make nas-smoke`)
 
