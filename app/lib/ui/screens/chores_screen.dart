@@ -7,6 +7,7 @@ import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/chore_card.dart';
 import 'package:betterhome/ui/widgets/overdue_badge.dart';
+import 'package:betterhome/ui/widgets/quick_log_sheet.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/undoable_action.dart';
 import 'package:betterhome/ui/widgets/week_summary_card.dart';
@@ -187,20 +188,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
     if (!mounted || latest.isEmpty) {
       return;
     }
-    final templateId = await showDialog<String>(
-      context: context,
-      builder: (context) => SimpleDialog(
-        title: Text(l10n.quickLog),
-        children: latest
-            .map(
-              (t) => SimpleDialogOption(
-                onPressed: () => Navigator.pop(context, t.id),
-                child: Text('${t.emoji ?? ''} ${t.title}'.trim()),
-              ),
-            )
-            .toList(),
-      ),
-    );
+    final templateId = await showQuickLogSheet(context, latest);
     if (templateId == null || !mounted) {
       return;
     }

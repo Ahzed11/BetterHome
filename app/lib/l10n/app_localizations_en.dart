@@ -536,4 +536,17 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$points pts within reach this week — $_temp0.';
   }
+
+  @override
+  String get quickLogSubtitle =>
+      'One tap logs it. Full points, straight to you.';
+
+  @override
+  String get searchChores => 'Search chores';
+
+  @override
+  String get quickLogFootnote => 'Doesn\'t change anyone\'s scheduled chores.';
+
+  @override
+  String get close => 'Close';
 }

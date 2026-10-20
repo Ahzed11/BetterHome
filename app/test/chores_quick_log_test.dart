@@ -4,6 +4,7 @@ import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/chores_screen.dart';
 import 'package:betterhome/ui/screens/home_shell.dart';
+import 'package:betterhome/ui/widgets/quick_log_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -53,7 +54,12 @@ Future<void> _quickLog(
 }) async {
   await tester.tap(find.text(label));
   await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(SimpleDialogOption, 'Dishes'));
+  await tester.tap(
+    find.descendant(
+      of: find.byType(QuickLogSheet),
+      matching: find.text('Dishes'),
+    ),
+  );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
 }

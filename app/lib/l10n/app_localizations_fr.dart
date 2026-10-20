@@ -540,4 +540,17 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$points pts à portée cette semaine — $_temp0.';
   }
+
+  @override
+  String get quickLogSubtitle =>
+      'Un tap et c’est noté. Tous les points, pour vous.';
+
+  @override
+  String get searchChores => 'Rechercher une tâche';
+
+  @override
+  String get quickLogFootnote => 'Ne change pas les tâches prévues des autres.';
+
+  @override
+  String get close => 'Fermer';
 }

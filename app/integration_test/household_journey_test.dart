@@ -9,6 +9,7 @@ import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/widgets/add_field.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
 import 'package:betterhome/ui/widgets/household_switcher.dart';
+import 'package:betterhome/ui/widgets/quick_log_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -199,7 +200,13 @@ void main() {
       await _see(tester, find.text('New chore template'));
       await tester.enterText(find.widgetWithText(TextField, 'Title'), 'Dishes');
       await _tap(tester, find.widgetWithText(FilledButton, 'Save'));
-      await _tap(tester, find.widgetWithText(SimpleDialogOption, 'Dishes'));
+      await _tap(
+        tester,
+        find.descendant(
+          of: find.byType(QuickLogSheet),
+          matching: find.text('Dishes'),
+        ),
+      );
 
       // The log can be cancelled for five seconds: nothing reaches the server.
       await _see(tester, find.text('Logging Dishes…'));
@@ -211,7 +218,13 @@ void main() {
 
       // Left alone, the log is sent when the five seconds pass.
       await _tap(tester, find.text('I just did…'));
-      await _tap(tester, find.widgetWithText(SimpleDialogOption, 'Dishes'));
+      await _tap(
+        tester,
+        find.descendant(
+          of: find.byType(QuickLogSheet),
+          matching: find.text('Dishes'),
+        ),
+      );
       await _see(tester, find.text('done · 5 pts'));
 
       // The assignee completes an open task.

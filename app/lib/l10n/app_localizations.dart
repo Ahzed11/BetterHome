@@ -1009,6 +1009,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{points} pts within reach this week — {count, plural, =0{nothing left} =1{one chore left} other{{count} chores left}}.'**
   String withinReach(int points, int count);
+
+  /// No description provided for @quickLogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'One tap logs it. Full points, straight to you.'**
+  String get quickLogSubtitle;
+
+  /// No description provided for @searchChores.
+  ///
+  /// In en, this message translates to:
+  /// **'Search chores'**
+  String get searchChores;
+
+  /// No description provided for @quickLogFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Doesn\'t change anyone\'s scheduled chores.'**
+  String get quickLogFootnote;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
 }
 
 class _AppLocalizationsDelegate

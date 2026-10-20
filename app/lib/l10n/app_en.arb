@@ -217,5 +217,9 @@
   "@rankBehind": {"placeholders": {"rank": {"type": "int"}, "behind": {"type": "int"}}},
   "rankFirst": "#1 · in front",
   "withinReach": "{points} pts within reach this week — {count, plural, =0{nothing left} =1{one chore left} other{{count} chores left}}.",
-  "@withinReach": {"placeholders": {"points": {"type": "int"}, "count": {"type": "int"}}}
+  "@withinReach": {"placeholders": {"points": {"type": "int"}, "count": {"type": "int"}}},
+  "quickLogSubtitle": "One tap logs it. Full points, straight to you.",
+  "searchChores": "Search chores",
+  "quickLogFootnote": "Doesn't change anyone's scheduled chores.",
+  "close": "Close"
 }

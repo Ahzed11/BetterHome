@@ -174,5 +174,9 @@
   "@rankBehind": {"placeholders": {"rank": {"type": "int"}, "behind": {"type": "int"}}},
   "rankFirst": "n°1 · en tête",
   "withinReach": "{points} pts à portée cette semaine — {count, plural, =0{plus rien à faire} =1{une tâche restante} other{{count} tâches restantes}}.",
-  "@withinReach": {"placeholders": {"points": {"type": "int"}, "count": {"type": "int"}}}
+  "@withinReach": {"placeholders": {"points": {"type": "int"}, "count": {"type": "int"}}},
+  "quickLogSubtitle": "Un tap et c’est noté. Tous les points, pour vous.",
+  "searchChores": "Rechercher une tâche",
+  "quickLogFootnote": "Ne change pas les tâches prévues des autres.",
+  "close": "Fermer"
 }
