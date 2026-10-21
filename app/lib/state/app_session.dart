@@ -122,6 +122,7 @@ class AppSession extends ChangeNotifier {
           FakeTasksRepository(
             currentUserId: profile?.id ?? 'user-1',
             ledger: ledger is FakeScoringRepository ? ledger : null,
+            now: (_tasksRepository as FakeTasksRepository).now,
           ),
         );
       }
