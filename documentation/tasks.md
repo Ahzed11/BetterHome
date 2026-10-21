@@ -1076,11 +1076,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0113 · NAS operations: updates and backups
 
-* Status: todo
-* Issue / PR: #123 / —
+* Status: in-review
+* Issue / PR: #123 / (pull request to follow; stacked on the T-0112 branch)
 * Depends on: T-0108
 * Spec: §7
 * Acceptance criteria: `deploy/nas/update.sh` pulls a new SHA tag, runs the migrations and restarts the services. A nightly `pg_dump` of every database, plus the Gotify data volume, to a NAS volume, reusing the `prodrigestivill/postgres-backup-local` pattern already running on the NAS (it takes a list of databases), with a documented restore that was tried once.
+* Summary: `compose.yml` gains `backup` (that image, `@daily`, the five databases and Keycloak's, 7 daily / 4 weekly / 3 monthly) and `backup-gotify` (alpine, a daily `tar` of the Gotify volume mounted read-only, 7 kept), both writing to `CHANGE_ME_BACKUP_DIR` and kept off `edge`. `update.sh [tag]` validates the tag, rewrites the BetterHome image tags (keeping `compose.yml.before-update`), takes a fresh dump through `backup`, then `pull` and `up -d` (migrations first). `restore.sh <database> <dump>` accepts only the six BetterHome database names, checks the gzip, drops and recreates the database and loads the dump. README: Update, Backups, Restore, and the backup folder permission. `make test-nas` also requires the backup service, every database in its list, the read-only Gotify mount and the two scripts.
+* Decisions and deviations: backups are Compose services rather than a NAS cron job, so they travel with the stack and need no task scheduler. A live SQLite copy of Gotify can be torn; accepted (README says why). A backup on the same disk is not a backup: the README tells to sync the folder elsewhere. A rollback is "old tag + restore"; there are no down migrations (forward-only, AGENTS §2).
+* Verification: with Podman standing in for Docker (a `docker` shim) and a trimmed copy of the real services (Postgres, init-databases, `backup`, `backup-gotify` taken from `compose.yml`): `backup` dumped all six databases; a marked row was destroyed and `restore.sh` brought it back; `restore.sh` refused an unknown name and a non-gzip file, and, with a session open on the database, failed at the drop and left the data intact; `update.sh` rejected a bad tag and, with a valid one, took a new dump and restarted the stack; the tag rewrite checked on the real file (all seven BetterHome images move, third-party images do not); the Gotify archive lists the data folder. `make test-nas` with negative cases (a database missing from the list, a writable Gotify mount) and `make test-docs` pass. Not run: Docker Compose v2 and the real images on the NAS, the full stack update with GHCR images, the restore of Gotify, `make check`.
+* Follow-ups: none new.
 
 ### T-0114 · Gotify push server on the NAS
 

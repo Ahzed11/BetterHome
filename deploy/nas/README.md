@@ -7,6 +7,8 @@ the server ([ADR 0029](../../documentation/decisions/0029-caddy-reverse-proxy-on
 |---|---|
 | `compose.yml` | The stack. No Caddy, no Tailscale, no published port, no `.env`: values are inline |
 | `Caddyfile` | A snippet for your Caddy: the routes of BetterHome, no host name in it |
+| `update.sh` | Backs up, moves the images to a tag, pulls and restarts |
+| `restore.sh` | Restores one database from a backup |
 
 ## Before you start
 
@@ -21,6 +23,7 @@ the server ([ADR 0029](../../documentation/decisions/0029-caddy-reverse-proxy-on
    - `CHANGE_ME_NAS_HOST`: the NAS's name on your tailnet (for example `nas.example.ts.net`). Three places.
    - `CHANGE_ME_POSTGRES_PASSWORD`: one strong password, the same value everywhere it appears.
    - `CHANGE_ME_KEYCLOAK_ADMIN_PASSWORD` and `CHANGE_ME_GOTIFY_ADMIN_PASSWORD`.
+   - `CHANGE_ME_BACKUP_DIR`: a folder of a NAS volume for the backups (see Backups). Two places.
    - `CHANGE_ME_SERVICE_CLIENT_SECRET` (the same value in the five services and in Keycloak) and `CHANGE_ME_API_CLIENT_SECRET`: long random strings, for example `openssl rand -hex 32`.
 3. In your Caddyfile, add the import inside the site block of your tailnet host, **before** any catch-all `handle` of yours, then reload Caddy:
 
@@ -88,7 +91,35 @@ Registration is open in the realm, so a user can sign up from the app's sign-in 
 
 ## Update
 
-Change the tag of the images (`:latest` moves with every merge; pin a commit SHA to be safe) and run `docker compose -f compose.yml up -d` again: the migrations run first, then the services restart on the new images.
+From the folder of `compose.yml` on the NAS:
+
+```bash
+./update.sh 3f9c2ab      # a commit SHA tag (the images are tagged with it when a pull request is merged)
+./update.sh              # without a tag: pulls the tags already in the file (`:latest` moves with every merge)
+```
+
+It first takes a fresh backup of every database (the migrations are forward-only, so this is the way back), rewrites the tag of the BetterHome images in `compose.yml` (the previous file is kept as `compose.yml.before-update`), pulls, and runs `up -d`: the migrations run first, then the services restart. Pin a SHA rather than `:latest` so a rollback is possible: put the old tag back, restore the databases (below) and `up -d`.
+
+## Backups
+
+Two services of the stack do it, no cron needed:
+
+- `backup` dumps the five databases and Keycloak's every night (`pg_dump`, the `prodrigestivill/postgres-backup-local` image used on the server for other stacks). It keeps 7 daily, 4 weekly and 3 monthly files; the newest of each database is `last/<database>-latest.sql.gz`.
+- `backup-gotify` archives Gotify's data every 24 hours (`gotify/gotify-<date>.tgz`, 7 kept).
+
+Both write to `CHANGE_ME_BACKUP_DIR` in `compose.yml`: use a folder on a NAS volume, outside the Docker data folder, and make it writable by the container (`chmod 777`, or `chown 999:999`, on the NAS; without it `backup` restarts in a loop with "BACKUP_DIR points to a file or folder with insufficient permissions"). A backup on the same disk does not survive the disk: copy the folder elsewhere with the NAS's own sync or backup tool. Gotify's database is a live SQLite file; a copy taken in the middle of a write could be unusable, which at one dump a day for a handful of users is unlikely and costs only the push registrations (users register their tokens again).
+
+### Restore
+
+Replaces one database entirely. Stop its services first (Postgres refuses to drop a database in use, and then nothing changes):
+
+```bash
+docker compose -f compose.yml stop betterhome-tasks
+./restore.sh betterhome_tasks /volume1/backups/betterhome/last/betterhome_tasks-latest.sql.gz
+docker compose -f compose.yml up -d
+```
+
+Database names: `betterhome_households`, `_tasks`, `_scoring`, `_lists`, `_notifications`, `_keycloak` (Keycloak: stop `betterhome-keycloak`). To restore Gotify: `docker compose stop betterhome-gotify`, then `docker run --rm -v betterhome_gotify-data:/data -v <backup dir>:/backups alpine sh -c 'rm -rf /data/* && tar xzf /backups/gotify/gotify-<date>.tgz -C /data'`, then `up -d`.
 
 ## Known limits
 

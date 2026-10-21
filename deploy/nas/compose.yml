@@ -196,6 +196,46 @@ services:
     volumes:
       - gotify-data:/app/data
 
+  # Nightly dumps of every database, Keycloak's included (T-0113), with the image already used on the server for
+  # other stacks. Files land in CHANGE_ME_BACKUP_DIR/{daily,weekly,monthly}/<database>-<date>.sql.gz (and `last/`).
+  # Restore with restore.sh. Postgres is reached over this stack's network only.
+  backup:
+    image: docker.io/prodrigestivill/postgres-backup-local:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: betterhome
+      POSTGRES_PASSWORD: CHANGE_ME_POSTGRES_PASSWORD
+      POSTGRES_DB: betterhome_households,betterhome_tasks,betterhome_scoring,betterhome_lists,betterhome_notifications,betterhome_keycloak
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: "7"
+      BACKUP_KEEP_WEEKS: "4"
+      BACKUP_KEEP_MONTHS: "3"
+    volumes:
+      # CHANGE_ME_BACKUP_DIR: a folder of a NAS volume, outside the Docker data folder (for example /volume1/backups/betterhome).
+      - CHANGE_ME_BACKUP_DIR:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Daily copy of Gotify's data (users, applications, tokens, messages), keeping the last 7.
+  backup-gotify:
+    image: docker.io/library/alpine:3.20
+    restart: unless-stopped
+    entrypoint:
+      - sh
+      - -ec
+      - |
+        mkdir -p /backups/gotify
+        while true; do
+          tar czf "/backups/gotify/gotify-$$(date +%F).tgz" -C /data .
+          find /backups/gotify -name 'gotify-*.tgz' -mtime +7 -delete
+          sleep 86400
+        done
+    volumes:
+      - gotify-data:/data:ro
+      - CHANGE_ME_BACKUP_DIR:/backups
+
 volumes:
   postgres-data:
   gotify-data:
