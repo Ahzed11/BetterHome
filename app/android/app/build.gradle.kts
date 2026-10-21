@@ -32,11 +32,23 @@ android {
         versionName = flutter.versionName
     }
 
+    // The release key exists only as GitHub secrets (T-0116); the release workflow passes it through these variables.
+    // Without them the release build type keeps the debug key, so `make apk` and `flutter run --release` still work.
+    val releaseKeystore: String? = System.getenv("ANDROID_KEYSTORE_FILE")
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 }
