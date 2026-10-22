@@ -1012,19 +1012,27 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0107 · ADR and design for the Caddy reverse proxy
 
-* Status: todo
-* Issue / PR: #117 / —
+* Status: in-review
+* Issue / PR: #117 / (pull request to follow; stacked on #124)
 * Depends on: —
 * Spec: §7
-* Acceptance criteria: ADR 0029 records the design: one Tailscale MagicDNS host taken from configuration (`NAS_HOST`; the tailnet name is never written in the repository, examples use `nas.example.ts.net`), path routing (`/auth` to Keycloak, `/api/<service>` to each service with the prefix stripped), TLS from tailscaled certificates (fallback `tls internal`, root CA installed on the phone), Keycloak behind a proxy, where Gotify is reached from the phone (decided there: a path under the same host or a second port; the Gotify app and its web UI must work), and why not subdomains (MagicDNS has none) or a public domain (exposes Keycloak and the APIs). Spec §7 gets one line. The app needs one base URL: it derives the Keycloak issuer (`/auth/realms/betterhome`) and the five service URLs from it (T-0115).
+* Acceptance criteria: ADR 0029 records the design: the NAS's existing Caddy and Tailscale (no Caddy or Tailscale of our own: a Caddyfile snippet to import plus a Compose file joining the shared `edge` network), one MagicDNS host that is only ever configured on the NAS (examples use `nas.example.ts.net`), path routing (`/auth` to Keycloak, `/api/<service>` to each service with the prefix stripped), TLS from tailscaled certificates (fallback `tls internal`, root CA installed on the phone), Keycloak behind a proxy, where Gotify is reached from the phone (decided there: a path under the same host or a second port; the Gotify app and its web UI must work), and why not subdomains (MagicDNS has none) or a public domain (exposes Keycloak and the APIs). Spec §7 gets one line. The app needs one base URL: it derives the Keycloak issuer (`/auth/realms/betterhome`) and the five service URLs from it (T-0115).
+* Summary: ADR 0029 fixes the layout for T-0108 to T-0115: the NAS's existing Caddy stays the entry point (a Caddyfile snippet to import and a Compose file joining the shared `edge` network, no Caddy or Tailscale of our own), on the operator's tailnet host; `/auth` goes to Keycloak (relative path, prefix kept), `/api/<service>` to each service (prefix stripped, only `/v1/*` and `/q/health/*` forwarded), `/gotify` to Gotify; TLS from tailscaled certificates with `tls internal` as the fallback; Keycloak in production mode with the public URL as issuer and a dynamic back channel. Spec §7 has one paragraph and the ADR index a line.
+* Decisions and deviations: Gotify is on a path (`/gotify`) rather than a second port, because Gotify supports a sub-path behind a proxy and one host keeps one certificate; T-0114 verifies the Android app and the web UI work that way. Consequence recorded: Tailscale certificates put the machine and tailnet name in public Certificate Transparency logs, so the name stays out of the repository but is not secret.
+* Verification: `make test-docs`. Documentation only; nothing was run against Caddy or a NAS yet.
+* Follow-ups: none new.
 
 ### T-0108 · NAS compose stack with Caddy
 
-* Status: todo
-* Issue / PR: #118 / —
+* Status: in-review
+* Issue / PR: #118 / (pull request to follow; stacked on #130)
 * Depends on: T-0107
 * Spec: §7, AGENTS §3
-* Acceptance criteria: `deploy/nas/compose.yml`, `Caddyfile` (host from `{$NAS_HOST}`), `.env.example` (placeholder host only; `deploy/nas/.env` is git-ignored) and a README start Postgres, Keycloak, the Flyway one-shot jobs (as `deploy/migrate.sh`), the five services (GHCR images pinned by `IMAGE_TAG`, ADR 0026, `docker login ghcr.io` with a read-only token) and Caddy on a UGREEN NAS (UGOS Pro, x86_64, Docker with Compose v2; how to load a compose project and its `.env` in the UGOS Docker app or over SSH is written down after trying it). Only Caddy publishes a port; CORS stays off (the Android app is not a browser). Restart policies, healthchecks and a JVM heap cap for a NAS. Secrets only from the uncommitted `.env`. `docker compose config` passes and a check proves no real hostname or secret is committed.
+* Acceptance criteria: `deploy/nas/compose.yml`, `deploy/nas/Caddyfile` and a README. The Caddyfile is a snippet for the NAS's existing Caddy (no host name in it, no catch-all) to `import` inside the tailnet host's site block. The Compose stack has no Caddy or Tailscale: the five services, Keycloak and Gotify also join the external `edge` network under `betterhome-*` aliases so Caddy reaches them, while Postgres and the Flyway one-shot jobs (as `deploy/migrate.sh`, never at startup; the services wait for them) stay on a private network. Values are inline with `CHANGE_ME` placeholders and there is no `.env` (NAS Docker UIs cannot be relied on to load one); real values exist only on the NAS. Images come from GHCR pinned by tag (ADR 0026); the packages are made public by the product owner, so no `docker login` is needed. Restart policies, healthchecks and a JVM heap cap for a NAS. The README says how to load the project in the UGOS Docker app or over SSH (written after trying it) and how to import the snippet, and a check shows its paths do not overlap with the routes of other apps on the host. `docker compose config` passes and a check proves no real hostname or secret is committed.
+* Summary: `deploy/nas/compose.yml` (Postgres, an idempotent `init-databases` job, the `migrate` job, Keycloak, the five services and Gotify; only the containers Caddy must reach join the external `edge` network and their service names carry the `betterhome-` prefix, Postgres and the jobs stay private; inline `CHANGE_ME` values, no `.env`, no published port, memory limits per service), `deploy/nas/Caddyfile` (the snippet: `/auth`, `/api/<service>` with only `/v1` and `/q/health` forwarded and the rest 404, `/gotify`) and `deploy/nas/README.md` (install, check, first user, update, known limits). `tooling/check-nas.sh` (`make test-nas`, in `make check` and CI) checks the routes, ports, images, prefixes, private services, no published port, no `.env`, and that no real `.ts.net` name or password is committed.
+* Decisions and deviations: the NAS has no checkout, so two more images are built and published (`betterhome-migrations`, `betterhome-keycloak`, ADR 0030); Keycloak's production mode is therefore delivered here, T-0109 keeps the secrets and the check on the real NAS. No health checks on the five services (their image has no shell or curl); Postgres and Keycloak have one. The service-client secret is still the development value of the baked realm (README says so, T-0109). Images use `:latest` in the file, pin a SHA to be safe.
+* Verification: `make test-nas` (and four negative cases: a real `.ts.net` name, a published port, a plain password, a service without the prefix, each fails); all seven images built locally with `tooling/build-images.sh`; the stack from `deploy/nas/compose.yml` (images and placeholders swapped for local ones) started with `podman compose` behind a throwaway Caddy with `tls internal` that imported the snippet: the discovery issuer and the `iss` of a password-grant token were the public URL, all five `/q/health/ready` through `/api/<service>` returned 200, a user synced its profile, created a household, a template and read lists and the scoreboard (service-to-service calls worked), `/q/metrics` and `/q/openapi` answered 404, another path fell through to the other site, `/gotify/health` was green. Not verified: Docker Compose v2 (`podman-compose` ran it, but needed a second `up` for `service_completed_successfully`), the UGOS Docker app, a real Caddy and Tailscale certificate (T-0110), the images from GHCR (they only exist after the first merge), the Gotify Android app through the sub-path (T-0114).
+* Follow-ups: how to load the project in the UGOS Docker app (to try on the NAS); T-0109 secrets.
 
 ### T-0109 · Keycloak production mode behind Caddy
 
@@ -1032,7 +1040,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #119 / —
 * Depends on: T-0108
 * Spec: §7, §9
-* Acceptance criteria: Keycloak runs with `start` on its own Postgres database, `KC_HTTP_RELATIVE_PATH=/auth`, hostname built from `NAS_HOST`, proxy headers and `KC_HOSTNAME_BACKCHANNEL_DYNAMIC=true`, so the issuer seen by the app, the services and Keycloak is the same. The realm import takes the service-client secrets and the admin password from the environment instead of the committed placeholders. Checked with a real token accepted by a service.
+* Acceptance criteria: Keycloak production mode itself (`start --optimized`, own database, `/auth` prefix, public hostname, proxy headers, dynamic back channel) is delivered by T-0108. This task replaces the development client secrets: the realm import takes the five service-client secrets from values set in the Compose file on the NAS (Keycloak `${ENV}` substitution; `CHANGE_ME` placeholders in the repository, development values kept for `make up`), the Compose services use the same values, and the admin console password is checked. Verified on the real NAS: a token fetched through the public URL is accepted by every service, and the development secret is refused.
 
 ### T-0110 · Tailscale and HTTPS certificates on the NAS
 
@@ -1040,7 +1048,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #120 / —
 * Depends on: T-0108
 * Spec: §7
-* Acceptance criteria: Tailscale runs as a service of the NAS compose stack (UGOS has no Tailscale app: `tailscale/tailscale` container with `/dev/net/tun`, auth key from the uncommitted `.env`), its socket shared with Caddy so Caddy gets the certificate of the `ts.net` name. Documented and verified steps: MagicDNS and HTTPS certificates enabled in the tailnet, an ACL limiting access to the phone and the dev machine, the phone on the tailnet with the Tailscale app. The tailnet name is only ever in `.env`. Manual work on the NAS and in the Tailscale admin: needs the product owner.
+* Acceptance criteria: The BetterHome stack contains no Tailscale and no Caddy: the NAS's existing Compose stack already runs them. Documented and verified: how that Caddy imports `deploy/nas/Caddyfile` for the tailnet host, MagicDNS and HTTPS certificates enabled in the tailnet (with the Certificate Transparency consequence of ADR 0029), an ACL limiting access to the phone and the dev machine, and the phone on the tailnet with the Tailscale app. The tailnet name only ever exists on the NAS. Manual work on the NAS and in the Tailscale admin: needs the product owner.
 
 ### T-0111 · Android build against the NAS (`make apk`)
 
@@ -1064,7 +1072,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #123 / —
 * Depends on: T-0108
 * Spec: §7
-* Acceptance criteria: `deploy/nas/update.sh` pulls a new SHA tag, runs the migrations and restarts the services. A nightly `pg_dump` of every database, plus the Gotify data volume, to a NAS volume, with a documented restore that was tried once.
+* Acceptance criteria: `deploy/nas/update.sh` pulls a new SHA tag, runs the migrations and restarts the services. A nightly `pg_dump` of every database, plus the Gotify data volume, to a NAS volume, reusing the `prodrigestivill/postgres-backup-local` pattern already running on the NAS (it takes a list of databases), with a documented restore that was tried once.
 
 ### T-0114 · Gotify push server on the NAS
 
@@ -1072,7 +1080,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Issue / PR: #126 / —
 * Depends on: T-0108, T-0109, T-0110
 * Spec: §5, §7
-* Acceptance criteria: Gotify (`gotify/server`, as the optional `gotify` profile of `deploy/podman-compose.yml`) runs in the NAS stack behind Caddy, reachable from the phone through Tailscale in the way T-0107 decides, with its data in a volume and the admin password from `.env`. notifications-service gets `GOTIFY_URL` pointing at it (ADR 0027). Documented: create a Gotify user and application, install the Gotify Android app, point it at the public URL, exempt it from battery optimisation. Verified on the phone: an event (for example an admin marking a member away, or a due reminder) arrives as a push. Until T-0086 exists the application token is registered with `PUT /v1/push-target` (curl command in the README).
+* Acceptance criteria: Gotify (`gotify/server`, as the optional `gotify` profile of `deploy/podman-compose.yml`) runs in the NAS stack behind Caddy, reachable from the phone through Tailscale in the way T-0107 decides, with its data in a volume and the admin password a `CHANGE_ME` placeholder edited on the NAS, and the container joining `edge` as `betterhome-gotify`. notifications-service gets `GOTIFY_URL` pointing at it (ADR 0027). Documented: create a Gotify user and application, install the Gotify Android app, point it at the public URL, exempt it from battery optimisation. Verified on the phone: an event (for example an admin marking a member away, or a due reminder) arrives as a push. Until T-0086 exists the application token is registered with `PUT /v1/push-target` (curl command in the README).
 
 ### T-0115 · App: server URL entered in the app
 
