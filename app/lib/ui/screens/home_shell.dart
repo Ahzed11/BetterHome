@@ -22,6 +22,7 @@ class HomeShell extends StatefulWidget {
     required this.session,
     this.onSignOut,
     this.onAccountDeleted,
+    this.now = DateTime.now,
   });
 
   final AppSession session;
@@ -32,6 +33,9 @@ class HomeShell extends StatefulWidget {
   /// Called after the user deleted their account, to end the session. Shown as a delete-account
   /// action when the app signs in with an identity provider.
   final VoidCallback? onAccountDeleted;
+
+  /// The clock of the chores tabs; golden tests pin it.
+  final DateTime Function() now;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
@@ -129,12 +133,14 @@ class _HomeShellState extends State<HomeShell> {
         key: key,
         session: widget.session,
         householdId: householdId,
+        now: widget.now,
       ),
       _Tab.myChores => ChoresScreen(
         key: key,
         session: widget.session,
         householdId: householdId,
         mine: true,
+        now: widget.now,
       ),
       _Tab.leaderboard => LeaderboardScreen(
         key: key,

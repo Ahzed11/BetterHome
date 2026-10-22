@@ -1009,3 +1009,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Decisions and deviations: no screen shows a former member's id today (the scoreboard lists active members only, chore cards show no assignee name), so there was nothing to render as "former member"; `memberLabel` already names any id it cannot find "Household member", and the journey checks the nil UUID through the tasks API instead. Demo mode (no identity provider) also offers the deletion so the e2e app can reach it; it returns to the profile step.
 * Verification: `make e2e` on a fresh stack (`make down` first, web target): all journeys passed, the deletion journey against real Keycloak included, so the `manage-users` grant and the Admin URL work; `make test-app` (544 tests, 18 new baseline cases for the screen, dialog and refusal in FR and EN, plus delete_account_test and HTTP contract tests). Not run: the Android e2e target (T-0045), `make test-backend` (no backend change).
 * Follow-ups: a hand-over screen for the admin role (the API exists, the app cannot call it), suggested title "Make another member an admin".
+
+### T-0118 · App golden tests render the real date and fail the day after they were made
+
+* Status: in-review
+* Issue / PR: #139 / (pull request to follow)
+* Depends on: T-0080
+* Spec: AGENTS §5.2 (golden tests), §2 (no direct system clock in domain code)
+* Acceptance criteria: The goldens do not depend on the date they run on; no golden image changes.
+* Summary: the week strip highlights today and the fake tasks repository stamps due and completion times with `DateTime.now()`, so the 26 chores, home, dialog and toast goldens made on 2026-10-20 failed from 2026-10-21 on, locally and in CI, on every pull request and on `master` (the `app` job, hence `check`). `FakeTasksRepository` takes a `now` clock (default `DateTime.now`), `AppSession` keeps it when profile sync swaps the repository, and `HomeShell` takes `now` like `ChoresScreen` already did. `screens_baseline_test.dart` pins every chores screen and the session to Tuesday 2026-10-20 12:00 UTC, the day the images were made, so they are unchanged.
+* Decisions and deviations: the clock went into the fake and the shell, not into a global, following the existing `ChoresScreen.now` parameter. Ids of fake tasks still use the real clock (they must be unique). Other test files that render dates already pass their own `now`.
+* Verification: the bug reproduced locally (26 failures, the diff shows two "Today" chips) and on a rerun of a previously green CI run; with the change `flutter test test/screens_baseline_test.dart` passes (336) against the committed images, and `make test-app` passes (545 tests, format and analyze included). Not run: `make check`, `make e2e`; the fix is not proven on a later calendar day (no clock faking on this machine), but nothing the goldens render reads the system date any more.
+* Follow-ups: none.
