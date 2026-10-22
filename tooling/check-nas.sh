@@ -45,6 +45,11 @@ done || status=1
 
 # No real tailnet name or secret: host names are placeholders, passwords are CHANGE_ME.
 grep -Eoh '[A-Za-z0-9.-]+\.ts\.net' "$compose" "$caddy" "$root/deploy/nas/README.md" | grep -v '^nas\.example\.ts\.net$' | grep -q . && fail "deploy/nas: a .ts.net name other than nas.example.ts.net is committed"
-grep -Eq '(PASSWORD|SECRET): *[^C" ]' "$compose" && grep -E '(PASSWORD|SECRET): *[^C" ]' "$compose" | grep -vq 'OIDC_SERVICE_CLIENT_SECRET: local-dev-only-change-me' && fail "compose.yml: a password is not a CHANGE_ME placeholder"
+grep -E '(PASSWORD|SECRET): *' "$compose" | grep -vq 'CHANGE_ME' && fail "compose.yml: a password or secret is not a CHANGE_ME placeholder"
+# The realm baked into the Keycloak image reads its client secrets from the environment, never a literal value.
+grep -E '"secret": ' "$root/deploy/keycloak/realm-betterhome.json" | grep -v '"\${[A-Z_]*:local-dev-only-change-me}"' | grep -q . && fail "realm-betterhome.json: a client secret is a literal, use \${NAME:default}"
+for var in OIDC_SERVICE_CLIENT_SECRET API_CLIENT_SECRET; do
+  grep -q "^      $var: CHANGE_ME" "$compose" || fail "compose.yml: Keycloak is not given $var"
+done
 [ "$status" -ne 0 ] || echo "nas stack: routes, ports, images and placeholders match every service"
 exit "$status"

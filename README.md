@@ -60,6 +60,14 @@ Without `API_BASE_URL` and `KEYCLOAK_ISSUER` the app runs in demo mode on in-mem
 
 `make seed` creates its demo users itself. Manual Keycloak user setup: [deploy/keycloak/README.md](deploy/keycloak/README.md).
 
+### Try the app on a phone
+
+`make apk` builds `app/build/app/outputs/flutter-apk/app-release.apk` (about 60 MB): a release-mode build signed with the debug key, which is meant for installing by hand, not for publishing (release signing is T-0116). It checks the file it built (the `INTERNET` permission, the application id, no `.ts.net` name inside).
+
+- **Install:** enable "install unknown apps" for your file manager or browser on the phone, then open the APK, or run `adb install -r app-release.apk` over USB. A debug-signed build does not install over a build signed with another key (another machine's debug key, or a release key): uninstall the old one first.
+- **Which server:** the plain build carries no server address and runs in demo mode until the app can be pointed at a server from its own screen (T-0115). Until then, build a **personal** build for your server of [deploy/nas](deploy/nas/README.md) with `NAS_HOST=nas.example.ts.net make apk` (your own tailnet name). It bakes the URLs of ADR 0029 in with `--dart-define`; never publish or commit that file.
+- **Sign-in** returns to the app through the redirect `com.betterhome.betterhome:/oauth2redirect`, which the realm already allows. The phone must be on the tailnet (Tailscale app) to reach the server.
+
 End-to-end journeys: `make e2e` runs them on the web build in headless Chrome. Choose the target with `E2E_TARGET=web|android` and reuse a running stack with `E2E_STACK=running` (after `make up`).
 
 ## Container images
