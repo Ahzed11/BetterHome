@@ -20,6 +20,31 @@ void main() {
     expect(find.textContaining('No households yet'), findsOneWidget);
   });
 
+  testWidgets('deleting the account in demo mode returns to the profile step', (
+    tester,
+  ) async {
+    final session = AppSession(repository: FakeHouseholdsRepository());
+    await tester.pumpWidget(
+      BetterHomeApp(session: session, initialLocale: const Locale('en')),
+    );
+    await tester.tap(find.text('Continue with demo data'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Delete my account'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete my account'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Delete my account'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your profile'), findsOneWidget);
+  });
+
   testWidgets('French create household flow', (tester) async {
     final session = AppSession(repository: FakeHouseholdsRepository());
     await tester.pumpWidget(
