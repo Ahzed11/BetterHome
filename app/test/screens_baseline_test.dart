@@ -518,6 +518,13 @@ final List<_Scenario> _scenarios = [
       session: await _sessionWith(notifications: repo),
     );
   }),
+  _Scenario('notification_settings_push_on', () async {
+    final repo = FakeNotificationsRepository();
+    await repo.registerPushTarget('token');
+    return NotificationPreferencesScreen(
+      session: await _sessionWith(notifications: repo),
+    );
+  }),
   _Scenario(
     'household_detail_member',
     () async => HouseholdDetailScreen(

@@ -698,6 +698,54 @@ abstract class AppLocalizations {
   /// **'Load more'**
   String get loadMore;
 
+  /// No description provided for @pushSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications'**
+  String get pushSection;
+
+  /// No description provided for @pushOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Pushes are sent to your Gotify app.'**
+  String get pushOn;
+
+  /// No description provided for @pushOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off. Paste the application token of your Gotify app to get pushes.'**
+  String get pushOff;
+
+  /// No description provided for @pushTokenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gotify application token'**
+  String get pushTokenLabel;
+
+  /// No description provided for @pushTokenHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Application token'**
+  String get pushTokenHint;
+
+  /// No description provided for @pushSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save token'**
+  String get pushSave;
+
+  /// No description provided for @pushRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop push notifications'**
+  String get pushRemove;
+
+  /// No description provided for @pushTokenInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'A token has only letters, digits and . _ ~ -'**
+  String get pushTokenInvalid;
+
   /// No description provided for @notificationSettings.
   ///
   /// In en, this message translates to:

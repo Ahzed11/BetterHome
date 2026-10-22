@@ -841,11 +841,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0086 · App: push permission prompt and device token registration
 
-* Status: todo
-* Issue / PR: #125 / —
+* Status: in-progress
+* Issue / PR: #125 / (pull request to follow)
 * Depends on: T-0027, T-0028
 * Spec: §5
 * Acceptance criteria: Split from T-0028 on 2026-10-14. The app asks for push permission at a sensible moment (not at first launch), obtains the FCM or APNs token and registers it through the device-token API of T-0027, and removes it on sign-out. (Gotify since T-0027, ADR 0027: there is no OS token or permission prompt; the user pastes the application token of their Gotify app, the app registers it with `PUT /v1/push-target` and removes it with `DELETE` on sign-out.) FR/EN, widget tests with a fake of the vendor boundary, e2e against the fake push endpoint (T-0077). Android only until iOS signing exists.
+* Summary: the notification settings screen has a "Push notifications" card: it says whether a Gotify token is registered, takes the application token (trimmed, checked against the contract's `[A-Za-z0-9._~-]` pattern before sending) and registers it with `PUT /v1/push-target`, and offers "Stop push notifications" (`DELETE`) while one is registered. `NotificationsRepository` gained `hasPushTarget` (`GET`, 404 means none), `registerPushTarget` and `removePushTarget`; the fake keeps the token for tests. Signing out removes the target first, while the access token is still valid. FR and EN strings; goldens `notification_settings_populated` regenerated and `notification_settings_push_on` added.
+* Decisions and deviations: no OS permission prompt exists with Gotify (ADR 0027), so there is no "sensible moment" prompt: the card lives in the settings the bell opens. If removing the target fails at sign-out (offline, server down), the app signs out anyway rather than trapping the user; the target stays until the next registration or account deletion. Account deletion skips the removal (the server drops the target with the account). No new ADR: ADR 0027 already decides this.
+* Verification: `make test-app` (format, analyze, widget, repository-against-contract and golden tests). Not done: the e2e journey against the fake push endpoint, because it needs T-0077 (still todo); the app was not launched against a real Gotify server. Both remain open, so this entry stays `in-progress` until T-0077 lets the journey be written.
+* Follow-ups: the e2e journey (register a token, see the fake endpoint receive a message, sign out and see it stop) once T-0077 is done.
 
 ### T-0087 · The ledger sum can go below zero after an adjustment followed by a reversal
 
