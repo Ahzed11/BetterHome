@@ -1000,11 +1000,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0106 · Account deletion: e2e journey and real Keycloak check (part of T-0032)
 
-* Status: todo
-* Issue / PR: #25 / —
+* Status: in-review
+* Issue / PR: #25 / (pull request to follow)
 * Depends on: T-0032
 * Spec: §9 Privacy, AGENTS §8
 * Acceptance criteria: An e2e journey deletes an account against the real stack (Keycloak included): last-admin refusal, hand-over, deletion, the Keycloak login gone, history shown under the nil UUID. Checks that the `manage-users` grant in `realm-betterhome.json` and `KEYCLOAK_ADMIN_URL` work against a real Keycloak. App: delete-account screen and rendering the nil UUID as a former member.
+* Summary: the app has a delete-account screen (a person-with-minus action in the top bar of the signed-in app, explanation, confirmation dialog, the 409 last-admin refusal explained in FR and EN, any other failure as the generic error); a successful deletion ends the session (sign-out with an identity provider, back to the profile step in demo mode). `HouseholdsRepository.deleteMyAccount` (HTTP through the generated client, and the fake follows the same last-admin and sole-member rules). A new e2e journey with a throwaway user (carol, created by `tooling/e2e.sh`) is refused as the only admin, hands the role to bob through the API (the app has no hand-over screen), deletes the account from the screen, cannot sync with the old token (403), and shows bob the chore she did with her id replaced by the nil UUID; `e2e.sh` then waits until the user is gone from Keycloak.
+* Decisions and deviations: no screen shows a former member's id today (the scoreboard lists active members only, chore cards show no assignee name), so there was nothing to render as "former member"; `memberLabel` already names any id it cannot find "Household member", and the journey checks the nil UUID through the tasks API instead. Demo mode (no identity provider) also offers the deletion so the e2e app can reach it; it returns to the profile step.
+* Verification: `make e2e` on a fresh stack (`make down` first, web target): all journeys passed, the deletion journey against real Keycloak included, so the `manage-users` grant and the Admin URL work; `make test-app` (544 tests, 18 new baseline cases for the screen, dialog and refusal in FR and EN, plus delete_account_test and HTTP contract tests). Not run: the Android e2e target (T-0045), `make test-backend` (no backend change).
+* Follow-ups: a hand-over screen for the admin role (the API exists, the app cannot call it), suggested title "Make another member an admin".
 
 ### T-0107 · ADR and design for the Caddy reverse proxy
 
@@ -1131,3 +1135,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Acceptance criteria: In `Ahzed11/chore-app-fdroid` (public; a separate repository, so this is a pull request there): an `apps.yaml` entry for `Ahzed11/BetterHome`, and `check_signatures.py` changed to pin a signing certificate per app (today one `signing_cert.sha256` applies to every APK, so a second key would block ChoreApp updates too), with ChoreApp's pin and behaviour unchanged and tested. The README table and metadata (name, description, categories, icon) for BetterHome. Merged only after T-0116 has produced a release; verified by adding the repo in an F-Droid client and installing the app.
 
 Out of scope of T-0107 to T-0117, to be filed when wanted: Caddy in the dev compose behind a profile, iOS, the App Store and Play Store listings (T-0035).
+
+### T-0118 · App golden tests render the real date and fail the day after they were made
+
+* Status: in-review
+* Issue / PR: #139 / (pull request to follow)
+* Depends on: T-0080
+* Spec: AGENTS §5.2 (golden tests), §2 (no direct system clock in domain code)
+* Acceptance criteria: The goldens do not depend on the date they run on; no golden image changes.
+* Summary: the week strip highlights today and the fake tasks repository stamps due and completion times with `DateTime.now()`, so the 26 chores, home, dialog and toast goldens made on 2026-10-20 failed from 2026-10-21 on, locally and in CI, on every pull request and on `master` (the `app` job, hence `check`). `FakeTasksRepository` takes a `now` clock (default `DateTime.now`), `AppSession` keeps it when profile sync swaps the repository, and `HomeShell` takes `now` like `ChoresScreen` already did. `screens_baseline_test.dart` pins every chores screen and the session to Tuesday 2026-10-20 12:00 UTC, the day the images were made, so they are unchanged.
+* Decisions and deviations: the clock went into the fake and the shell, not into a global, following the existing `ChoresScreen.now` parameter. Ids of fake tasks still use the real clock (they must be unique). Other test files that render dates already pass their own `now`.
+* Verification: the bug reproduced locally (26 failures, the diff shows two "Today" chips) and on a rerun of a previously green CI run; with the change `flutter test test/screens_baseline_test.dart` passes (336) against the committed images, and `make test-app` passes (545 tests, format and analyze included). Not run: `make check`, `make e2e`; the fix is not proven on a later calendar day (no clock faking on this machine), but nothing the goldens render reads the system date any more.
+* Follow-ups: none.

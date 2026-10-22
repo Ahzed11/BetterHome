@@ -109,6 +109,24 @@ void main() {
       ]);
     });
 
+    test('deletes the account through the contract', () async {
+      await households().deleteMyAccount();
+
+      expect(server.requests, ['DELETE /v1/me']);
+    });
+
+    test('a refused account deletion keeps its status', () async {
+      server.respondWith('deleteMyAccount', 409, {
+        'code': 'conflict',
+        'message': 'only admin',
+      });
+
+      await expectLater(
+        households().deleteMyAccount(),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 409)),
+      );
+    });
+
     test('an error answer becomes an ApiException with its status', () async {
       server.respondWith('createHousehold', 403, {
         'code': 'forbidden',
