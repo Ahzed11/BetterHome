@@ -1,0 +1,204 @@
+# BetterHome on a self-hosted server (UGREEN NAS, T-0108, ADR 0029).
+#
+# Usage: replace every CHANGE_ME in this file, create the shared network once (`docker network create edge`,
+# normally already there for your Caddy stack), then `docker compose -f compose.yml up -d`. See README.md.
+#
+# There is no .env file on purpose (NAS Docker UIs often cannot load one): every value is inline, and the real
+# values exist only in the copy on the NAS. This file never gets Caddy or Tailscale: the server's own Caddy
+# reaches the containers below through the external `edge` network and the Caddyfile snippet next to this file.
+#
+# Only the containers Caddy must reach join `edge`, and their service names carry a `betterhome-` prefix, because
+# a service name is a DNS name on every network it joins and `edge` is shared with other stacks.
+name: betterhome
+
+x-service: &service
+  restart: unless-stopped
+  networks:
+    - default
+    - edge
+  depends_on:
+    migrate:
+      condition: service_completed_successfully
+    betterhome-keycloak:
+      condition: service_healthy
+
+x-service-env: &service-env
+  DB_USER: betterhome
+  # Same value as POSTGRES_PASSWORD below.
+  DB_PASSWORD: CHANGE_ME_POSTGRES_PASSWORD
+  # The back channel stays on this stack's network; tokens carry the public issuer (KC_HOSTNAME below).
+  OIDC_AUTH_SERVER_URL: http://betterhome-keycloak:8180/auth/realms/betterhome
+  # The JVM sizes its heap from the container limit, so five services fit on a small NAS.
+  JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=65
+  # Request ids on every call, no spans recorded (no collector here).
+  OTEL_TRACES_SAMPLER: parentbased_always_off
+  # Same value as the secret of the service clients in the realm baked into the Keycloak image until T-0109
+  # moves it here. Not a secret yet: the stack is only reachable through the tailnet.
+  OIDC_SERVICE_CLIENT_SECRET: local-dev-only-change-me
+
+services:
+  postgres:
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: betterhome
+      # CHANGE_ME: a strong password, the same value as DB_PASSWORD, KC_DB_PASSWORD and the other places below.
+      POSTGRES_PASSWORD: CHANGE_ME_POSTGRES_PASSWORD
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U betterhome"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # No published port and not on `edge`: only this stack reaches the database.
+
+  # One database per service, plus Keycloak's. Idempotent, so it runs on every `up`.
+  init-databases:
+    image: docker.io/library/postgres:16-alpine
+    restart: "no"
+    environment:
+      PGPASSWORD: CHANGE_ME_POSTGRES_PASSWORD
+    depends_on:
+      postgres:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -ec
+      - |
+        for name in households tasks scoring lists notifications keycloak; do
+          exists=$$(psql -h postgres -U betterhome -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'betterhome_$${name}'")
+          [ "$$exists" = 1 ] || psql -h postgres -U betterhome -d postgres -c "CREATE DATABASE betterhome_$${name} OWNER betterhome"
+        done
+
+  # Flyway for the five services (AGENTS section 3: never at service startup in production). Rerun it after
+  # pulling a new tag with `docker compose up -d`: the services wait for it.
+  migrate:
+    image: ghcr.io/ahzed11/betterhome-migrations:latest
+    restart: "no"
+    environment:
+      DB_HOST: postgres
+      DB_USER: betterhome
+      DB_PASSWORD: CHANGE_ME_POSTGRES_PASSWORD
+    depends_on:
+      init-databases:
+        condition: service_completed_successfully
+
+  betterhome-keycloak:
+    image: ghcr.io/ahzed11/betterhome-keycloak:latest
+    restart: unless-stopped
+    command: ["start", "--optimized", "--import-realm"]
+    networks:
+      - default
+      - edge
+    environment:
+      # CHANGE_ME_NAS_HOST: the host name of the NAS on your tailnet, the one the phone uses. Tokens carry it
+      # as their issuer, so changing it signs everyone out.
+      KC_HOSTNAME: https://CHANGE_ME_NAS_HOST/auth
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: "8180"
+      KC_PROXY_HEADERS: xforwarded
+      # Services reach Keycloak by its container name, tokens still carry the public issuer.
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_DB_URL: jdbc:postgresql://postgres:5432/betterhome_keycloak
+      KC_DB_USERNAME: betterhome
+      KC_DB_PASSWORD: CHANGE_ME_POSTGRES_PASSWORD
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      # CHANGE_ME: the password of the Keycloak admin console (`https://CHANGE_ME_NAS_HOST/auth`).
+      KC_BOOTSTRAP_ADMIN_PASSWORD: CHANGE_ME_KEYCLOAK_ADMIN_PASSWORD
+    mem_limit: 1g
+    depends_on:
+      init-databases:
+        condition: service_completed_successfully
+    healthcheck:
+      # The image has no curl; probe the management port (9000) with bash.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /auth/health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  betterhome-households:
+    <<: *service
+    image: ghcr.io/ahzed11/betterhome-households-service:latest
+    mem_limit: 512m
+    environment:
+      <<: *service-env
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_households
+      TASKS_SERVICE_URL: http://betterhome-tasks:8082
+      SCORING_SERVICE_URL: http://betterhome-scoring:8083
+      LISTS_SERVICE_URL: http://betterhome-lists:8084
+      NOTIFICATIONS_SERVICE_URL: http://betterhome-notifications:8085
+      KEYCLOAK_ADMIN_URL: http://betterhome-keycloak:8180/auth/admin/realms/betterhome
+      OIDC_SERVICE_CLIENT_ID: betterhome-households-service
+
+  betterhome-tasks:
+    <<: *service
+    image: ghcr.io/ahzed11/betterhome-tasks-service:latest
+    mem_limit: 512m
+    environment:
+      <<: *service-env
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_tasks
+      HOUSEHOLDS_SERVICE_URL: http://betterhome-households:8081
+      SCORING_SERVICE_URL: http://betterhome-scoring:8083
+      NOTIFICATIONS_SERVICE_URL: http://betterhome-notifications:8085
+      OIDC_SERVICE_CLIENT_ID: betterhome-tasks-service
+
+  betterhome-scoring:
+    <<: *service
+    image: ghcr.io/ahzed11/betterhome-scoring-service:latest
+    mem_limit: 512m
+    environment:
+      <<: *service-env
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_scoring
+      HOUSEHOLDS_SERVICE_URL: http://betterhome-households:8081
+      OIDC_SERVICE_CLIENT_ID: betterhome-scoring-service
+
+  betterhome-lists:
+    <<: *service
+    image: ghcr.io/ahzed11/betterhome-lists-service:latest
+    mem_limit: 512m
+    environment:
+      <<: *service-env
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_lists
+      HOUSEHOLDS_SERVICE_URL: http://betterhome-households:8081
+      OIDC_SERVICE_CLIENT_ID: betterhome-lists-service
+
+  betterhome-notifications:
+    <<: *service
+    image: ghcr.io/ahzed11/betterhome-notifications-service:latest
+    mem_limit: 512m
+    environment:
+      <<: *service-env
+      DB_JDBC_URL: jdbc:postgresql://postgres:5432/betterhome_notifications
+      HOUSEHOLDS_SERVICE_URL: http://betterhome-households:8081
+      OIDC_SERVICE_CLIENT_ID: betterhome-notifications-service
+      # Push goes through Gotify (ADR 0027); the application token of each user is registered with
+      # PUT /v1/push-target. Empty would mean no push, the inbox still works.
+      GOTIFY_URL: http://betterhome-gotify:80
+
+  # Push server (ADR 0027, T-0114). The phone reaches it through Caddy at https://CHANGE_ME_NAS_HOST/gotify.
+  betterhome-gotify:
+    image: docker.io/gotify/server:2.6.1
+    restart: unless-stopped
+    networks:
+      - default
+      - edge
+    environment:
+      # CHANGE_ME: the password of the Gotify `admin` user, created on first start.
+      GOTIFY_DEFAULTUSER_PASS: CHANGE_ME_GOTIFY_ADMIN_PASSWORD
+    volumes:
+      - gotify-data:/app/data
+
+volumes:
+  postgres-data:
+  gotify-data:
+
+networks:
+  # This stack's own network: Postgres and the one-shot jobs live only here.
+  default: {}
+  # Shared with the server's Caddy stack so Caddy reaches the `betterhome-*` containers by name.
+  # Create it once if it does not exist: docker network create edge
+  edge:
+    external: true
