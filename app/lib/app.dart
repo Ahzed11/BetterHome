@@ -102,7 +102,10 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
   Widget _home() {
     if (widget.auth == null) {
       return _synced
-          ? HomeShell(session: widget.session)
+          ? HomeShell(
+              session: widget.session,
+              onAccountDeleted: () => setState(() => _synced = false),
+            )
           : _demoProfileScreen();
     }
     return switch (_phase) {
@@ -114,7 +117,11 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
         busy: _phase == _Phase.signingIn,
         failed: _signInFailed,
       ),
-      _Phase.ready => HomeShell(session: widget.session, onSignOut: _signOut),
+      _Phase.ready => HomeShell(
+        session: widget.session,
+        onSignOut: _signOut,
+        onAccountDeleted: _signOut,
+      ),
     };
   }
 
