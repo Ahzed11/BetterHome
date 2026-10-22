@@ -572,6 +572,42 @@ abstract class AppLocalizations {
   /// **'Server: {host}'**
   String serverCurrent(String host);
 
+  /// No description provided for @deleteAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete my account'**
+  String get deleteAccount;
+
+  /// No description provided for @deleteAccountIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting your account removes your name and email and signs you out for good. You leave every household; one where you are the only member is deleted with you.'**
+  String get deleteAccountIntro;
+
+  /// No description provided for @deleteAccountHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'What you did stays in your households, such as completed chores and points, but no longer carries your name.'**
+  String get deleteAccountHistory;
+
+  /// No description provided for @deleteAccountConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your account?'**
+  String get deleteAccountConfirmTitle;
+
+  /// No description provided for @deleteAccountConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone.'**
+  String get deleteAccountConfirmBody;
+
+  /// No description provided for @deleteAccountSoleAdmin.
+  ///
+  /// In en, this message translates to:
+  /// **'You are the only admin of a household that has other members. Make another member an admin, or delete the household, then try again.'**
+  String get deleteAccountSoleAdmin;
+
   /// No description provided for @createList.
   ///
   /// In en, this message translates to:

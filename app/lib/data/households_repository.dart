@@ -40,6 +40,10 @@ abstract class HouseholdsRepository {
   Future<Membership> clearAway(String householdId, String userId);
 
   Future<void> leave(String householdId);
+
+  /// Deletes the signed-in person's account. Answers 409 while they are the only admin of a
+  /// household that has other members.
+  Future<void> deleteMyAccount();
 }
 
 class HttpHouseholdsRepository implements HouseholdsRepository {
@@ -163,6 +167,9 @@ class HttpHouseholdsRepository implements HouseholdsRepository {
   @override
   Future<void> leave(String householdId) =>
       callVoid(() => _memberships.leaveHousehold(householdId));
+
+  @override
+  Future<void> deleteMyAccount() => callVoid(_users.deleteMyAccount);
 }
 
 /// In-memory repository for widget tests and offline demo mode.
@@ -258,6 +265,7 @@ class FakeHouseholdsRepository implements HouseholdsRepository {
     required String memberUserId,
     required String givenName,
     required String familyName,
+    MembershipRole role = MembershipRole.member,
   }) {
     _members
         .putIfAbsent(householdId, () => [])
@@ -266,7 +274,7 @@ class FakeHouseholdsRepository implements HouseholdsRepository {
             id: 'm-$householdId-$memberUserId',
             userId: memberUserId,
             householdId: householdId,
-            role: MembershipRole.member,
+            role: role,
             joinedAt: DateTime.utc(2026, 1, 2),
             givenName: givenName,
             familyName: familyName,
@@ -357,5 +365,33 @@ class FakeHouseholdsRepository implements HouseholdsRepository {
   Future<void> leave(String householdId) async {
     _households.removeWhere((h) => h.id == householdId);
     _members.remove(householdId);
+  }
+
+  @override
+  Future<void> deleteMyAccount() async {
+    final blocked = _households.any((household) {
+      final members = _members[household.id] ?? const <Membership>[];
+      final others = members.where((m) => m.userId != userId);
+      return others.isNotEmpty &&
+          members.any(
+            (m) => m.userId == userId && m.role == MembershipRole.admin,
+          ) &&
+          !others.any((m) => m.role == MembershipRole.admin);
+    });
+    if (blocked) {
+      throw ApiException('sole admin of a household', statusCode: 409);
+    }
+    for (final household in List.of(_households)) {
+      final others = (_members[household.id] ?? const <Membership>[]).where(
+        (m) => m.userId != userId,
+      );
+      if (others.isEmpty) {
+        _households.remove(household);
+        _members.remove(household.id);
+      } else {
+        _members[household.id] = others.toList();
+      }
+    }
+    _me = null;
   }
 }
