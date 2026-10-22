@@ -19,7 +19,7 @@ The host name is the operator's tailnet name. It is configuration on the NAS, ne
 |---|---|---|
 | `/auth/*` | `keycloak:8180` | Keycloak runs with `KC_HTTP_RELATIVE_PATH=/auth`, so the prefix is kept |
 | `/api/households/*`, `/api/tasks/*`, `/api/scoring/*`, `/api/lists/*`, `/api/notifications/*` | `<service>:808x` | Only `/v1/*` and `/q/health/*` are forwarded; the rest of a service's management surface answers 404 from the snippet |
-| `/gotify/*` | `gotify:80` | Gotify supports a sub-path behind a proxy; Caddy forwards its WebSocket (`/gotify/stream`) without extra settings |
+| `/gotify/*` | `gotify:80` | Gotify supports a sub-path behind a proxy; Caddy forwards its WebSocket (`/gotify/stream`) without extra settings. `/gotify` redirects to `/gotify/` because the web UI uses relative links. Verified in T-0114 |
 | anything else | not claimed | left to the operator's own site and other apps |
 
 **The app needs one base URL.** From `https://<host>` it derives the issuer `https://<host>/auth/realms/betterhome` and the service URLs `https://<host>/api/<service>`. Entering it in the app is T-0115; the build-time `--dart-define`s stay as the default so development and e2e do not change. Service-to-service calls and Keycloak's back channel stay on the Compose network and never go through Caddy.

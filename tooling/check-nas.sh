@@ -28,6 +28,9 @@ grep -q "image: ghcr.io/ahzed11/betterhome-keycloak:" "$compose" || fail "compos
 grep -q "reverse_proxy betterhome-keycloak:8180\$" "$caddy" || fail "Caddyfile: Keycloak is not proxied"
 grep -q "KC_HTTP_RELATIVE_PATH=/auth" "$root/deploy/keycloak/Dockerfile" || fail "keycloak image: relative path is not /auth"
 grep -q "reverse_proxy betterhome-gotify:80\$" "$caddy" || fail "Caddyfile: Gotify is not proxied"
+grep -q '^redir /gotify /gotify/ permanent$' "$caddy" || fail "Caddyfile: /gotify without a slash must redirect (the web UI uses relative links)"
+grep -q "^      GOTIFY_URL: http://betterhome-gotify:80\$" "$compose" || fail "compose.yml: notifications-service must push to http://betterhome-gotify:80 (ADR 0027)"
+grep -q "^      - gotify-data:/app/data\$" "$compose" || fail "compose.yml: Gotify's data must be in a volume"
 
 grep -Eq '^ +ports:' "$compose" && fail "compose.yml: a port is published to the host, only Caddy may reach the stack"
 grep -Eq 'env_file|(^|[^$])\$\{' "$compose" && fail "compose.yml: it must not need a .env file or environment interpolation"
