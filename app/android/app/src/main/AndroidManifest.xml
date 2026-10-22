@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The app talks to its servers: without this a release build has no network (the debug and profile
+         manifests add it for development only). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="betterhome"
         android:name="${applicationName}"

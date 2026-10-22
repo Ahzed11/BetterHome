@@ -14,7 +14,7 @@ export PATH := $(JAVA_HOME)/bin:$(PATH)
 export DOCKER_HOST ?= unix://$(XDG_RUNTIME_DIR)/podman/podman.sock
 export TESTCONTAINERS_RYUK_DISABLED ?= true
 
-.PHONY: mutation client doctor up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-images test-openshift-ports test-nas test-openshift test-guard e2e check update-goldens run-app
+.PHONY: mutation client doctor up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-images test-openshift-ports test-nas test-openshift test-guard e2e apk check update-goldens run-app
 
 doctor: ## Check the pinned toolchain (JDK, Podman, Flutter, Android) is installed
 	@bash $(ROOT)/tooling/doctor.sh
@@ -83,6 +83,9 @@ test-guard: ## Prove the generated client breaks on a broken document or a drift
 
 e2e: client ## Journeys against the real stack; E2E_TARGET=web (default) or android, E2E_STACK=running to reuse `make up`
 	@bash $(ROOT)/tooling/e2e.sh
+
+apk: client ## Android APK to try on a phone: release mode, debug-signed, no server address inside (NAS_HOST=<host> for a personal build for your server)
+	@bash $(ROOT)/tooling/build-apk.sh
 
 run-app: ## Try the app by hand: stack, demo users, web app on http://localhost:8090 (alice / demo; RUN_APP_SEED=1 adds the demo household)
 	@bash $(ROOT)/tooling/run-app.sh
