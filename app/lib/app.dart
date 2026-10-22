@@ -1,5 +1,6 @@
 import 'package:betterhome/auth/auth_service.dart';
 import 'package:betterhome/data/households_repository.dart';
+import 'package:betterhome/data/models.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/app_theme.dart';
@@ -60,6 +61,17 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
   }
 
   Future<void> _signOut() async {
+    try {
+      // While the token is still valid. Another user on this phone must not get this user's pushes.
+      await widget.session.notificationsRepository.removePushTarget();
+    } on ApiException {
+      // Offline or the server is down: signing out must still work. The target is replaced at the
+      // next registration and removed with the account.
+    }
+    await _leave();
+  }
+
+  Future<void> _leave() async {
     await widget.auth?.signOut();
     _set(_Phase.signedOut);
   }
@@ -120,7 +132,7 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
       _Phase.ready => HomeShell(
         session: widget.session,
         onSignOut: _signOut,
-        onAccountDeleted: _signOut,
+        onAccountDeleted: _leave,
       ),
     };
   }

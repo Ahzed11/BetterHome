@@ -328,6 +328,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loadMore => 'Load more';
 
   @override
+  String get pushSection => 'Push notifications';
+
+  @override
+  String get pushOn => 'Pushes are sent to your Gotify app.';
+
+  @override
+  String get pushOff =>
+      'Off. Paste the application token of your Gotify app to get pushes.';
+
+  @override
+  String get pushTokenLabel => 'Gotify application token';
+
+  @override
+  String get pushTokenHint => 'Application token';
+
+  @override
+  String get pushSave => 'Save token';
+
+  @override
+  String get pushRemove => 'Stop push notifications';
+
+  @override
+  String get pushTokenInvalid => 'A token has only letters, digits and . _ ~ -';
+
+  @override
   String get notificationSettings => 'Notification settings';
 
   @override

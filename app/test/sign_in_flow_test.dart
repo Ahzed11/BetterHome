@@ -1,11 +1,13 @@
 import 'package:betterhome/app.dart';
 import 'package:betterhome/auth/auth_service.dart';
 import 'package:betterhome/data/households_repository.dart';
+import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fake_auth_service.dart';
+import 'support/repository_doubles.dart';
 
 const _ada = AuthUser(
   subject: 'sub-ada',
@@ -134,6 +136,54 @@ void main() {
     expect(find.text('Welcome to BetterHome'), findsOneWidget);
     expect(auth.signOutCalls, 1);
     expect(auth.accessToken(), isEmpty);
+  });
+
+  testWidgets('signing out removes the push target first', (tester) async {
+    final auth = FakeAuthService(restored: _ada);
+    final notifications = FakeNotificationsRepository();
+    await notifications.registerPushTarget('abc');
+    final session = AppSession(
+      repository: FakeHouseholdsRepository(),
+      notificationsRepository: notifications,
+    );
+    await tester.pumpWidget(
+      BetterHomeApp(
+        session: session,
+        auth: auth,
+        initialLocale: const Locale('en'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Sign out'));
+    await tester.pumpAndSettle();
+
+    expect(notifications.pushToken, isNull);
+    expect(auth.signOutCalls, 1);
+  });
+
+  testWidgets('signing out works when the push target cannot be removed', (
+    tester,
+  ) async {
+    final auth = FakeAuthService(restored: _ada);
+    final session = AppSession(
+      repository: FakeHouseholdsRepository(),
+      notificationsRepository: UnremovablePushRepository(),
+    );
+    await tester.pumpWidget(
+      BetterHomeApp(
+        session: session,
+        auth: auth,
+        initialLocale: const Locale('en'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Sign out'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome to BetterHome'), findsOneWidget);
+    expect(auth.signOutCalls, 1);
   });
 
   testWidgets('the sign-in flow is available in French', (tester) async {

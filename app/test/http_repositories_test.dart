@@ -404,6 +404,45 @@ void main() {
       },
     );
 
+    test('registers, checks and removes the push target', () async {
+      final repo = notifications();
+
+      await repo.registerPushTarget('abc.DEF-1_2~3');
+      final registered = await repo.hasPushTarget();
+      await repo.removePushTarget();
+
+      expect(registered, isTrue);
+      expect(server.lastBody['registerMyPushTarget'], {
+        'token': 'abc.DEF-1_2~3',
+      });
+      expect(server.requests, [
+        'PUT /v1/push-target',
+        'GET /v1/push-target',
+        'DELETE /v1/push-target',
+      ]);
+    });
+
+    test('no push target is a 404, not an error', () async {
+      server.respondWith('getMyPushTarget', 404, {
+        'code': 'not_found',
+        'message': 'none',
+      });
+
+      expect(await notifications().hasPushTarget(), isFalse);
+    });
+
+    test('another failure of the push target check is raised', () async {
+      server.respondWith('getMyPushTarget', 503, {
+        'code': 'unavailable',
+        'message': 'down',
+      });
+
+      await expectLater(
+        notifications().hasPushTarget(),
+        throwsA(isA<ApiException>().having((e) => e.statusCode, 'status', 503)),
+      );
+    });
+
     test('an error answer becomes an ApiException', () async {
       server.respondWith('markMyNotificationRead', 404, {
         'code': 'not_found',
