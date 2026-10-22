@@ -49,6 +49,8 @@ if [[ "$E2E_STACK" == start ]]; then
 fi
 ensure_user "$E2E_USER" "$E2E_PASSWORD" "${E2E_USER}@betterhome.local" "$E2E_USER"
 ensure_user bob "$E2E_PASSWORD" "bob@betterhome.local" bob
+# The account deletion journey deletes this user, so it cannot be one the other journeys need.
+ensure_user carol "$E2E_PASSWORD" "carol@betterhome.local" carol
 
 # On the Android emulator the host is 10.0.2.2; Chrome reaches it as localhost.
 host=localhost
@@ -64,7 +66,24 @@ set_defines() {
     "--dart-define=E2E_NOTIFICATIONS_URL=http://${host}:8085"
     "--dart-define=E2E_ACCESS_TOKEN=$(get_token "$E2E_USER" "$E2E_PASSWORD")"
     "--dart-define=E2E_ACCESS_TOKEN_BOB=$(get_token bob "$E2E_PASSWORD")"
+    "--dart-define=E2E_ACCESS_TOKEN_CAROL=$(get_token carol "$E2E_PASSWORD")"
   )
+}
+
+# The households service removes the user from Keycloak in the background after the account was
+# deleted (ADR 0028), so the login is checked to be gone once the journeys finish.
+assert_keycloak_user_gone() {
+  local username="$1"
+  for _ in $(seq 1 60); do
+    kcadm_login
+    if [[ -z "$(kcadm get users -r "$KEYCLOAK_REALM" -q "username=${username}" -q exact=true --fields id --format csv --noquotes)" ]]; then
+      echo "e2e: Keycloak user ${username} is gone"
+      return 0
+    fi
+    sleep 2
+  done
+  echo "e2e: Keycloak user ${username} still exists two minutes after the account was deleted" >&2
+  return 1
 }
 
 if [[ "$E2E_TARGET" == web ]]; then
@@ -98,3 +117,5 @@ else
     --target=integration_test/household_journey_test.dart \
     -d emulator-5554 "${defines[@]}"
 fi
+
+assert_keycloak_user_gone carol
