@@ -1,0 +1,96 @@
+# Builds the Android APK signed with the BetterHome release key and publishes it as a GitHub Release (T-0116).
+# Triggered by pushing a tag `v<version>` where <version> is the one in app/pubspec.yaml (without the build number).
+# The F-Droid repository (Ahzed11/chore-app-fdroid, T-0117) reads the release, which holds exactly one .apk.
+# The key lives only in the repository secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and
+# ANDROID_KEY_PASSWORD; app/android/app/build.gradle.kts reads it from the environment.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-24.04' }}
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Read the pinned versions and the app version
+        id: version
+        run: |
+          . tooling/versions.env
+          echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> "$GITHUB_ENV"
+          echo "JAVA_MAJOR=$JAVA_MAJOR" >> "$GITHUB_ENV"
+          version="$(sed -n 's/^version: \([0-9][0-9.]*\)+[0-9]*$/\1/p' app/pubspec.yaml)"
+          [ -n "$version" ] || { echo "no version in app/pubspec.yaml" >&2; exit 1; }
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "the tag $GITHUB_REF_NAME does not match app/pubspec.yaml (v$version): bump the version first" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_MAJOR }}
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+
+      # The app depends on the generated client (gitignored, ADR 0006).
+      - name: Generate the Dart client
+        run: make client
+
+      - name: Build the signed APK
+        working-directory: app
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          [ -n "$KEYSTORE_BASE64" ] || { echo "the release key secrets are not set" >&2; exit 1; }
+          export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/betterhome-release.jks"
+          echo "$KEYSTORE_BASE64" | base64 -d > "$ANDROID_KEYSTORE_FILE"
+          flutter pub get --enforce-lockfile
+          flutter build apk --release
+          rm -f "$ANDROID_KEYSTORE_FILE"
+
+      # The file must be signed by the release key, not the debug key a missing secret would fall back to, and must
+      # carry the network permission and the application id.
+      - name: Check the APK and name it
+        id: apk
+        run: |
+          built=app/build/app/outputs/flutter-apk/app-release.apk
+          tools="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          certs="$("$tools/apksigner" verify --print-certs "$built")"
+          echo "$certs"
+          if grep -q 'CN=Android Debug' <<<"$certs"; then echo "the APK is signed with the debug key" >&2; exit 1; fi
+          grep -q 'android.permission.INTERNET' < <("$tools/aapt" dump permissions "$built") || { echo "no INTERNET permission" >&2; exit 1; }
+          grep -q "package: name='com.betterhome.betterhome'" < <("$tools/aapt" dump badging "$built") || { echo "unexpected application id" >&2; exit 1; }
+          if unzip -p "$built" 'lib/*/libapp.so' | strings | grep -Eq '\.ts\.net'; then echo "a .ts.net name is inside the build" >&2; exit 1; fi
+          mkdir -p dist
+          cp "$built" "dist/betterhome-${{ steps.version.outputs.version }}.apk"
+          fingerprint="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$certs")"
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "dist/betterhome-${{ steps.version.outputs.version }}.apk" \
+            --title "BetterHome ${{ steps.version.outputs.version }}" \
+            --notes "Signing certificate SHA-256: ${{ steps.apk.outputs.fingerprint }}"

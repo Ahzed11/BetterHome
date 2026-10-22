@@ -32,6 +32,13 @@ grep -q '^redir /gotify /gotify/ permanent$' "$caddy" || fail "Caddyfile: /gotif
 grep -q "^      GOTIFY_URL: http://betterhome-gotify:80\$" "$compose" || fail "compose.yml: notifications-service must push to http://betterhome-gotify:80 (ADR 0027)"
 grep -q "^      - gotify-data:/app/data\$" "$compose" || fail "compose.yml: Gotify's data must be in a volume"
 
+grep -q "image: docker.io/prodrigestivill/postgres-backup-local:" "$compose" || fail "compose.yml: no backup service"
+for name in households tasks scoring lists notifications keycloak; do
+  grep -q "^      POSTGRES_DB: .*betterhome_$name\b" "$compose" || fail "compose.yml: the backup service does not dump betterhome_$name"
+done
+grep -q "^      - gotify-data:/data:ro\$" "$compose" || fail "compose.yml: Gotify's data is not backed up (read-only mount)"
+[ -x "$root/deploy/nas/update.sh" ] && [ -x "$root/deploy/nas/restore.sh" ] || fail "deploy/nas: update.sh and restore.sh must exist and be executable"
+
 grep -Eq '^ +ports:' "$compose" && fail "compose.yml: a port is published to the host, only Caddy may reach the stack"
 grep -Eq 'env_file|(^|[^$])\$\{' "$compose" && fail "compose.yml: it must not need a .env file or environment interpolation"
 grep -Eq '^  edge:' "$compose" && grep -A2 '^  edge:' "$compose" | grep -q 'external: true' || fail "compose.yml: edge must be the external network"
