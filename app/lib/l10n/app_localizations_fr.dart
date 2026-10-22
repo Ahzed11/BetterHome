@@ -231,6 +231,38 @@ class AppLocalizationsFr extends AppLocalizations {
   String get signOut => 'Se déconnecter';
 
   @override
+  String get serverSetupTitle => 'Connectez-vous à votre serveur';
+
+  @override
+  String get serverSetupBody =>
+      'BetterHome fonctionne sur un serveur que vous ou un colocataire hébergez. Saisissez son adresse pour vous connecter.';
+
+  @override
+  String get serverAddress => 'Adresse du serveur';
+
+  @override
+  String get serverAddressHint => 'https://maison.exemple.fr';
+
+  @override
+  String get serverChecking => 'Vérification…';
+
+  @override
+  String get serverInvalid =>
+      'Saisissez une adresse web, par exemple https://maison.exemple.fr';
+
+  @override
+  String get serverUnreachable =>
+      'Aucun serveur BetterHome n\'a répondu à cette adresse. Vérifiez-la ainsi que votre connexion.';
+
+  @override
+  String get serverChange => 'Changer de serveur';
+
+  @override
+  String serverCurrent(String host) {
+    return 'Serveur : $host';
+  }
+
+  @override
   String get deleteAccount => 'Supprimer mon compte';
 
   @override

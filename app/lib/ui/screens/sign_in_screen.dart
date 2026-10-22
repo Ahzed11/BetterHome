@@ -10,11 +10,18 @@ class SignInScreen extends StatelessWidget {
     required this.onSignIn,
     this.busy = false,
     this.failed = false,
+    this.serverHost,
+    this.onChangeServer,
   });
 
   final VoidCallback onSignIn;
   final bool busy;
   final bool failed;
+
+  /// The server in use, with [onChangeServer] to pick another (T-0115). Both null when the server
+  /// is fixed at build time.
+  final String? serverHost;
+  final VoidCallback? onChangeServer;
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +70,22 @@ class SignInScreen extends StatelessWidget {
                       onPressed: busy ? null : onSignIn,
                       child: Text(busy ? l10n.signingIn : l10n.signInButton),
                     ),
+                    if (serverHost case final host?) ...[
+                      const SizedBox(height: AppTokens.spaceMd),
+                      Text(
+                        l10n.serverCurrent(host),
+                        textAlign: TextAlign.center,
+                        style: AppTypography.label,
+                      ),
+                      if (onChangeServer case final change?)
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            minimumSize: const Size(0, AppTokens.minTapTarget),
+                          ),
+                          onPressed: busy ? null : change,
+                          child: Text(l10n.serverChange),
+                        ),
+                    ],
                   ],
                 ),
               ),
