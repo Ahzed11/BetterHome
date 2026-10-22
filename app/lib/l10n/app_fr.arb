@@ -90,6 +90,13 @@
   "serverChange": "Changer de serveur",
   "serverCurrent": "Serveur : {host}",
   "@serverCurrent": {"placeholders": {"host": {"type": "String"}}},
+
+  "deleteAccount": "Supprimer mon compte",
+  "deleteAccountIntro": "La suppression de votre compte efface votre nom et votre e-mail et vous déconnecte définitivement. Vous quittez tous vos foyers ; un foyer dont vous êtes le seul membre est supprimé avec vous.",
+  "deleteAccountHistory": "Ce que vous avez fait reste dans vos foyers, comme les tâches terminées et les points, mais ne porte plus votre nom.",
+  "deleteAccountConfirmTitle": "Supprimer votre compte ?",
+  "deleteAccountConfirmBody": "Cette action est irréversible.",
+  "deleteAccountSoleAdmin": "Vous êtes le seul administrateur d'un foyer qui compte d'autres membres. Nommez un autre administrateur, ou supprimez le foyer, puis réessayez.",
   "createList": "Créer une liste",
   "listName": "Nom de la liste",
   "renameList": "Renommer",
