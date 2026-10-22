@@ -74,6 +74,16 @@ abstract class NotificationsRepository {
     NotificationChannel channel, {
     required bool enabled,
   });
+
+  /// Whether a Gotify application token is registered, so pushes reach this user's Gotify clients.
+  Future<bool> hasPushTarget();
+
+  /// Registers the user's own Gotify application token, replacing the previous one. The token is
+  /// write-only: the server never returns it.
+  Future<void> registerPushTarget(String token);
+
+  /// Stops pushes; the inbox is unaffected. Fine when there is none.
+  Future<void> removePushTarget();
 }
 
 class HttpNotificationsRepository implements NotificationsRepository {
@@ -91,6 +101,7 @@ class HttpNotificationsRepository implements NotificationsRepository {
 
   api.NotificationsApi get _notifications => api.NotificationsApi(_client);
   api.PreferencesApi get _preferences => api.PreferencesApi(_client);
+  api.PushApi get _push => api.PushApi(_client);
 
   @override
   Future<List<AppNotification>> list({
@@ -141,6 +152,31 @@ class HttpNotificationsRepository implements NotificationsRepository {
       ),
     );
   }
+
+  @override
+  Future<bool> hasPushTarget() async {
+    try {
+      await call(_push.getMyPushTarget);
+      return true;
+    } on ApiException catch (e) {
+      if (e.statusCode == 404) {
+        return false;
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> registerPushTarget(String token) async {
+    await call(
+      () => _push.registerMyPushTarget(
+        api.RegisterPushTargetRequest(token: token),
+      ),
+    );
+  }
+
+  @override
+  Future<void> removePushTarget() => callVoid(_push.removeMyPushTarget);
 }
 
 /// In-memory repository for widget tests and offline demo mode. Starts with an empty inbox; tests
@@ -150,6 +186,10 @@ class FakeNotificationsRepository implements NotificationsRepository {
 
   final List<AppNotification> _inbox = [];
   final Map<(NotificationType, NotificationChannel), bool> _switched = {};
+  String? _pushToken;
+
+  /// The token last registered, for tests; the real server never returns it.
+  String? get pushToken => _pushToken;
 
   /// Puts a notification at the top of the inbox.
   void add(AppNotification notification) => _inbox.insert(0, notification);
@@ -226,4 +266,13 @@ class FakeNotificationsRepository implements NotificationsRepository {
       enabled: enabled,
     );
   }
+
+  @override
+  Future<bool> hasPushTarget() async => _pushToken != null;
+
+  @override
+  Future<void> registerPushTarget(String token) async => _pushToken = token;
+
+  @override
+  Future<void> removePushTarget() async => _pushToken = null;
 }

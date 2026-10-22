@@ -332,6 +332,33 @@ class AppLocalizationsFr extends AppLocalizations {
   String get loadMore => 'Voir plus';
 
   @override
+  String get pushSection => 'Notifications push';
+
+  @override
+  String get pushOn =>
+      'Les notifications sont envoyées à votre application Gotify.';
+
+  @override
+  String get pushOff =>
+      'Désactivées. Collez le jeton d\'application de votre application Gotify pour les recevoir.';
+
+  @override
+  String get pushTokenLabel => 'Jeton d\'application Gotify';
+
+  @override
+  String get pushTokenHint => 'Jeton d\'application';
+
+  @override
+  String get pushSave => 'Enregistrer le jeton';
+
+  @override
+  String get pushRemove => 'Arrêter les notifications push';
+
+  @override
+  String get pushTokenInvalid =>
+      'Un jeton ne contient que des lettres, des chiffres et . _ ~ -';
+
+  @override
   String get notificationSettings => 'Réglages des notifications';
 
   @override

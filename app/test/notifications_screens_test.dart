@@ -8,6 +8,7 @@ import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'support/repository_doubles.dart';
 import 'support/screen_harness.dart';
 
 AppNotification _notification(
@@ -211,6 +212,74 @@ void main() {
         tester.widgetList<Switch>(find.byType(Switch)).first.value,
         isFalse,
       );
+    });
+
+    testWidgets('pasting the Gotify token registers it', (tester) async {
+      final repo = await open(tester);
+      expect(
+        find.textContaining('Off. Paste the application token'),
+        findsOneWidget,
+      );
+
+      await tester.enterText(find.byType(TextField), '  AbC.12-x_~  ');
+      await tester.tap(find.byTooltip('Save token'));
+      await tester.pumpAndSettle();
+
+      expect(repo.pushToken, 'AbC.12-x_~');
+      expect(find.text('Pushes are sent to your Gotify app.'), findsOneWidget);
+      expect(find.text('Stop push notifications'), findsOneWidget);
+    });
+
+    testWidgets('a token with forbidden characters is refused', (tester) async {
+      final repo = await open(tester);
+
+      await tester.enterText(find.byType(TextField), 'not a token!');
+      await tester.tap(find.byTooltip('Save token'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repo.pushToken, isNull);
+      expect(
+        find.text('A token has only letters, digits and . _ ~ -'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('stopping push removes the token', (tester) async {
+      final repo = FakeNotificationsRepository();
+      await repo.registerPushTarget('abc');
+      await pumpScreen(
+        tester,
+        home: NotificationPreferencesScreen(session: _session(repo)),
+        locale: const Locale('en'),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Stop push notifications'));
+      await tester.pumpAndSettle();
+
+      expect(repo.pushToken, isNull);
+      expect(find.text('Stop push notifications'), findsNothing);
+    });
+
+    testWidgets('a failed registration is shown and nothing changes', (
+      tester,
+    ) async {
+      final repo = FailingPushRepository();
+      await pumpScreen(
+        tester,
+        home: NotificationPreferencesScreen(session: _session(repo)),
+        locale: const Locale('en'),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'abc');
+      await tester.tap(find.byTooltip('Save token'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Something went wrong'), findsOneWidget);
+      expect(find.text('Stop push notifications'), findsNothing);
     });
 
     testWidgets('is available in French', (tester) async {

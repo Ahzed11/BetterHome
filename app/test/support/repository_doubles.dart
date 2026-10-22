@@ -147,3 +147,17 @@ class FailingNotificationsRepository extends FakeNotificationsRepository {
   Future<List<NotificationPreference>> preferences() async =>
       throw ApiException('boom', statusCode: 500);
 }
+
+/// Notifications repository that refuses to register a push target.
+class FailingPushRepository extends FakeNotificationsRepository {
+  @override
+  Future<void> registerPushTarget(String token) async =>
+      throw ApiException('boom', statusCode: 500);
+}
+
+/// Notifications repository whose push target removal fails (offline sign-out).
+class UnremovablePushRepository extends FakeNotificationsRepository {
+  @override
+  Future<void> removePushTarget() async =>
+      throw ApiException('offline', statusCode: 503);
+}
