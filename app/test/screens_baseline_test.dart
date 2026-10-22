@@ -10,6 +10,7 @@ import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/chores_screen.dart';
 import 'package:betterhome/ui/screens/create_household_screen.dart';
+import 'package:betterhome/ui/screens/delete_account_screen.dart';
 import 'package:betterhome/ui/screens/home_shell.dart';
 import 'package:betterhome/ui/screens/household_detail_screen.dart';
 import 'package:betterhome/ui/screens/leaderboard_screen.dart';
@@ -28,6 +29,9 @@ import 'support/repository_doubles.dart';
 import 'support/screen_harness.dart';
 
 const String _household = 'hh-1';
+
+/// The day every golden is rendered on (a Tuesday), so the week strip, due dates and "Today" do not move with the date.
+DateTime _now() => DateTime.utc(2026, 10, 20, 12);
 
 /// A screen in one of its states, ready to be pumped.
 class _Scenario {
@@ -117,6 +121,16 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
+/// Taps the delete-account button, scrolling to it first: at large text sizes it is below the fold.
+Future<void> _tapDeleteAccount(
+  WidgetTester tester,
+  AppLocalizations l10n,
+) async {
+  final button = find.widgetWithText(FilledButton, l10n.deleteAccount);
+  await tester.scrollUntilVisible(button, 100);
+  await _tap(tester, button);
+}
+
 /// A second person in the household, named by the members API, besides the signed-in one.
 void _addBob(AppSession session) =>
     (session.repository as FakeHouseholdsRepository).addMember(
@@ -138,6 +152,7 @@ Future<AppSession> _sessionWith({
 }) async {
   final session = AppSession(
     repository: households ?? FakeHouseholdsRepository(),
+    tasksRepository: FakeTasksRepository(now: _now),
   );
   await session.syncProfile(email: 'ada@example.com', givenName: 'Ada');
   if (withHousehold) {
@@ -245,7 +260,7 @@ final List<_Scenario> _scenarios = [
   ),
   _Scenario(
     'home_populated',
-    () async => HomeShell(session: await _sessionWith()),
+    () async => HomeShell(session: await _sessionWith(), now: _now),
   ),
   _Scenario('household_sheet', () async {
     final session = await _sessionWith();
@@ -266,7 +281,7 @@ final List<_Scenario> _scenarios = [
       templateId: templates.first.id,
       dueAt: DateTime.utc(2020),
     );
-    return ChoresScreen(session: session, householdId: _household);
+    return ChoresScreen(now: _now, session: session, householdId: _household);
   }),
   _Scenario('chores_reverted', () async {
     final session = await _choresSession(populated: true);
@@ -275,11 +290,12 @@ final List<_Scenario> _scenarios = [
       _household,
     )).firstWhere((t) => t.status == TaskStatus.done);
     await tasks.revert(_household, done.id, reason: 'Not clean');
-    return ChoresScreen(session: session, householdId: _household);
+    return ChoresScreen(now: _now, session: session, householdId: _household);
   }),
   _Scenario(
     'chores_mine',
     () async => ChoresScreen(
+      now: _now,
       session: await _choresSession(populated: true),
       householdId: _household,
       mine: true,
@@ -349,6 +365,7 @@ final List<_Scenario> _scenarios = [
   _Scenario(
     'chores_loading',
     () async => ChoresScreen(
+      now: _now,
       session: await _sessionWith(tasks: PendingTasksRepository()),
       householdId: _household,
     ),
@@ -356,6 +373,7 @@ final List<_Scenario> _scenarios = [
   _Scenario(
     'chores_error',
     () async => ChoresScreen(
+      now: _now,
       session: await _sessionWith(tasks: FailingTasksRepository()),
       householdId: _household,
     ),
@@ -363,6 +381,7 @@ final List<_Scenario> _scenarios = [
   _Scenario(
     'chores_empty',
     () async => ChoresScreen(
+      now: _now,
       session: await _choresSession(populated: false),
       householdId: _household,
     ),
@@ -370,6 +389,7 @@ final List<_Scenario> _scenarios = [
   _Scenario(
     'chores_populated',
     () async => ChoresScreen(
+      now: _now,
       session: await _choresSession(populated: true),
       householdId: _household,
     ),
@@ -532,7 +552,7 @@ final List<_Scenario> _scenarios = [
     );
     await tasks.createOpen(householdId: _household, templateId: vacuum.id);
     await tasks.quickLog(householdId: _household, templateId: dishes.id);
-    return ChoresScreen(session: session, householdId: _household);
+    return ChoresScreen(now: _now, session: session, householdId: _household);
   }),
   _Scenario(
     'invite_dialog',
@@ -573,6 +593,7 @@ final List<_Scenario> _scenarios = [
   _Scenario(
     'dismiss_confirm_dialog',
     () async => ChoresScreen(
+      now: _now,
       session: await _choresSession(populated: true),
       householdId: _household,
     ),
@@ -583,12 +604,44 @@ final List<_Scenario> _scenarios = [
   _Scenario(
     'revert_dialog',
     () async => ChoresScreen(
+      now: _now,
       session: await _choresSession(populated: true),
       householdId: _household,
     ),
     act: (tester, l10n) async {
       await _tap(tester, find.byTooltip(l10n.revertTask).first);
       await tester.enterText(find.byType(TextField), 'Not clean');
+      await tester.pumpAndSettle();
+    },
+  ),
+  _Scenario(
+    'delete_account',
+    () async =>
+        DeleteAccountScreen(session: await _sessionWith(), onDeleted: () {}),
+  ),
+  _Scenario(
+    'delete_account_confirm_dialog',
+    () async =>
+        DeleteAccountScreen(session: await _sessionWith(), onDeleted: () {}),
+    act: (tester, l10n) async {
+      await _tapDeleteAccount(tester, l10n);
+    },
+  ),
+  _Scenario(
+    'delete_account_sole_admin',
+    () async {
+      final session = await _sessionWith();
+      _addBob(session);
+      return DeleteAccountScreen(session: session, onDeleted: () {});
+    },
+    act: (tester, l10n) async {
+      await _tapDeleteAccount(tester, l10n);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(l10n.deleteAccount),
+        ),
+      );
       await tester.pumpAndSettle();
     },
   ),
@@ -615,6 +668,7 @@ final List<_Scenario> _scenarios = [
   _Scenario(
     'toast_undo',
     () async => ChoresScreen(
+      now: _now,
       session: await _choresSession(populated: true),
       householdId: _household,
     ),
@@ -627,6 +681,7 @@ final List<_Scenario> _scenarios = [
   _Scenario(
     'toast_error',
     () async => ChoresScreen(
+      now: _now,
       session: await _choresSession(populated: true),
       householdId: _household,
     ),

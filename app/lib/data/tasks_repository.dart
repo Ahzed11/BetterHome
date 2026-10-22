@@ -374,9 +374,16 @@ class HttpTasksRepository implements TasksRepository {
 }
 
 class FakeTasksRepository implements TasksRepository {
-  FakeTasksRepository({this.currentUserId = 'user-1', this.ledger});
+  FakeTasksRepository({
+    this.currentUserId = 'user-1',
+    this.ledger,
+    this.now = DateTime.now,
+  });
 
   final String currentUserId;
+
+  /// The clock of due dates and completion times. Golden tests pin it so a screen looks the same every day.
+  final DateTime Function() now;
 
   /// Stands in for the real backend, where tasks-service writes the ledger itself.
   final FakeScoringRepository? ledger;
@@ -475,7 +482,7 @@ class FakeTasksRepository implements TasksRepository {
       latePoints: template.latePoints,
       status: TaskStatus.done,
       assigneeId: currentUserId,
-      completedAt: DateTime.now().toUtc(),
+      completedAt: now().toUtc(),
       pointsAwarded: template.points,
     );
     _tasks.putIfAbsent(householdId, () => []).add(task);
@@ -503,7 +510,7 @@ class FakeTasksRepository implements TasksRepository {
       latePoints: template.latePoints,
       status: TaskStatus.open,
       assigneeId: currentUserId,
-      dueAt: dueAt ?? DateTime.now().toUtc().add(const Duration(days: 1)),
+      dueAt: dueAt ?? now().toUtc().add(const Duration(days: 1)),
     );
     _tasks.putIfAbsent(householdId, () => []).add(task);
     return task;
@@ -526,7 +533,7 @@ class FakeTasksRepository implements TasksRepository {
         status: TaskStatus.done,
         assigneeId: t.assigneeId,
         dueAt: t.dueAt,
-        completedAt: DateTime.now().toUtc(),
+        completedAt: now().toUtc(),
         pointsAwarded: t.points,
       ),
     );
@@ -595,7 +602,7 @@ class FakeTasksRepository implements TasksRepository {
       credited = t.pointsAwarded ?? t.points;
       final resulting = t.origin == TaskOrigin.manual
           ? TaskStatus.reverted
-          : (t.dueAt != null && t.dueAt!.isAfter(DateTime.now().toUtc())
+          : (t.dueAt != null && t.dueAt!.isAfter(now().toUtc())
                 ? TaskStatus.open
                 : TaskStatus.dismissed);
       return ChoreTask(
@@ -648,8 +655,8 @@ class FakeTasksRepository implements TasksRepository {
       assignmentMode: assignmentMode,
       fixedAssigneeId: fixedAssigneeId,
       timezone: 'UTC',
-      startsAt: startsAt ?? DateTime.now().toUtc(),
-      nextRunAt: DateTime.now().toUtc().subtract(const Duration(minutes: 1)),
+      startsAt: startsAt ?? now().toUtc(),
+      nextRunAt: now().toUtc().subtract(const Duration(minutes: 1)),
     );
     _recurrences[key] = recurrence;
     return recurrence;
@@ -663,7 +670,7 @@ class FakeTasksRepository implements TasksRepository {
           (r) =>
               r.householdId == householdId &&
               r.nextRunAt != null &&
-              !r.nextRunAt!.isAfter(DateTime.now().toUtc()),
+              !r.nextRunAt!.isAfter(now().toUtc()),
         )
         .toList();
     for (final recurrence in due) {
@@ -705,7 +712,7 @@ class FakeTasksRepository implements TasksRepository {
         latePoints: template.latePoints,
         status: TaskStatus.open,
         assigneeId: currentUserId,
-        dueAt: DateTime.now().toUtc().add(const Duration(days: 1)),
+        dueAt: now().toUtc().add(const Duration(days: 1)),
       );
       tasks.add(task);
       _recurrences['$householdId|${template.id}'] = TaskRecurrence(
@@ -718,8 +725,8 @@ class FakeTasksRepository implements TasksRepository {
         timezone: recurrence.timezone,
         startsAt: recurrence.startsAt,
         endsAt: recurrence.endsAt,
-        lastGeneratedAt: DateTime.now().toUtc(),
-        nextRunAt: DateTime.now().toUtc().add(const Duration(days: 1)),
+        lastGeneratedAt: now().toUtc(),
+        nextRunAt: now().toUtc().add(const Duration(days: 1)),
       );
       spawned++;
     }
