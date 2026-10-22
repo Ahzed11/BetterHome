@@ -263,6 +263,27 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get deleteAccount => 'Supprimer mon compte';
+
+  @override
+  String get deleteAccountIntro =>
+      'La suppression de votre compte efface votre nom et votre e-mail et vous déconnecte définitivement. Vous quittez tous vos foyers ; un foyer dont vous êtes le seul membre est supprimé avec vous.';
+
+  @override
+  String get deleteAccountHistory =>
+      'Ce que vous avez fait reste dans vos foyers, comme les tâches terminées et les points, mais ne porte plus votre nom.';
+
+  @override
+  String get deleteAccountConfirmTitle => 'Supprimer votre compte ?';
+
+  @override
+  String get deleteAccountConfirmBody => 'Cette action est irréversible.';
+
+  @override
+  String get deleteAccountSoleAdmin =>
+      'Vous êtes le seul administrateur d\'un foyer qui compte d\'autres membres. Nommez un autre administrateur, ou supprimez le foyer, puis réessayez.';
+
+  @override
   String get createList => 'Créer une liste';
 
   @override
