@@ -1068,11 +1068,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0112 · NAS smoke check (`make nas-smoke`)
 
-* Status: todo
-* Issue / PR: #122 / —
+* Status: in-review
+* Issue / PR: #122 / (pull request to follow; stacked on #135)
 * Depends on: T-0108, T-0109
 * Spec: §7
 * Acceptance criteria: From any tailnet machine: the certificate is valid, the discovery issuer under `/auth` equals the public URL, each service answers `/q/health/ready` through its prefix, Gotify answers its health endpoint, and one password-grant token is accepted by every service. Extends the pattern of `deploy/smoke.sh`.
+* Summary: `deploy/nas-smoke.sh` (`make nas-smoke`) takes `NAS_URL`, `API_CLIENT_SECRET`, `SMOKE_USER` and `SMOKE_PASSWORD` from the environment (nothing is committed), and checks in order: TLS and Keycloak reachable (curl verifies the certificate), the issuer equals `$NAS_URL/auth/realms/betterhome`, `/api/<service>/q/health/ready` for the five services, `/gotify/health`, and a password-grant token accepted by `/api/<service>/v1/meta` of every service. It stops at the first failure with a message naming it. README "Check it" now points to it.
+* Decisions and deviations: the user is not created by the script (unlike `smoke.sh`, which uses `kcadm` on a local container): on the NAS the realm has open registration or an admin-made user (README, First user), and the script runs from a different machine than the NAS. Not part of `make check` (needs the NAS).
+* Verification: run against a fake HTTP server (Python, in the scratchpad, not committed) for the good case (exit 0, all steps), a wrong issuer, an unreachable host, and a wrong user (no token): exit 1 each with the expected message; missing variables fail with a message. Not run: a real NAS, a real certificate (T-0110, product owner).
+* Follow-ups: none new.
 
 ### T-0113 · NAS operations: updates and backups
 

@@ -14,7 +14,7 @@ export PATH := $(JAVA_HOME)/bin:$(PATH)
 export DOCKER_HOST ?= unix://$(XDG_RUNTIME_DIR)/podman/podman.sock
 export TESTCONTAINERS_RYUK_DISABLED ?= true
 
-.PHONY: mutation client doctor up down migrate seed smoke openapi test-backend test-app test-docs test-policy test-images test-openshift-ports test-nas test-openshift test-guard e2e apk check update-goldens run-app
+.PHONY: mutation client doctor up down migrate seed smoke nas-smoke openapi test-backend test-app test-docs test-policy test-images test-openshift-ports test-nas test-openshift test-guard e2e apk check update-goldens run-app
 
 doctor: ## Check the pinned toolchain (JDK, Podman, Flutter, Android) is installed
 	@bash $(ROOT)/tooling/doctor.sh
@@ -42,6 +42,9 @@ smoke: ## Wait for all services to be ready and make one authenticated call
 openapi: ## Regenerate documentation/api/*-openapi.yaml from the annotated code, then openapi.yaml from those
 	cd $(BACKEND) && ./mvnw -B verify -Dtest=OpenApiContractTest -Dopenapi.update=true -Dsurefire.failIfNoSpecifiedTests=false -Djacoco.skip=true -Denforcer.skip=true
 	cd $(BACKEND) && ./mvnw -B verify -pl common-domain -Dtest=OpenApiAggregateTest -Dopenapi.update=true -Djacoco.skip=true -Denforcer.skip=true
+
+nas-smoke: ## Check the self-hosted stack from a tailnet machine (NAS_URL, API_CLIENT_SECRET, SMOKE_USER, SMOKE_PASSWORD; needs curl and jq)
+	@bash $(ROOT)/deploy/nas-smoke.sh
 
 test-backend: ## Spotless, Checkstyle, Quarkus tests and coverage floor; SERVICE=tasks-service limits it to one service (dependency audit: T-0005)
 	cd $(BACKEND) && ./mvnw -B verify $(if $(SERVICE),-pl services/$(SERVICE) -am)

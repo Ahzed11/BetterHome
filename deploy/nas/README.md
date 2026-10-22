@@ -41,11 +41,11 @@ The Compose file uses `depends_on: condition: service_completed_successfully`, w
 From any machine on the tailnet (replace the host):
 
 ```bash
-H=https://nas.example.ts.net
-curl -s $H/auth/realms/betterhome/.well-known/openid-configuration | jq -r .issuer   # https://<host>/auth/realms/betterhome
-for s in households tasks scoring lists notifications; do curl -s -o /dev/null -w "$s %{http_code}\n" $H/api/$s/q/health/ready; done
-curl -s $H/gotify/health
+NAS_URL=https://nas.example.ts.net API_CLIENT_SECRET=<betterhome-api secret> \
+  SMOKE_USER=<member user> SMOKE_PASSWORD=<its password> make nas-smoke
 ```
+
+It checks the HTTPS certificate, that Keycloak's issuer is the public URL, that each service is ready through `/api/<service>`, that Gotify answers `/gotify/health`, and that one password-grant token is accepted by all five services. The user must already exist with the `member` role (see First user). It needs `curl` and `jq`.
 
 ## The app
 
