@@ -93,6 +93,6 @@ apk: client ## Android APK to try on a phone: release mode, debug-signed, no ser
 run-app: ## Try the app by hand: stack, demo users, web app on http://localhost:8090 (alice / demo; RUN_APP_SEED=1 adds the demo household)
 	@bash $(ROOT)/tooling/run-app.sh
 
-check: test-docs test-backend test-images test-openshift-ports test-nas ## CI entrypoint (app/e2e when present; `make smoke` runs inside `make up`, which `make e2e` calls)
-	@if [[ -d $(ROOT)/app ]]; then $(MAKE) test-app test-guard; fi
-	@echo "check: backend + docs OK (e2e not yet required for Phase 0)"
+check: test-docs test-backend test-images test-openshift-ports test-nas ## CI entrypoint (the web journeys of `make e2e` run last, on a stack `make up` starts or finds running; `make smoke` runs inside `make up`)
+	@if [[ -d $(ROOT)/app ]]; then $(MAKE) test-app test-guard e2e; fi
+	@echo "check: backend, docs, app and end-to-end journeys OK"

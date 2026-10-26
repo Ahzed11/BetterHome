@@ -763,11 +763,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0078 · `make check` runs the e2e suite
 
-* Status: todo
+* Status: in-review
 * Issue / PR: — (suggested: "Include e2e in make check")
 * Depends on: T-0073
 * Spec: AGENTS §6.1 (`make check` is everything above, as in CI)
 * Acceptance criteria: `make check` runs `make e2e` like CI does (or AGENTS §6.1 states why not), without a second stack start when one is already up.
+* Summary: `make check` now ends with `make e2e` (web target) after `test-app` and `test-guard`, so the local gate matches CI, where the `e2e` job runs the same script.
+* Decisions and deviations: no second stack start: nothing earlier in `check` starts the stack (the backend tests use Testcontainers), and `e2e.sh` runs `make up`, which is idempotent, so a stack left up by `make up` is reused. `E2E_STACK=running` skips the start altogether. The CI `check` job still joins the parallel jobs and does not call `make check`, so CI timing is unchanged.
+* Verification: `make -n check` shows the order; `make test-docs`. **Not run:** `make check` or `make e2e` here (no Podman, Flutter or Chrome): the CI `e2e` job runs the same script.
+* Follow-ups: none.
 
 ### T-0079 · Bundle the design fonts
 
