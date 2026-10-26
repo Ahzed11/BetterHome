@@ -61,11 +61,12 @@ AppSession _sessionFor(String token) => AppSession(
   ),
 );
 
-/// Runs the clock of the tasks service [shift] ahead of the real time, so a journey can reach a due
-/// date without waiting for it. The endpoint exists only on the e2e stack (`tooling/e2e.sh`).
-Future<void> _shiftTasksClock(Duration shift) async {
+/// Runs the clock of the service at [serviceUrl] [shift] ahead of the real time, so a journey can
+/// reach a due date without waiting for it. The endpoint exists only on the e2e stack
+/// (`tooling/e2e.sh`).
+Future<void> _shiftClock(String serviceUrl, Duration shift) async {
   final response = await http.put(
-    Uri.parse('$_tasksUrl/v1/test/clock'),
+    Uri.parse('$serviceUrl/v1/test/clock'),
     headers: {
       'Authorization': 'Bearer $_aliceToken',
       'Content-Type': 'application/json',
@@ -586,7 +587,7 @@ void main() {
       // A day and a half later the second occurrence is due: it goes to the other member and the
       // first one, still open, is dismissed as superseded.
       try {
-        await _shiftTasksClock(const Duration(hours: 36));
+        await _shiftClock(_tasksUrl, const Duration(hours: 36));
         late ChoreTask second;
         await _waitFor(() async {
           final open = await home.tasksOf(TaskStatus.open);
@@ -600,7 +601,7 @@ void main() {
         final dismissed = await home.tasksOf(TaskStatus.dismissed);
         expect(dismissed.map((t) => t.id), [first.id]);
       } finally {
-        await _shiftTasksClock(Duration.zero);
+        await _shiftClock(_tasksUrl, Duration.zero);
       }
     },
   );
@@ -619,7 +620,7 @@ void main() {
 
       // The next occurrence skips the member who is away.
       try {
-        await _shiftTasksClock(const Duration(hours: 36));
+        await _shiftClock(_tasksUrl, const Duration(hours: 36));
         late ChoreTask next;
         await _waitFor(() async {
           final open = await home.tasksOf(TaskStatus.open);
@@ -631,7 +632,54 @@ void main() {
         }, 'the next occurrence of the recurrence');
         expect(next.assigneeId, isNot(first.assigneeId));
       } finally {
-        await _shiftTasksClock(Duration.zero);
+        await _shiftClock(_tasksUrl, Duration.zero);
+      }
+    },
+  );
+
+  testWidgets(
+    'leaderboard periods: points leave the week and month views when time passes and stay in all time',
+    (tester) async {
+      final alice = _sessionFor(_aliceToken);
+      final home = await alice.repository.createHousehold(
+        name: 'E2E periods home ${DateTime.now().millisecondsSinceEpoch}',
+        timezone: 'UTC',
+      );
+      final template = await alice.tasksRepository.createTemplate(
+        householdId: home.id,
+        title: 'Period chore',
+        description: '',
+        points: 4,
+        latePoints: 2,
+      );
+      await alice.tasksRepository.quickLog(
+        householdId: home.id,
+        templateId: template.id,
+      );
+
+      Future<int> pointsIn(ScorePeriod period) async {
+        final board = await alice.scoringRepository.getScoreboard(
+          home.id,
+          period: period,
+        );
+        return board.totalPoints;
+      }
+
+      await _waitFor(
+        () async => await pointsIn(ScorePeriod.week) == 4,
+        'the quick-logged chore on the weekly leaderboard',
+      );
+      expect(await pointsIn(ScorePeriod.month), 4);
+      expect(await pointsIn(ScorePeriod.all), 4);
+
+      // Forty days later neither the current week nor the current month is the one of the chore.
+      try {
+        await _shiftClock(_scoringUrl, const Duration(days: 40));
+        expect(await pointsIn(ScorePeriod.week), 0);
+        expect(await pointsIn(ScorePeriod.month), 0);
+        expect(await pointsIn(ScorePeriod.all), 4);
+      } finally {
+        await _shiftClock(_scoringUrl, Duration.zero);
       }
     },
   );
