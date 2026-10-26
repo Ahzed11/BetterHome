@@ -141,30 +141,87 @@ Future<void> _pickTemplate(WidgetTester tester, String title) async {
   );
 }
 
-/// Opens the app as [token]'s user, completes the profile step, and returns its session.
+/// The words of the app that the journeys read, in the language of the app under test.
+class _Words {
+  const _Words({
+    required this.locale,
+    required this.profileTitle,
+    required this.email,
+    required this.continueLabel,
+    required this.noHouseholds,
+    required this.allChores,
+    required this.leaderboard,
+    required this.createHousehold,
+    required this.householdName,
+    required this.save,
+  });
+
+  final Locale locale;
+  final String profileTitle;
+  final String email;
+  final String continueLabel;
+
+  /// The start of the text of the empty household list.
+  final String noHouseholds;
+  final String allChores;
+  final String leaderboard;
+  final String createHousehold;
+  final String householdName;
+  final String save;
+}
+
+const _english = _Words(
+  locale: Locale('en'),
+  profileTitle: 'Your profile',
+  email: 'Email',
+  continueLabel: 'Continue',
+  noHouseholds: 'No households yet',
+  allChores: 'All chores',
+  leaderboard: 'Leaderboard',
+  createHousehold: 'Create household',
+  householdName: 'Household name',
+  save: 'Save',
+);
+
+const _french = _Words(
+  locale: Locale('fr'),
+  profileTitle: 'Votre profil',
+  email: 'E-mail',
+  continueLabel: 'Continuer',
+  noHouseholds: 'Aucun foyer',
+  allChores: 'Toutes les tâches',
+  leaderboard: 'Classement',
+  createHousehold: 'Créer un foyer',
+  householdName: 'Nom du foyer',
+  save: 'Enregistrer',
+);
+
+/// Opens the app as [token]'s user in the language of [words], completes the profile step, and
+/// returns its session.
 Future<AppSession> _openAs(
   WidgetTester tester,
   String token,
-  String email,
-) async {
+  String email, {
+  _Words words = _english,
+}) async {
   final session = _sessionFor(token);
   await tester.pumpWidget(
     // A new key per user, otherwise the previous user's app state is kept.
     BetterHomeApp(
       key: UniqueKey(),
       session: session,
-      initialLocale: const Locale('en'),
+      initialLocale: words.locale,
     ),
   );
-  await _see(tester, find.text('Your profile'));
-  await tester.enterText(find.widgetWithText(TextField, 'Email'), email);
-  await _tap(tester, find.text('Continue'));
+  await _see(tester, find.text(words.profileTitle));
+  await tester.enterText(find.widgetWithText(TextField, words.email), email);
+  await _tap(tester, find.text(words.continueLabel));
   await _see(
     tester,
     find.byWidgetPredicate(
       (w) =>
           w is NavigationBar ||
-          (w is Text && (w.data ?? '').contains('No households yet')),
+          (w is Text && (w.data ?? '').contains(words.noHouseholds)),
     ),
   );
   return session;
@@ -205,17 +262,21 @@ Future<void> _openDetails(WidgetTester tester) async {
 }
 
 /// Creates a household: from the empty state of a new user, or from the switcher sheet.
-Future<void> _createHousehold(WidgetTester tester, String name) async {
+Future<void> _createHousehold(
+  WidgetTester tester,
+  String name, {
+  _Words words = _english,
+}) async {
   if (find.byType(HouseholdSwitcher).evaluate().isNotEmpty) {
     await _tap(tester, find.byType(HouseholdSwitcher));
   }
-  await _tap(tester, find.text('Create household'));
-  await _see(tester, find.widgetWithText(TextField, 'Household name'));
+  await _tap(tester, find.text(words.createHousehold));
+  await _see(tester, find.widgetWithText(TextField, words.householdName));
   await tester.enterText(
-    find.widgetWithText(TextField, 'Household name'),
+    find.widgetWithText(TextField, words.householdName),
     name,
   );
-  await _tap(tester, find.widgetWithText(FilledButton, 'Save'));
+  await _tap(tester, find.widgetWithText(FilledButton, words.save));
   await _see(tester, find.textContaining(name));
 }
 
@@ -681,6 +742,25 @@ void main() {
       } finally {
         await _shiftClock(_scoringUrl, Duration.zero);
       }
+    },
+  );
+
+  testWidgets(
+    'French: the app runs in French from the profile step to the leaderboard',
+    (tester) async {
+      await _openAs(tester, _aliceToken, _aliceEmail, words: _french);
+
+      // The navigation bar speaks French, and no English label is left in it.
+      await _see(tester, find.text(_french.allChores));
+      expect(find.text(_english.allChores), findsNothing);
+      expect(find.text(_english.leaderboard), findsNothing);
+
+      // A household made through the French dialog, and the tab of its leaderboard.
+      final home = 'E2E maison ${DateTime.now().millisecondsSinceEpoch}';
+      await _createHousehold(tester, home, words: _french);
+      await _tap(tester, find.text(_french.leaderboard));
+      await _see(tester, find.text(_french.leaderboard));
+      expect(find.text(_english.leaderboard), findsNothing);
     },
   );
 
