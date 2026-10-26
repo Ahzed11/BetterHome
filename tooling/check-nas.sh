@@ -23,6 +23,9 @@ for dir in "$root"/backend/services/*/; do
   grep -q "/migrations/$name/" "$root/deploy/migrations/Dockerfile" || fail "$service: its SQL is not copied into the migrations image"
   grep -q "for service in .*\b$name\b" "$root/deploy/migrations/migrate-all.sh" || fail "$service: migrate-all.sh does not migrate it"
 done
+if grep -rqi "test.clock" "$root/deploy/nas" "$root/deploy/openshift"; then
+  fail "deploy/nas and deploy/openshift must not mention the e2e test clock (/v1/test/clock moves time)"
+fi
 grep -q "image: ghcr.io/ahzed11/betterhome-migrations:" "$compose" || fail "compose.yml: no migrations image"
 grep -q "image: ghcr.io/ahzed11/betterhome-keycloak:" "$compose" || fail "compose.yml: no keycloak image"
 grep -q "reverse_proxy betterhome-keycloak:8180\$" "$caddy" || fail "Caddyfile: Keycloak is not proxied"

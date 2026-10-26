@@ -46,7 +46,7 @@ fi
 
 if [[ "$E2E_STACK" == start ]]; then
   # The push gateway of the journeys is a real Gotify server (ADR 0027), started with the stack.
-  COMPOSE_PROFILES=gotify GOTIFY_URL=http://gotify:80 CORS_ORIGINS="http://localhost:${E2E_WEB_PORT}" make -C "$ROOT" up
+  BETTERHOME_TEST_CLOCK_ENABLED=true COMPOSE_PROFILES=gotify GOTIFY_URL=http://gotify:80 CORS_ORIGINS="http://localhost:${E2E_WEB_PORT}" make -C "$ROOT" up
 fi
 ensure_user "$E2E_USER" "$E2E_PASSWORD" "${E2E_USER}@betterhome.local" "$E2E_USER"
 ensure_user bob "$E2E_PASSWORD" "bob@betterhome.local" bob

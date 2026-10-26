@@ -743,11 +743,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0076 · Controllable test clock and the e2e journeys that need time
 
-* Status: todo
-* Issue / PR: — (suggested: "Controllable clock for e2e") 
+* Status: in-review
+* Issue / PR: — (suggested: "Controllable clock for e2e") / (pull request to follow)
 * Depends on: T-0021
 * Spec: AGENTS §6.2
 * Acceptance criteria: A clock that can be moved, exposed only in the test environment of the services (never in production profiles), used by `make e2e` for the journeys that depend on time: recurrence spawn and round-robin assignment, supersede, away reassignment, month-end recap. Also the journeys left from T-0021: leaderboard period views, household switcher with two households, French and English.
+* Summary: `SystemClock` (common-domain, used by all five services) can run ahead of the system time by an offset, and `TestClockResource` (`GET`/`PUT /v1/test/clock`, `{"offsetSeconds": n}`, any signed-in member) moves it. The endpoint answers 404 unless `BETTERHOME_TEST_CLOCK_ENABLED=true`: the local Compose file defaults it to `false`, only `tooling/e2e.sh` turns it on, `make test-nas` fails if `deploy/nas` or `deploy/openshift` mention it, and it is excluded from the OpenAPI documents and the generated client. New journey "time travel": alice makes a household and invites bob, a daily round-robin recurrence spawns its first task, the tasks clock is moved 36 hours ahead, and the second occurrence goes to the other member while the first is dismissed as superseded; the clock is put back in a `finally`.
+* Decisions and deviations: scope split, as T-0021 did. Done here: the mechanism in every service and the journey for recurrence spawn, round-robin assignment and supersede. Moved to T-0119: the journeys for away reassignment, the month-end recap, leaderboard period views and French/English (the household switcher journey already exists). A runtime switch rather than a build-time one, so the images `make up` builds and the published ones are the same; the guard is the default `false`, the OpenAPI exclusion and the `make test-nas` check. Test dependency `quarkus-rest` in common-domain (managed by the Quarkus BOM) only gives the unit tests a JAX-RS runtime to build a `NotFoundException`. The journey moves only the tasks clock; the other services follow the real time.
+* Verification: common-domain unit tests (`SystemClockTest`, `TestClockResourceTest`) run locally with Spotless and Checkstyle clean; `make test-nas`, `make test-docs`, `bash -n tooling/e2e.sh`. **Not run:** the Quarkus tests, `make e2e` and the app checks (no container runtime, Flutter or Chrome here): the pull request's CI is the first run, including the generated OpenAPI drift check that must not see the new endpoint.
+* Follow-ups: T-0119.
 
 ### T-0077 · Fake push gateway endpoint for e2e
 
@@ -1159,3 +1163,11 @@ Out of scope of T-0107 to T-0117, to be filed when wanted: Caddy in the dev comp
 * Decisions and deviations: the clock went into the fake and the shell, not into a global, following the existing `ChoresScreen.now` parameter. Ids of fake tasks still use the real clock (they must be unique). Other test files that render dates already pass their own `now`.
 * Verification: the bug reproduced locally (26 failures, the diff shows two "Today" chips) and on a rerun of a previously green CI run; with the change `flutter test test/screens_baseline_test.dart` passes (336) against the committed images, and `make test-app` passes (545 tests, format and analyze included). Not run: `make check`, `make e2e`; the fix is not proven on a later calendar day (no clock faking on this machine), but nothing the goldens render reads the system date any more.
 * Follow-ups: none.
+
+### T-0119 · e2e journeys that need the clock: away reassignment, month-end recap, leaderboard periods, French and English
+
+* Status: todo
+* Issue / PR: — (suggested: "More time-dependent e2e journeys")
+* Depends on: T-0076
+* Spec: AGENTS §6.2
+* Acceptance criteria: With the test clock of T-0076 (`PUT /v1/test/clock` on each service that needs it): marking a member away reassigns their open tasks, the month-end recap reaches the scoreboard and the notifications, the leaderboard period views change when time passes, and the app is exercised in French as well as English. Each journey resets the clocks it moved.

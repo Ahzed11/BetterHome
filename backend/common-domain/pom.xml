@@ -56,6 +56,12 @@
             <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- The JAX-RS runtime delegate, so a plain unit test can build a NotFoundException. -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
