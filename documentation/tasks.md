@@ -755,7 +755,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0077 · Fake push gateway endpoint for e2e
 
-* Status: in-review
+* Status: done
 * Issue / PR: — (suggested: "Fake push gateway for e2e")
 * Depends on: T-0021, T-0027
 * Spec: AGENTS §6.2, §3 Push
@@ -763,11 +763,12 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Summary: `make e2e` starts the stack with the optional `gotify` profile and `GOTIFY_URL=http://gotify:80`, waits for Gotify, creates an application through its API and passes its token to the journeys (`E2E_GOTIFY_APP_TOKEN`). The notifications journey registers that token as bob's push target (`PUT /v1/push-target`) before alice marks him away; after the journeys, `tooling/e2e.sh` reads the application's messages and requires a "Marked away" push whose `betterhome::push` extras hold the type `marked_away` and nothing else.
 * Decisions and deviations: the recording endpoint is the real Gotify server of the local stack, not a hand-written fake: it already records every message and exposes them through its API, so there is no extra server to maintain and the request is checked against what Gotify really accepts. The check runs in the script, not in the Dart journey, because the web journey runs in a browser that cannot read another origin without CORS on Gotify. Only the English text is asserted: the journeys' users use the default language; a French assertion needs a user with that language setting and is left out. A stack started by hand (`E2E_STACK=running`) needs `COMPOSE_PROFILES=gotify GOTIFY_URL=http://gotify:80`; the script says so when Gotify is missing.
 * Verification: `bash -n tooling/e2e.sh` and the jq filter tried on matching, extra-key and missing messages. **Not run:** `make e2e` and the Android target: this environment has no Podman, Flutter or Chrome, so the CI `e2e` job on the pull request is the first real run.
+* Closing note: Done: merged in #143 with the CI `e2e` job green on the pull request and on `master` (run 233).
 * Follow-ups: none new.
 
 ### T-0078 · `make check` runs the e2e suite
 
-* Status: in-review
+* Status: done
 * Issue / PR: — (suggested: "Include e2e in make check")
 * Depends on: T-0073
 * Spec: AGENTS §6.1 (`make check` is everything above, as in CI)
@@ -775,6 +776,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Summary: `make check` now ends with `make e2e` (web target) after `test-app` and `test-guard`, so the local gate matches CI, where the `e2e` job runs the same script.
 * Decisions and deviations: no second stack start: nothing earlier in `check` starts the stack (the backend tests use Testcontainers), and `e2e.sh` runs `make up`, which is idempotent, so a stack left up by `make up` is reused. `E2E_STACK=running` skips the start altogether. The CI `check` job still joins the parallel jobs and does not call `make check`, so CI timing is unchanged.
 * Verification: `make -n check` shows the order; `make test-docs`. **Not run:** `make check` or `make e2e` here (no Podman, Flutter or Chrome): the CI `e2e` job runs the same script.
+* Closing note: Done: merged in #144 (CI and `master` run 235 green); `make check` itself was not run here, it runs the same `make e2e` script the CI job runs.
 * Follow-ups: none.
 
 ### T-0079 · Bundle the design fonts
@@ -853,7 +855,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0086 · App: push permission prompt and device token registration
 
-* Status: in-review
+* Status: done
 * Issue / PR: #125 / (pull request to follow)
 * Depends on: T-0027, T-0028
 * Spec: §5
@@ -861,6 +863,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Summary: the notification settings screen has a "Push notifications" card: it says whether a Gotify token is registered, takes the application token (trimmed, checked against the contract's `[A-Za-z0-9._~-]` pattern before sending) and registers it with `PUT /v1/push-target`, and offers "Stop push notifications" (`DELETE`) while one is registered. `NotificationsRepository` gained `hasPushTarget` (`GET`, 404 means none), `registerPushTarget` and `removePushTarget`; the fake keeps the token for tests. Signing out removes the target first, while the access token is still valid. FR and EN strings; goldens `notification_settings_populated` regenerated and `notification_settings_push_on` added.
 * Decisions and deviations: no OS permission prompt exists with Gotify (ADR 0027), so there is no "sensible moment" prompt: the card lives in the settings the bell opens. If removing the target fails at sign-out (offline, server down), the app signs out anyway rather than trapping the user; the target stays until the next registration or account deletion. Account deletion skips the removal (the server drops the target with the account). No new ADR: ADR 0027 already decides this.
 * Verification: `make test-app` (format, analyze, widget, repository-against-contract and golden tests). Not done: the e2e journey against the fake push endpoint, because it needs T-0077 (still todo); the app was not launched against a real Gotify server. The e2e part is now in the T-0077 change (see below); its first real run is the CI `e2e` job.
+* Closing note: Done: the registration journey and the push arriving at Gotify ran green in CI (#143, `master` run 233); what the e2e does not cover is in the follow-ups.
 * Follow-ups: the e2e covers registering the token through the repository and the push arriving at Gotify (checked by `tooling/e2e.sh`, T-0077). It does not drive the settings card in the browser, nor sign-out removing the target: both are covered by widget tests only. Not launched against a Gotify Android client (T-0114).
 
 ### T-0087 · The ledger sum can go below zero after an adjustment followed by a reversal
@@ -1166,8 +1169,9 @@ Out of scope of T-0107 to T-0117, to be filed when wanted: Caddy in the dev comp
 
 ### T-0119 · e2e journeys that need the clock: away reassignment, month-end recap, leaderboard periods, French and English
 
-* Status: todo
+* Status: in-progress
 * Issue / PR: — (suggested: "More time-dependent e2e journeys")
 * Depends on: T-0076
 * Spec: AGENTS §6.2
 * Acceptance criteria: With the test clock of T-0076 (`PUT /v1/test/clock` on each service that needs it): marking a member away reassigns their open tasks, the month-end recap reaches the scoreboard and the notifications, the leaderboard period views change when time passes, and the app is exercised in French as well as English. Each journey resets the clocks it moved.
+* Progress: journey 1 of 4 done: "away" (the admin marks a recurrence assignee away, their open task is dismissed at once, and the next occurrence, after the tasks clock moves 36 hours ahead, goes to the other member). The recurrence setup the time-travel journey used moved into a shared helper (`_startClockHome`). Verified in CI only (no container runtime or Flutter here). Left: month-end recap (scoring and notifications clocks), leaderboard period views, French and English. The entry stays `in-progress` until they are done.

@@ -218,6 +218,78 @@ Future<void> _createHousehold(WidgetTester tester, String name) async {
   await _see(tester, find.textContaining(name));
 }
 
+/// A household of alice (admin) and bob with a daily round-robin recurrence, and the first task the
+/// scheduler spawned for it. The journeys that move the clock start from it.
+class _ClockHome {
+  _ClockHome(this.alice, this.householdId, this.templateId, this.first);
+
+  final AppSession alice;
+  final String householdId;
+  final String templateId;
+  final ChoreTask first;
+
+  /// The tasks of the recurrence that have [status].
+  Future<List<ChoreTask>> tasksOf(TaskStatus status) =>
+      _tasksOfTemplate(alice, householdId, templateId, status);
+}
+
+Future<List<ChoreTask>> _tasksOfTemplate(
+  AppSession session,
+  String householdId,
+  String templateId,
+  TaskStatus status,
+) async {
+  final all = await session.tasksRepository.listTasks(
+    householdId,
+    status: status,
+  );
+  return all.where((t) => t.templateId == templateId).toList();
+}
+
+Future<_ClockHome> _startClockHome() async {
+  final alice = _sessionFor(_aliceToken);
+  final bob = _sessionFor(_bobToken);
+  final home = await alice.repository.createHousehold(
+    name: 'E2E clock home ${DateTime.now().millisecondsSinceEpoch}',
+    timezone: 'UTC',
+  );
+  final invitation = await alice.repository.createInvitation(
+    householdId: home.id,
+    email: _bobEmail,
+  );
+  await bob.repository.acceptInvitation(invitation.token);
+  final template = await alice.tasksRepository.createTemplate(
+    householdId: home.id,
+    title: 'Clock chore',
+    description: '',
+    points: 3,
+    latePoints: 1,
+  );
+  await alice.tasksRepository.upsertRecurrence(
+    householdId: home.id,
+    templateId: template.id,
+    rrule: 'FREQ=DAILY',
+    assignmentMode: AssignmentMode.roundRobin,
+  );
+
+  // The first occurrence is the start of the recurrence: the scheduler spawns it within seconds.
+  late ChoreTask first;
+  await _waitFor(() async {
+    final open = await _tasksOfTemplate(
+      alice,
+      home.id,
+      template.id,
+      TaskStatus.open,
+    );
+    if (open.isEmpty) {
+      return false;
+    }
+    first = open.single;
+    return true;
+  }, 'the first occurrence of the recurrence');
+  return _ClockHome(alice, home.id, template.id, first);
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -508,49 +580,8 @@ void main() {
   testWidgets(
     'time travel: a daily recurrence rotates between members and supersedes the open task',
     (tester) async {
-      final alice = _sessionFor(_aliceToken);
-      final bob = _sessionFor(_bobToken);
-      final home = await alice.repository.createHousehold(
-        name: 'E2E clock home ${DateTime.now().millisecondsSinceEpoch}',
-        timezone: 'UTC',
-      );
-      final invitation = await alice.repository.createInvitation(
-        householdId: home.id,
-        email: _bobEmail,
-      );
-      await bob.repository.acceptInvitation(invitation.token);
-      final template = await alice.tasksRepository.createTemplate(
-        householdId: home.id,
-        title: 'Clock chore',
-        description: '',
-        points: 3,
-        latePoints: 1,
-      );
-      await alice.tasksRepository.upsertRecurrence(
-        householdId: home.id,
-        templateId: template.id,
-        rrule: 'FREQ=DAILY',
-        assignmentMode: AssignmentMode.roundRobin,
-      );
-
-      Future<List<ChoreTask>> tasksOf(TaskStatus status) async {
-        final all = await alice.tasksRepository.listTasks(
-          home.id,
-          status: status,
-        );
-        return all.where((t) => t.templateId == template.id).toList();
-      }
-
-      // The first occurrence is the start of the recurrence: the scheduler spawns it within seconds.
-      late ChoreTask first;
-      await _waitFor(() async {
-        final open = await tasksOf(TaskStatus.open);
-        if (open.isEmpty) {
-          return false;
-        }
-        first = open.single;
-        return true;
-      }, 'the first occurrence of the recurrence');
+      final home = await _startClockHome();
+      final first = home.first;
 
       // A day and a half later the second occurrence is due: it goes to the other member and the
       // first one, still open, is dismissed as superseded.
@@ -558,7 +589,7 @@ void main() {
         await _shiftTasksClock(const Duration(hours: 36));
         late ChoreTask second;
         await _waitFor(() async {
-          final open = await tasksOf(TaskStatus.open);
+          final open = await home.tasksOf(TaskStatus.open);
           if (open.length != 1 || open.single.id == first.id) {
             return false;
           }
@@ -566,8 +597,39 @@ void main() {
           return true;
         }, 'the second occurrence of the recurrence');
         expect(second.assigneeId, isNot(first.assigneeId));
-        final dismissed = await tasksOf(TaskStatus.dismissed);
+        final dismissed = await home.tasksOf(TaskStatus.dismissed);
         expect(dismissed.map((t) => t.id), [first.id]);
+      } finally {
+        await _shiftTasksClock(Duration.zero);
+      }
+    },
+  );
+
+  testWidgets(
+    'away: marking the assignee away dismisses their task and the next one goes to the other member',
+    (tester) async {
+      final home = await _startClockHome();
+      final first = home.first;
+
+      // The admin marks the assignee away: their open task is dismissed at once.
+      await home.alice.repository.setAway(home.householdId, first.assigneeId);
+      expect(await home.tasksOf(TaskStatus.open), isEmpty);
+      final dismissed = await home.tasksOf(TaskStatus.dismissed);
+      expect(dismissed.map((t) => t.id), [first.id]);
+
+      // The next occurrence skips the member who is away.
+      try {
+        await _shiftTasksClock(const Duration(hours: 36));
+        late ChoreTask next;
+        await _waitFor(() async {
+          final open = await home.tasksOf(TaskStatus.open);
+          if (open.length != 1) {
+            return false;
+          }
+          next = open.single;
+          return true;
+        }, 'the next occurrence of the recurrence');
+        expect(next.assigneeId, isNot(first.assigneeId));
       } finally {
         await _shiftTasksClock(Duration.zero);
       }
