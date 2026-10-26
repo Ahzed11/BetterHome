@@ -73,6 +73,8 @@ handle /api/notifications/* {
 }
 
 # Gotify serves from / and supports a sub-path behind a proxy; its WebSocket (/gotify/stream) is proxied as is.
+# Its web UI uses relative links, so the address needs the trailing slash.
+redir /gotify /gotify/ permanent
 handle_path /gotify/* {
 	reverse_proxy betterhome-gotify:80
 }

@@ -16,6 +16,8 @@ class BetterHomeApp extends StatefulWidget {
     required this.session,
     this.auth,
     this.initialLocale,
+    this.serverHost,
+    this.onChangeServer,
   });
 
   final AppSession session;
@@ -23,6 +25,10 @@ class BetterHomeApp extends StatefulWidget {
   /// Signs the user in with the identity provider. Without it the app runs in demo mode.
   final AuthService? auth;
   final Locale? initialLocale;
+
+  /// The server the app talks to, shown on the sign-in screen with a way to change it (T-0115).
+  final String? serverHost;
+  final VoidCallback? onChangeServer;
 
   @override
   State<BetterHomeApp> createState() => _BetterHomeAppState();
@@ -128,6 +134,8 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
         onSignIn: _signIn,
         busy: _phase == _Phase.signingIn,
         failed: _signInFailed,
+        serverHost: widget.serverHost,
+        onChangeServer: widget.onChangeServer,
       ),
       _Phase.ready => HomeShell(
         session: widget.session,
@@ -157,19 +165,23 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      theme: buildAppTheme(),
-      locale: widget.initialLocale,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: _home(),
-    );
-  }
+  Widget build(BuildContext context) =>
+      buildAppMaterial(locale: widget.initialLocale, home: _home());
+}
+
+/// The app's theme and localizations around [home]; the setup screen shares them with the app.
+MaterialApp buildAppMaterial({required Widget home, Locale? locale}) {
+  return MaterialApp(
+    onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+    theme: buildAppTheme(),
+    locale: locale,
+    localizationsDelegates: const [
+      AppLocalizations.delegate,
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+    supportedLocales: AppLocalizations.supportedLocales,
+    home: home,
+  );
 }

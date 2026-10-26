@@ -1040,11 +1040,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0109 · Keycloak production mode behind Caddy
 
-* Status: todo
-* Issue / PR: #119 / —
+* Status: in-review
+* Issue / PR: #119 / (pull request to follow; stacked on #131)
 * Depends on: T-0108
 * Spec: §7, §9
 * Acceptance criteria: Keycloak production mode itself (`start --optimized`, own database, `/auth` prefix, public hostname, proxy headers, dynamic back channel) is delivered by T-0108. This task replaces the development client secrets: the realm import takes the five service-client secrets from values set in the Compose file on the NAS (Keycloak `${ENV}` substitution; `CHANGE_ME` placeholders in the repository, development values kept for `make up`), the Compose services use the same values, and the admin console password is checked. Verified on the real NAS: a token fetched through the public URL is accepted by every service, and the development secret is refused.
+* Summary: the six client secrets of `realm-betterhome.json` are now `${NAME:local-dev-only-change-me}` placeholders (`OIDC_SERVICE_CLIENT_SECRET` for the five service clients, the variable the services already read; `API_CLIENT_SECRET` for `betterhome-api`, the one `deploy/lib.sh` already uses). Keycloak substitutes them from its environment at import, so the baked image and `make up` keep the development value. `deploy/nas/compose.yml` gives Keycloak both values and the services the first, all `CHANGE_ME` placeholders edited on the NAS; `deploy/podman-compose.yml` passes the two variables to Keycloak too, so one override changes clients and services together. `make test-nas` now requires every password and secret in the Compose file to be a placeholder and the realm to hold no literal secret.
+* Decisions and deviations: the five services keep sharing one secret (as before and as the services' configuration expects); one per service is a possible follow-up. The realm is imported once, on a first start: changing a secret later is done in the admin console and in the Compose file (README). The admin password was already a placeholder from T-0108. Not part of this task: the Keycloak production mode, delivered in T-0108.
+* Verification: `make test-nas` (and negative cases for a literal secret in the Compose file, a missing variable, and the old development value). On a scratch Keycloak and then on the NAS stack run locally (local images, throwaway Caddy, distinct secrets): a service client gets a token with the new secret and 401 with the development one (all five, and `betterhome-api`); the admin login works with the configured password and not with a wrong one; a user token from `betterhome-api` is accepted by the services; tasks awarded points through scoring, scoring and tasks called households with their own tokens; an internal endpoint answers 403 to a user token and 200 to a service token. `SKIP_PACKAGE=1 make up` (smoke on :8081-:8085 passed) and `make seed` still work with the changed realm. Not verified: the real NAS (the first start there decides, check README), `make e2e` (the realm and the dev compose changed, the journeys use the defaults).
+* Follow-ups: one client secret per service; rotation of the secrets without losing the realm.
 
 ### T-0110 · Tailscale and HTTPS certificates on the NAS
 
@@ -1056,51 +1060,75 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0111 · Android build against the NAS (`make apk`)
 
-* Status: todo
-* Issue / PR: #121 / —
-* Depends on: T-0107
+* Status: in-review
+* Issue / PR: #121 / (pull request to follow; stacked on #132)
+* Depends on: T-0107 (the phone check also needs T-0115 and a running NAS stack)
 * Spec: §1
 * Acceptance criteria: `make apk` builds a debug-signed APK for the dev phone, with no host baked in: the server URL is entered in the app (T-0115). Install steps (adb or a download over the tailnet). Verified on a real phone: after entering the server URL, sign-in through Keycloak works, the OIDC redirect returns to the app, a household can be created. The tailnet name is never written to a committed file or to an APK that is published. Release signing is T-0116.
+* Summary: `make apk` (`tooling/build-apk.sh`) builds `app/build/app/outputs/flutter-apk/app-release.apk` in release mode, signed with the debug key as the release build type already is, and then checks the file: the `INTERNET` permission, the application id, the signer, and that no `.ts.net` name is inside a build made without `NAS_HOST`. README has install steps. A first version had `NAS_HOST=<host> make apk` for a personal build with the URLs baked in; T-0115 made it unnecessary and it was removed. **Bug fixed on the way:** the main `AndroidManifest.xml` had no `INTERNET` permission (only the debug and profile manifests did), so any release APK, this one and the F-Droid one, had no network.
+* Decisions and deviations: release mode rather than `--debug` (60 MB, no debugger, the build users will get); the signing key stays the debug key until T-0116, so an APK built on another machine does not update this one (README). A fat APK (all ABIs) for simplicity. `make apk` depends on `make client` like `make e2e`.
+* Verification: `make apk` built the APK (60.7 MB, `aapt`: `INTERNET`, `com.betterhome.betterhome`, signer `CN=Android Debug`, no server inside); the same build without the manifest fix fails the check with "the INTERNET permission is missing". Not verified: installing and running it on a phone (the Android emulator still crashes on the dev VM, T-0045), signing in through Keycloak and the redirect back to the app, creating a household (needs the NAS stack, Tailscale and a phone: T-0110 and the product owner).
+* Follow-ups: T-0116 replaces the signing key.
 
 ### T-0112 · NAS smoke check (`make nas-smoke`)
 
-* Status: todo
-* Issue / PR: #122 / —
+* Status: in-review
+* Issue / PR: #122 / (pull request to follow; stacked on #135)
 * Depends on: T-0108, T-0109
 * Spec: §7
 * Acceptance criteria: From any tailnet machine: the certificate is valid, the discovery issuer under `/auth` equals the public URL, each service answers `/q/health/ready` through its prefix, Gotify answers its health endpoint, and one password-grant token is accepted by every service. Extends the pattern of `deploy/smoke.sh`.
+* Summary: `deploy/nas-smoke.sh` (`make nas-smoke`) takes `NAS_URL`, `API_CLIENT_SECRET`, `SMOKE_USER` and `SMOKE_PASSWORD` from the environment (nothing is committed), and checks in order: TLS and Keycloak reachable (curl verifies the certificate), the issuer equals `$NAS_URL/auth/realms/betterhome`, `/api/<service>/q/health/ready` for the five services, `/gotify/health`, and a password-grant token accepted by `/api/<service>/v1/meta` of every service. It stops at the first failure with a message naming it. README "Check it" now points to it.
+* Decisions and deviations: the user is not created by the script (unlike `smoke.sh`, which uses `kcadm` on a local container): on the NAS the realm has open registration or an admin-made user (README, First user), and the script runs from a different machine than the NAS. Not part of `make check` (needs the NAS).
+* Verification: run against a fake HTTP server (Python, in the scratchpad, not committed) for the good case (exit 0, all steps), a wrong issuer, an unreachable host, and a wrong user (no token): exit 1 each with the expected message; missing variables fail with a message. Not run: a real NAS, a real certificate (T-0110, product owner).
+* Follow-ups: none new.
 
 ### T-0113 · NAS operations: updates and backups
 
-* Status: todo
-* Issue / PR: #123 / —
+* Status: in-review
+* Issue / PR: #123 / (pull request to follow; stacked on the T-0112 branch)
 * Depends on: T-0108
 * Spec: §7
 * Acceptance criteria: `deploy/nas/update.sh` pulls a new SHA tag, runs the migrations and restarts the services. A nightly `pg_dump` of every database, plus the Gotify data volume, to a NAS volume, reusing the `prodrigestivill/postgres-backup-local` pattern already running on the NAS (it takes a list of databases), with a documented restore that was tried once.
+* Summary: `compose.yml` gains `backup` (that image, `@daily`, the five databases and Keycloak's, 7 daily / 4 weekly / 3 monthly) and `backup-gotify` (alpine, a daily `tar` of the Gotify volume mounted read-only, 7 kept), both writing to `CHANGE_ME_BACKUP_DIR` and kept off `edge`. `update.sh [tag]` validates the tag, rewrites the BetterHome image tags (keeping `compose.yml.before-update`), takes a fresh dump through `backup`, then `pull` and `up -d` (migrations first). `restore.sh <database> <dump>` accepts only the six BetterHome database names, checks the gzip, drops and recreates the database and loads the dump. README: Update, Backups, Restore, and the backup folder permission. `make test-nas` also requires the backup service, every database in its list, the read-only Gotify mount and the two scripts.
+* Decisions and deviations: backups are Compose services rather than a NAS cron job, so they travel with the stack and need no task scheduler. A live SQLite copy of Gotify can be torn; accepted (README says why). A backup on the same disk is not a backup: the README tells to sync the folder elsewhere. A rollback is "old tag + restore"; there are no down migrations (forward-only, AGENTS §2).
+* Verification: with Podman standing in for Docker (a `docker` shim) and a trimmed copy of the real services (Postgres, init-databases, `backup`, `backup-gotify` taken from `compose.yml`): `backup` dumped all six databases; a marked row was destroyed and `restore.sh` brought it back; `restore.sh` refused an unknown name and a non-gzip file, and, with a session open on the database, failed at the drop and left the data intact; `update.sh` rejected a bad tag and, with a valid one, took a new dump and restarted the stack; the tag rewrite checked on the real file (all seven BetterHome images move, third-party images do not); the Gotify archive lists the data folder. `make test-nas` with negative cases (a database missing from the list, a writable Gotify mount) and `make test-docs` pass. Not run: Docker Compose v2 and the real images on the NAS, the full stack update with GHCR images, the restore of Gotify, `make check`.
+* Follow-ups: none new.
 
 ### T-0114 · Gotify push server on the NAS
 
-* Status: todo
-* Issue / PR: #126 / —
+* Status: in-review
+* Issue / PR: #126 / (pull request to follow; stacked on #134)
 * Depends on: T-0108, T-0109, T-0110
 * Spec: §5, §7
 * Acceptance criteria: Gotify (`gotify/server`, as the optional `gotify` profile of `deploy/podman-compose.yml`) runs in the NAS stack behind Caddy, reachable from the phone through Tailscale in the way T-0107 decides, with its data in a volume and the admin password a `CHANGE_ME` placeholder edited on the NAS, and the container joining `edge` as `betterhome-gotify`. notifications-service gets `GOTIFY_URL` pointing at it (ADR 0027). Documented: create a Gotify user and application, install the Gotify Android app, point it at the public URL, exempt it from battery optimisation. Verified on the phone: an event (for example an admin marking a member away, or a due reminder) arrives as a push. Until T-0086 exists the application token is registered with `PUT /v1/push-target` (curl command in the README).
+* Summary: Gotify and the `GOTIFY_URL` of notifications-service were already in `deploy/nas/compose.yml` (T-0108); this task verified them and documented the use. New: `redir /gotify /gotify/ permanent` in the Caddyfile (without it `https://<host>/gotify` fell through to the other site, and the web UI needs the slash), three more static checks in `make test-nas` (the redirect, `GOTIFY_URL`, the data volume), and a "Push notifications (Gotify)" section in `deploy/nas/README.md`: create the Gotify application and users, install the Gotify Android app against `https://<host>/gotify`, battery and Tailscale advice, register the token with `PUT /v1/push-target` (curl, until T-0086), and how to send a test event with the service client.
+* Decisions and deviations: Gotify stays on the `/gotify` path (ADR 0029) because it works there; ADR row amended. Each person who wants pushes needs a Gotify user and application (ADR 0027): one shared admin account is fine for one phone. No change to the services.
+* Verification: the NAS stack run locally (local images, throwaway Caddy with `tls internal` importing the snippet): Gotify's UI, its static assets (relative links), `/gotify/health` and its API (401 without credentials, 200 with, 401 with a wrong password) work under `/gotify/`; an application and a client created through the API; a user registered the application token with `PUT /api/notifications/v1/push-target` (200); a WebSocket on `wss://<host>/gotify/stream` upgraded (101); an event posted to `/api/notifications/v1/internal/notifications` with a service token produced the notification and, within a second, the message on the WebSocket and in Gotify's message list with the expected title, text, priority 5 and the `betterhome::push` extras. A browser-style WebSocket with the same `Origin` upgraded, a foreign `Origin` got 403. `/gotify` redirects (301) to `/gotify/`, `/gotifyx` is not claimed. `make test-nas` with negative cases for the three new checks. Not verified: the Gotify Android app on a phone (battery behaviour, the server URL with a path, push after the phone sleeps), Docker Compose v2 and a real Caddy and Tailscale certificate (T-0110), pulling the Gotify image on the NAS.
+* Follow-ups: T-0086 replaces the curl registration; `make nas-smoke` (T-0112) checks `/gotify/health`.
 
 ### T-0115 · App: server URL entered in the app
 
-* Status: todo
-* Issue / PR: #127 / —
+* Status: in-review
+* Issue / PR: #127 / (pull request to follow; stacked on #133)
 * Depends on: T-0107
 * Spec: §1, §7
 * Acceptance criteria: The app asks for the server URL on first launch (typed or pasted; a QR code if cheap), stores it, and derives from it the Keycloak issuer and the five service base URLs using the path layout of T-0107. The build-time `--dart-define`s stay as the default so dev, `make run-app` and e2e do not change. Validation and an error state, a way to change the server from the signed-out screen, FR/EN strings, widget tests for the screen and for the URL derivation, goldens and accessibility checks. No host is baked into any build. Needed before any APK is published (T-0116).
+* Summary: `ServerConfig` reads what a person types (a bare host means HTTPS, spaces and trailing slashes dropped, plain HTTP only for `localhost`, `127.0.0.1` and `10.0.2.2`, no credentials, query or fragment) and derives the Keycloak issuer and the five service URLs of ADR 0029. `isBetterHomeServer` fetches the OpenID discovery document and requires the expected issuer, so a typo or a wrong server is caught before anything is saved. `ServerSetupScreen` (address field, "Checking…" state, invalid and unreachable errors, "Continue with demo data") is shown by the new `ServerApp` on first launch; it remembers the address in `SharedPreferences`, builds the real stack (`buildStackForServer`) and hands it to `BetterHomeApp`; the sign-in screen shows "Server: <host>" and a "Change server" button that forgets it. `main.dart` keeps the build-time `--dart-define`s as the winning default (dev, `make run-app`, `make e2e` unchanged) and uses `ServerApp` otherwise; FR/EN strings.
+* Decisions and deviations: the server check is an addition (the issue did not ask for it) because the NAS setup needs fast feedback on a wrong address and on an issuer mismatch. No QR code (not cheap: needs a camera plugin and permission). Changing the server is possible from the signed-out screen only, so a signed-in user signs out first. The demo option of the old startup is kept on the setup screen. `NAS_HOST` of `make apk` (T-0111) was removed: the APK carries no host, which also makes it publishable. Refactor: the construction of the repositories moved from `main.dart` to `lib/server_stack.dart` and is shared by both startup paths.
+* Verification: 9 widget tests of the whole flow (first launch, refused address, unanswering server not remembered, a BetterHome server remembered, next launch straight to sign-in, a stored value that is no longer an address ignored, Change server forgets, demo, French), 8 unit tests of the address rules and the derived URLs plus 4 of the probe (each of them proven to fail on a broken probe and on no persistence); 30 baseline cases (accessibility, 200% text scale, goldens in FR and EN) for the setup screen in four states and the sign-in with a server; `flutter analyze`, `dart format`, all 568 tests; `make apk` (60.7 MB, `INTERNET`, no host inside); `make e2e` on a fresh stack, web target: all journeys passed, including the browser sign-in through Keycloak that goes through the refactored startup. Not verified: on a phone against the NAS (T-0110 and the product owner); Android's rejection of a cleartext address was not exercised.
+* Follow-ups: none new.
 
 ### T-0116 · Release workflow: signed APK as a GitHub Release
 
-* Status: todo
-* Issue / PR: #128 / —
+* Status: in-review
+* Issue / PR: #128 / (pull request to follow)
 * Depends on: T-0115
 * Spec: §1, §10 Phase 6
 * Acceptance criteria: A workflow builds a release APK signed with a new BetterHome keystore (created by the product owner and stored as GitHub secrets, never committed) and publishes it as a GitHub Release with exactly one `.apk` asset, the layout the F-Droid repo expects, version taken from `pubspec.yaml`. The certificate fingerprint is recorded for the F-Droid pin (T-0117). Replaces the debug signing of the release build type (`app/android/app/build.gradle.kts`). The Android part of T-0035.
+* Summary: `.github/workflows/release.yml` runs on a pushed tag `v*`, fails when the tag is not `v<version>` of `app/pubspec.yaml`, generates the Dart client, builds `flutter build apk --release` with the key decoded from `ANDROID_KEYSTORE_BASE64` into the runner's temp folder (removed after the build), then checks with `apksigner`/`aapt`: not signed by `CN=Android Debug`, `INTERNET` present, application id, no `.ts.net` name. It publishes a release with the single asset `betterhome-<version>.apk` and the certificate's SHA-256 in the notes. `app/android/app/build.gradle.kts` signs with a `release` config read from `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` when set, and keeps the debug key otherwise (so `make apk` is unchanged). README documents the release steps.
+* Decisions and deviations: a tag trigger rather than every merge, so a version is published on purpose. The keystore is generated by the owner on the dev machine (`~/.betterhome-release/`, outside the repository) and uploaded as secrets; the agent's permission mode blocks writing secrets, so the owner ran it. Third-party actions are the ones already pinned in `check.yml`.
+* Verification: with a throwaway keystore (not the release key) `flutter build apk --release` produced an APK whose signer is that key; without the variables `make apk` still signs with the debug key and passes its checks. `make test-docs`. NOT run: the workflow itself (it needs the secrets and a pushed tag), so the first tag is the real test; the real certificate fingerprint is not recorded yet, it appears in the first release's notes and goes into T-0117.
+* Follow-ups: record the fingerprint in T-0117 after the first release; the Play Store/iOS parts of T-0035 remain.
 
 ### T-0117 · List BetterHome in the F-Droid repository
 

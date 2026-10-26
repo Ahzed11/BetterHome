@@ -28,6 +28,16 @@ grep -q "image: ghcr.io/ahzed11/betterhome-keycloak:" "$compose" || fail "compos
 grep -q "reverse_proxy betterhome-keycloak:8180\$" "$caddy" || fail "Caddyfile: Keycloak is not proxied"
 grep -q "KC_HTTP_RELATIVE_PATH=/auth" "$root/deploy/keycloak/Dockerfile" || fail "keycloak image: relative path is not /auth"
 grep -q "reverse_proxy betterhome-gotify:80\$" "$caddy" || fail "Caddyfile: Gotify is not proxied"
+grep -q '^redir /gotify /gotify/ permanent$' "$caddy" || fail "Caddyfile: /gotify without a slash must redirect (the web UI uses relative links)"
+grep -q "^      GOTIFY_URL: http://betterhome-gotify:80\$" "$compose" || fail "compose.yml: notifications-service must push to http://betterhome-gotify:80 (ADR 0027)"
+grep -q "^      - gotify-data:/app/data\$" "$compose" || fail "compose.yml: Gotify's data must be in a volume"
+
+grep -q "image: docker.io/prodrigestivill/postgres-backup-local:" "$compose" || fail "compose.yml: no backup service"
+for name in households tasks scoring lists notifications keycloak; do
+  grep -q "^      POSTGRES_DB: .*betterhome_$name\b" "$compose" || fail "compose.yml: the backup service does not dump betterhome_$name"
+done
+grep -q "^      - gotify-data:/data:ro\$" "$compose" || fail "compose.yml: Gotify's data is not backed up (read-only mount)"
+[ -x "$root/deploy/nas/update.sh" ] && [ -x "$root/deploy/nas/restore.sh" ] || fail "deploy/nas: update.sh and restore.sh must exist and be executable"
 
 grep -Eq '^ +ports:' "$compose" && fail "compose.yml: a port is published to the host, only Caddy may reach the stack"
 grep -Eq 'env_file|(^|[^$])\$\{' "$compose" && fail "compose.yml: it must not need a .env file or environment interpolation"
@@ -45,6 +55,11 @@ done || status=1
 
 # No real tailnet name or secret: host names are placeholders, passwords are CHANGE_ME.
 grep -Eoh '[A-Za-z0-9.-]+\.ts\.net' "$compose" "$caddy" "$root/deploy/nas/README.md" | grep -v '^nas\.example\.ts\.net$' | grep -q . && fail "deploy/nas: a .ts.net name other than nas.example.ts.net is committed"
-grep -Eq '(PASSWORD|SECRET): *[^C" ]' "$compose" && grep -E '(PASSWORD|SECRET): *[^C" ]' "$compose" | grep -vq 'OIDC_SERVICE_CLIENT_SECRET: local-dev-only-change-me' && fail "compose.yml: a password is not a CHANGE_ME placeholder"
+grep -E '(PASSWORD|SECRET): *' "$compose" | grep -vq 'CHANGE_ME' && fail "compose.yml: a password or secret is not a CHANGE_ME placeholder"
+# The realm baked into the Keycloak image reads its client secrets from the environment, never a literal value.
+grep -E '"secret": ' "$root/deploy/keycloak/realm-betterhome.json" | grep -v '"\${[A-Z_]*:local-dev-only-change-me}"' | grep -q . && fail "realm-betterhome.json: a client secret is a literal, use \${NAME:default}"
+for var in OIDC_SERVICE_CLIENT_SECRET API_CLIENT_SECRET; do
+  grep -q "^      $var: CHANGE_ME" "$compose" || fail "compose.yml: Keycloak is not given $var"
+done
 [ "$status" -ne 0 ] || echo "nas stack: routes, ports, images and placeholders match every service"
 exit "$status"

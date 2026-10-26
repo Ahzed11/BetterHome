@@ -229,6 +229,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signOut => 'Sign out';
 
   @override
+  String get serverSetupTitle => 'Connect to your server';
+
+  @override
+  String get serverSetupBody =>
+      'BetterHome runs on a server that you or a housemate host. Enter its address to sign in.';
+
+  @override
+  String get serverAddress => 'Server address';
+
+  @override
+  String get serverAddressHint => 'https://home.example.com';
+
+  @override
+  String get serverChecking => 'Checking…';
+
+  @override
+  String get serverInvalid =>
+      'Enter a web address, such as https://home.example.com';
+
+  @override
+  String get serverUnreachable =>
+      'No BetterHome server answered at this address. Check it and your connection.';
+
+  @override
+  String get serverChange => 'Change server';
+
+  @override
+  String serverCurrent(String host) {
+    return 'Server: $host';
+  }
+
+  @override
   String get deleteAccount => 'Delete my account';
 
   @override
