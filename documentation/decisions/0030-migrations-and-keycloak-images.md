@@ -16,6 +16,6 @@ The databases themselves are created by a one-shot `postgres` container in the C
 ## Consequences
 
 - Every merge into `master` publishes seven images instead of five; the SQL and the realm of a given commit travel with its tag, so a stack on one tag cannot migrate with another's files.
-- The realm inside the image still holds the development client secrets until T-0109; the image is public like the repository.
+- The realm inside the image holds no secret: the client secrets are `${NAME:local-dev-only-change-me}` placeholders that Keycloak fills from its environment when it imports the realm (T-0109), so the public image can be used with real values set on the NAS. The import happens once, on a first start.
 - The local stack, `deploy/migrate.sh` and the OpenShift Jobs are unchanged.
 - `make test-images` builds two more images (a pull of the Flyway and Keycloak base images, and a Keycloak build step).

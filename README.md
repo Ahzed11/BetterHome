@@ -60,6 +60,15 @@ Without `API_BASE_URL` and `KEYCLOAK_ISSUER` the app runs in demo mode on in-mem
 
 `make seed` creates its demo users itself. Manual Keycloak user setup: [deploy/keycloak/README.md](deploy/keycloak/README.md).
 
+### Try the app on a phone
+
+`make apk` builds `app/build/app/outputs/flutter-apk/app-release.apk` (about 60 MB): a release-mode build signed with the debug key, which is meant for installing by hand, not for publishing. The published APK is built by the `release` workflow with the release key (see below). It checks the file it built (the `INTERNET` permission, the application id, no `.ts.net` name inside).
+
+- **Releases:** push a tag `v<version>` that matches `version:` in `app/pubspec.yaml` (for example `v0.1.0` for `0.1.0+1`). The `release` workflow builds the APK signed with the release key, refuses a debug-signed file, and publishes a GitHub Release with exactly one asset, `betterhome-<version>.apk`; the signing certificate's SHA-256 is in the release notes. The key exists only as the repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and `ANDROID_KEY_PASSWORD`, and in the owner's own backup of the keystore. If it is lost, no update can be installed over an existing install.
+- **Install:** enable "install unknown apps" for your file manager or browser on the phone, then open the APK, or run `adb install -r app-release.apk` over USB. A debug-signed build does not install over a build signed with another key (another machine's debug key, or a release key): uninstall the old one first.
+- **Which server:** the app asks for the server address on first launch (for example `https://nas.example.ts.net`, the name of your server of [deploy/nas](deploy/nas/README.md)), checks that a BetterHome server answers there and remembers it. "Change server" on the sign-in screen asks again. No address is inside the APK, so the same file works for every server. The build-time `--dart-define`s of development and `make e2e` still win when they are set.
+- **Sign-in** returns to the app through the redirect `com.betterhome.betterhome:/oauth2redirect`, which the realm already allows. The phone must be on the tailnet (Tailscale app) to reach the server.
+
 End-to-end journeys: `make e2e` runs them on the web build in headless Chrome. Choose the target with `E2E_TARGET=web|android` and reuse a running stack with `E2E_STACK=running` (after `make up`).
 
 ## Container images

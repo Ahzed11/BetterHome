@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/server_config.dart';
 import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
@@ -18,6 +19,7 @@ import 'package:betterhome/ui/screens/lists_screen.dart';
 import 'package:betterhome/ui/screens/notification_preferences_screen.dart';
 import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:betterhome/ui/screens/profile_sync_screen.dart';
+import 'package:betterhome/ui/screens/server_setup_screen.dart';
 import 'package:betterhome/ui/screens/sign_in_screen.dart';
 import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/ui/widgets/app_toast.dart';
@@ -120,6 +122,30 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.tap(finder);
   await tester.pumpAndSettle();
 }
+
+/// Types [address] into the server field and taps Continue, scrolling to the button first: at large
+/// text sizes it is below the fold.
+Future<void> _submitServer(
+  WidgetTester tester,
+  AppLocalizations l10n,
+  String address,
+) async {
+  // The text field has a Scrollable of its own: scroll the page, the first one.
+  final page = find.byType(Scrollable).first;
+  await tester.scrollUntilVisible(
+    find.byType(TextField),
+    100,
+    scrollable: page,
+  );
+  await tester.enterText(find.byType(TextField), address);
+  final button = find.widgetWithText(FilledButton, l10n.continueLabel);
+  await tester.scrollUntilVisible(button, 100, scrollable: page);
+  await _tap(tester, button);
+}
+
+/// The server setup screen with the answer of the server check decided by [check].
+Widget _serverSetup(Future<bool> Function(ServerConfig) check) =>
+    ServerSetupScreen(check: check, onSaved: (_) {}, onDemo: () {});
 
 /// Taps the delete-account button, scrolling to it first: at large text sizes it is below the fold.
 Future<void> _tapDeleteAccount(
@@ -233,6 +259,30 @@ final List<_Scenario> _scenarios = [
   _Scenario(
     'sign_in_failed',
     () async => SignInScreen(onSignIn: () {}, failed: true),
+  ),
+  _Scenario('server_setup', () async => _serverSetup((_) async => true)),
+  _Scenario(
+    'server_setup_invalid',
+    () async => _serverSetup((_) async => true),
+    act: (tester, l10n) => _submitServer(tester, l10n, 'ftp://home'),
+  ),
+  _Scenario(
+    'server_setup_unreachable',
+    () async => _serverSetup((_) async => false),
+    act: (tester, l10n) => _submitServer(tester, l10n, 'home.example.com'),
+  ),
+  _Scenario(
+    'server_setup_checking',
+    () async => _serverSetup((_) => Completer<bool>().future),
+    act: (tester, l10n) => _submitServer(tester, l10n, 'home.example.com'),
+  ),
+  _Scenario(
+    'sign_in_server',
+    () async => SignInScreen(
+      onSignIn: () {},
+      serverHost: 'home.example.com',
+      onChangeServer: () {},
+    ),
   ),
   _Scenario(
     'profile_sync',
