@@ -69,7 +69,7 @@ Without `API_BASE_URL` and `KEYCLOAK_ISSUER` the app runs in demo mode on in-mem
 - **Which server:** the app asks for the server address on first launch (for example `https://nas.example.ts.net`, the name of your server of [deploy/nas](deploy/nas/README.md)), checks that a BetterHome server answers there and remembers it. "Change server" on the sign-in screen asks again. No address is inside the APK, so the same file works for every server. The build-time `--dart-define`s of development and `make e2e` still win when they are set.
 - **Sign-in** returns to the app through the redirect `com.betterhome.betterhome:/oauth2redirect`, which the realm already allows. The phone must be on the tailnet (Tailscale app) to reach the server.
 
-End-to-end journeys: `make e2e` runs them on the web build in headless Chrome. Choose the target with `E2E_TARGET=web|android` and reuse a running stack with `E2E_STACK=running` (after `make up`).
+End-to-end journeys: `make e2e` runs them on the web build in headless Chrome. Choose the target with `E2E_TARGET=web|android` and reuse a running stack with `E2E_STACK=running` (after `COMPOSE_PROFILES=gotify GOTIFY_URL=http://gotify:80 make up`: the journeys check that a push reaches Gotify).
 
 ## Container images
 

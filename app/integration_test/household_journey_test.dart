@@ -23,6 +23,7 @@ const _tasksUrl = String.fromEnvironment('E2E_TASKS_URL');
 const _scoringUrl = String.fromEnvironment('E2E_SCORING_URL');
 const _listsUrl = String.fromEnvironment('E2E_LISTS_URL');
 const _notificationsUrl = String.fromEnvironment('E2E_NOTIFICATIONS_URL');
+const _gotifyAppToken = String.fromEnvironment('E2E_GOTIFY_APP_TOKEN');
 const _aliceToken = String.fromEnvironment('E2E_ACCESS_TOKEN');
 const _bobToken = String.fromEnvironment('E2E_ACCESS_TOKEN_BOB');
 const _carolToken = String.fromEnvironment('E2E_ACCESS_TOKEN_CAROL');
@@ -446,6 +447,10 @@ void main() {
       final alice = _sessionFor(_aliceToken);
       final bobApi = _sessionFor(_bobToken);
       final bobId = (await bobApi.repository.getMe()).id;
+      // Bob's Gotify application is his push target, so `tooling/e2e.sh` can check that the
+      // push arrived once the journeys are over.
+      await bobApi.notificationsRepository.registerPushTarget(_gotifyAppToken);
+      expect(await bobApi.notificationsRepository.hasPushTarget(), isTrue);
       await alice.repository.setAway(householdId, bobId);
       await _waitFor(
         () async => (await bobApi.notificationsRepository.list(

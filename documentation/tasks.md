@@ -751,11 +751,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0077 · Fake push gateway endpoint for e2e
 
-* Status: todo
+* Status: in-review
 * Issue / PR: — (suggested: "Fake push gateway for e2e")
 * Depends on: T-0021, T-0027
 * Spec: AGENTS §6.2, §3 Push
 * Acceptance criteria: (Gotify since T-0027, ADR 0027: the fake is a Gotify-compatible `POST /message` endpoint, `GOTIFY_URL` points at it, and the journey registers a token through `PUT /v1/push-target`.) The local and e2e stack runs a fake push gateway endpoint that records what notifications-service sends; e2e journeys assert on it (type, language, minimal payload). Needed by the M6 exit.
+* Summary: `make e2e` starts the stack with the optional `gotify` profile and `GOTIFY_URL=http://gotify:80`, waits for Gotify, creates an application through its API and passes its token to the journeys (`E2E_GOTIFY_APP_TOKEN`). The notifications journey registers that token as bob's push target (`PUT /v1/push-target`) before alice marks him away; after the journeys, `tooling/e2e.sh` reads the application's messages and requires a "Marked away" push whose `betterhome::push` extras hold the type `marked_away` and nothing else.
+* Decisions and deviations: the recording endpoint is the real Gotify server of the local stack, not a hand-written fake: it already records every message and exposes them through its API, so there is no extra server to maintain and the request is checked against what Gotify really accepts. The check runs in the script, not in the Dart journey, because the web journey runs in a browser that cannot read another origin without CORS on Gotify. Only the English text is asserted: the journeys' users use the default language; a French assertion needs a user with that language setting and is left out. A stack started by hand (`E2E_STACK=running`) needs `COMPOSE_PROFILES=gotify GOTIFY_URL=http://gotify:80`; the script says so when Gotify is missing.
+* Verification: `bash -n tooling/e2e.sh` and the jq filter tried on matching, extra-key and missing messages. **Not run:** `make e2e` and the Android target: this environment has no Podman, Flutter or Chrome, so the CI `e2e` job on the pull request is the first real run.
+* Follow-ups: none new.
 
 ### T-0078 · `make check` runs the e2e suite
 
@@ -841,15 +845,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0086 · App: push permission prompt and device token registration
 
-* Status: in-progress
+* Status: in-review
 * Issue / PR: #125 / (pull request to follow)
 * Depends on: T-0027, T-0028
 * Spec: §5
 * Acceptance criteria: Split from T-0028 on 2026-10-14. The app asks for push permission at a sensible moment (not at first launch), obtains the FCM or APNs token and registers it through the device-token API of T-0027, and removes it on sign-out. (Gotify since T-0027, ADR 0027: there is no OS token or permission prompt; the user pastes the application token of their Gotify app, the app registers it with `PUT /v1/push-target` and removes it with `DELETE` on sign-out.) FR/EN, widget tests with a fake of the vendor boundary, e2e against the fake push endpoint (T-0077). Android only until iOS signing exists.
 * Summary: the notification settings screen has a "Push notifications" card: it says whether a Gotify token is registered, takes the application token (trimmed, checked against the contract's `[A-Za-z0-9._~-]` pattern before sending) and registers it with `PUT /v1/push-target`, and offers "Stop push notifications" (`DELETE`) while one is registered. `NotificationsRepository` gained `hasPushTarget` (`GET`, 404 means none), `registerPushTarget` and `removePushTarget`; the fake keeps the token for tests. Signing out removes the target first, while the access token is still valid. FR and EN strings; goldens `notification_settings_populated` regenerated and `notification_settings_push_on` added.
 * Decisions and deviations: no OS permission prompt exists with Gotify (ADR 0027), so there is no "sensible moment" prompt: the card lives in the settings the bell opens. If removing the target fails at sign-out (offline, server down), the app signs out anyway rather than trapping the user; the target stays until the next registration or account deletion. Account deletion skips the removal (the server drops the target with the account). No new ADR: ADR 0027 already decides this.
-* Verification: `make test-app` (format, analyze, widget, repository-against-contract and golden tests). Not done: the e2e journey against the fake push endpoint, because it needs T-0077 (still todo); the app was not launched against a real Gotify server. Both remain open, so this entry stays `in-progress` until T-0077 lets the journey be written.
-* Follow-ups: the e2e journey (register a token, see the fake endpoint receive a message, sign out and see it stop) once T-0077 is done.
+* Verification: `make test-app` (format, analyze, widget, repository-against-contract and golden tests). Not done: the e2e journey against the fake push endpoint, because it needs T-0077 (still todo); the app was not launched against a real Gotify server. The e2e part is now in the T-0077 change (see below); its first real run is the CI `e2e` job.
+* Follow-ups: the e2e covers registering the token through the repository and the push arriving at Gotify (checked by `tooling/e2e.sh`, T-0077). It does not drive the settings card in the browser, nor sign-out removing the target: both are covered by widget tests only. Not launched against a Gotify Android client (T-0114).
 
 ### T-0087 · The ledger sum can go below zero after an adjustment followed by a reversal
 
