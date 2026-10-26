@@ -1,9 +1,11 @@
 package com.betterhome.common;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
@@ -28,5 +30,20 @@ class SystemClockTest {
         Instant second = clock.now();
 
         assertFalse(second.isBefore(first));
+    }
+
+    @Test
+    void runsAheadOfTheSystemTimeByTheShiftAndBackWhenItIsRemoved() {
+        SystemClock clock = new SystemClock();
+        assertEquals(Duration.ZERO, clock.offset());
+
+        clock.shiftBy(Duration.ofDays(2));
+        Instant shifted = clock.now();
+        assertEquals(Duration.ofDays(2), clock.offset());
+        assertTrue(shifted.isAfter(Instant.now().plus(Duration.ofDays(2)).minusSeconds(5)));
+        assertTrue(shifted.isBefore(Instant.now().plus(Duration.ofDays(2)).plusSeconds(5)));
+
+        clock.shiftBy(Duration.ZERO);
+        assertTrue(clock.now().isBefore(Instant.now().plusSeconds(5)));
     }
 }

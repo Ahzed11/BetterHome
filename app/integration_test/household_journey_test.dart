@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:betterhome/app.dart';
 import 'package:betterhome/data/api_support.dart';
 import 'package:betterhome/data/households_repository.dart';
@@ -14,6 +16,7 @@ import 'package:betterhome/ui/widgets/quick_log_sheet.dart';
 import 'package:betterhome_api/api.dart' as api;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
 
 /// Values come from `tooling/e2e.sh` (`--dart-define`), which also boots the stack and
@@ -57,6 +60,20 @@ AppSession _sessionFor(String token) => AppSession(
     accessToken: () => token,
   ),
 );
+
+/// Runs the clock of the tasks service [shift] ahead of the real time, so a journey can reach a due
+/// date without waiting for it. The endpoint exists only on the e2e stack (`tooling/e2e.sh`).
+Future<void> _shiftTasksClock(Duration shift) async {
+  final response = await http.put(
+    Uri.parse('$_tasksUrl/v1/test/clock'),
+    headers: {
+      'Authorization': 'Bearer $_aliceToken',
+      'Content-Type': 'application/json',
+    },
+    body: jsonEncode({'offsetSeconds': shift.inSeconds}),
+  );
+  expect(response.statusCode, 200, reason: 'test clock: ${response.body}');
+}
 
 /// Waits on real time until [finder] matches: the answers come from the network, which
 /// `pumpAndSettle` does not wait for.
@@ -485,6 +502,75 @@ void main() {
       await _back(tester);
       await _back(tester);
       await _see(tester, find.byTooltip('Notifications'));
+    },
+  );
+
+  testWidgets(
+    'time travel: a daily recurrence rotates between members and supersedes the open task',
+    (tester) async {
+      final alice = _sessionFor(_aliceToken);
+      final bob = _sessionFor(_bobToken);
+      final home = await alice.repository.createHousehold(
+        name: 'E2E clock home ${DateTime.now().millisecondsSinceEpoch}',
+        timezone: 'UTC',
+      );
+      final invitation = await alice.repository.createInvitation(
+        householdId: home.id,
+        email: _bobEmail,
+      );
+      await bob.repository.acceptInvitation(invitation.token);
+      final template = await alice.tasksRepository.createTemplate(
+        householdId: home.id,
+        title: 'Clock chore',
+        description: '',
+        points: 3,
+        latePoints: 1,
+      );
+      await alice.tasksRepository.upsertRecurrence(
+        householdId: home.id,
+        templateId: template.id,
+        rrule: 'FREQ=DAILY',
+        assignmentMode: AssignmentMode.roundRobin,
+      );
+
+      Future<List<ChoreTask>> tasksOf(TaskStatus status) async {
+        final all = await alice.tasksRepository.listTasks(
+          home.id,
+          status: status,
+        );
+        return all.where((t) => t.templateId == template.id).toList();
+      }
+
+      // The first occurrence is the start of the recurrence: the scheduler spawns it within seconds.
+      late ChoreTask first;
+      await _waitFor(() async {
+        final open = await tasksOf(TaskStatus.open);
+        if (open.isEmpty) {
+          return false;
+        }
+        first = open.single;
+        return true;
+      }, 'the first occurrence of the recurrence');
+
+      // A day and a half later the second occurrence is due: it goes to the other member and the
+      // first one, still open, is dismissed as superseded.
+      try {
+        await _shiftTasksClock(const Duration(hours: 36));
+        late ChoreTask second;
+        await _waitFor(() async {
+          final open = await tasksOf(TaskStatus.open);
+          if (open.length != 1 || open.single.id == first.id) {
+            return false;
+          }
+          second = open.single;
+          return true;
+        }, 'the second occurrence of the recurrence');
+        expect(second.assigneeId, isNot(first.assigneeId));
+        final dismissed = await tasksOf(TaskStatus.dismissed);
+        expect(dismissed.map((t) => t.id), [first.id]);
+      } finally {
+        await _shiftTasksClock(Duration.zero);
+      }
     },
   );
 

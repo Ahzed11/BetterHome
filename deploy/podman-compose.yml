@@ -22,6 +22,8 @@ x-service-env: &service-env
   # then open Jaeger on http://localhost:16686 (services ship OTLP/gRPC to jaeger:4317).
   OTEL_TRACES_SAMPLER: ${OTEL_TRACES_SAMPLER:-parentbased_always_off}
   OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}
+  # Lets the e2e journeys move the clock of a service (/v1/test/clock). Off unless tooling/e2e.sh turns it on.
+  BETTERHOME_TEST_CLOCK_ENABLED: ${BETTERHOME_TEST_CLOCK_ENABLED:-false}
 
 services:
   postgres:
