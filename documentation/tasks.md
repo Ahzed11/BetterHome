@@ -986,11 +986,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0103 · App: contrast of the dialog buttons in lists and the text prompt
 
-* Status: todo
-* Issue / PR: — (suggested: "App: AlertDialog buttons below 4.5:1 contrast")
+* Status: in-review
+* Issue / PR: — / (this PR)
 * Depends on: T-0059
 * Spec: AGENTS §5.2
 * Acceptance criteria: The archive-list confirmation (`lists_screen.dart`) and `promptForText` use the same dialog surface as the dialogs fixed in T-0059 (or the theme sets it for all dialogs, with the month-recap golden regenerated), and scenarios open them with the accessibility checks.
+* Summary: The archive-list confirmation and `promptForText` set `backgroundColor: AppTokens.card`, as the dialogs of T-0059 do. `screens_baseline_test.dart` gains `lists_new_list_dialog`, `lists_rename_dialog` and `lists_archive_dialog` (accessibility, 200% text scale and golden, FR and EN): 6 new goldens, no existing golden changed.
+* Decisions and deviations: Same choice as T-0059: no global `dialogTheme`, because it would change the month-recap dialog and its goldens.
+* Verification: with the two production changes stashed, 6 of the new accessibility checks fail; with them, `make update-goldens` then `flutter test`, `flutter analyze` and `dart format` in `app/` pass. Not run: e2e, CI.
+
 ### T-0101 · Recurrence: an occurrence in a daylight-saving gap at the end of the day moved to the next day
 
 * Status: done

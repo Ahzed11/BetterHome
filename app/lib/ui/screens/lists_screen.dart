@@ -177,6 +177,7 @@ class _ListsScreenState extends State<ListsScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppTokens.card,
         title: Text(title),
         content: Text(body),
         actions: [

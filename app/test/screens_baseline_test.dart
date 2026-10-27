@@ -514,6 +514,44 @@ final List<_Scenario> _scenarios = [
     ),
   ),
   _Scenario(
+    'lists_new_list_dialog',
+    () async => ListsScreen(
+      session: await _listsSession(populated: true),
+      householdId: _household,
+    ),
+    act: (tester, l10n) async {
+      await _tap(tester, find.byTooltip(l10n.newList));
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'Pantry',
+      );
+      await tester.pumpAndSettle();
+    },
+  ),
+  _Scenario(
+    'lists_rename_dialog',
+    () async => ListsScreen(
+      session: await _listsSession(populated: true),
+      householdId: _household,
+    ),
+    act: (tester, l10n) async {
+      await _tap(tester, find.byTooltip(l10n.renameList));
+    },
+  ),
+  _Scenario(
+    'lists_archive_dialog',
+    () async => ListsScreen(
+      session: await _listsSession(populated: true),
+      householdId: _household,
+    ),
+    act: (tester, l10n) async {
+      await _tap(tester, find.byTooltip(l10n.archiveList));
+    },
+  ),
+  _Scenario(
     'notifications_loading',
     () async => NotificationsScreen(
       session: await _sessionWith(
