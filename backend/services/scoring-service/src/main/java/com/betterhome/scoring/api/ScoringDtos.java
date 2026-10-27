@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Positive;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 public final class ScoringDtos {
 
@@ -37,7 +38,10 @@ public final class ScoringDtos {
 
     /** Rows changed per kind by an account deletion; all zero when nothing was left. */
     public record ScoringAnonymizationResponse(
-            int ledgerRows, int reversions, int recapsWon, long celebrationsForgotten) {
+            @Schema(required = true) int ledgerRows,
+            @Schema(required = true) int reversions,
+            @Schema(required = true) int recapsWon,
+            @Schema(required = true) long celebrationsForgotten) {
 
         public static ScoringAnonymizationResponse from(AnonymizationService.Result result) {
             return new ScoringAnonymizationResponse(
@@ -49,14 +53,14 @@ public final class ScoringDtos {
     }
 
     public record TransactionResponse(
-            UUID id,
-            UUID householdId,
-            UUID userId,
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID householdId,
+            @Schema(required = true) UUID userId,
             UUID taskId,
             UUID reversionId,
-            int points,
-            PointReason reason,
-            Instant createdAt) {
+            @Schema(required = true) int points,
+            @Schema(required = true) PointReason reason,
+            @Schema(required = true) Instant createdAt) {
 
         public static TransactionResponse from(PointTransaction tx) {
             return new TransactionResponse(
@@ -72,14 +76,14 @@ public final class ScoringDtos {
     }
 
     public record ReversionResponse(
-            UUID id,
-            UUID householdId,
-            UUID taskId,
-            UUID adminUserId,
-            String reason,
-            int pointsReversed,
-            ReversionResultingStatus resultingStatus,
-            Instant createdAt) {
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID householdId,
+            @Schema(required = true) UUID taskId,
+            @Schema(required = true) UUID adminUserId,
+            @Schema(required = true) String reason,
+            @Schema(required = true) int pointsReversed,
+            @Schema(required = true) ReversionResultingStatus resultingStatus,
+            @Schema(required = true) Instant createdAt) {
 
         public static ReversionResponse from(TaskReversion reversion) {
             return new ReversionResponse(
@@ -94,7 +98,11 @@ public final class ScoringDtos {
         }
     }
 
-    public record ScoreEntryResponse(UUID userId, int points, double effortShare, int rank) {
+    public record ScoreEntryResponse(
+            @Schema(required = true) UUID userId,
+            @Schema(required = true) int points,
+            @Schema(required = true) double effortShare,
+            @Schema(required = true) int rank) {
 
         public static ScoreEntryResponse from(ScoreboardService.Entry entry) {
             return new ScoreEntryResponse(
@@ -103,13 +111,13 @@ public final class ScoringDtos {
     }
 
     public record ScoreboardResponse(
-            ScorePeriod period,
+            @Schema(required = true) ScorePeriod period,
             String yearMonth,
             Instant from,
             Instant to,
-            int totalPoints,
-            List<ScoreEntryResponse> entries,
-            List<ScoreEntryResponse> podium) {
+            @Schema(required = true) int totalPoints,
+            @Schema(required = true) List<ScoreEntryResponse> entries,
+            @Schema(required = true) List<ScoreEntryResponse> podium) {
 
         public static ScoreboardResponse from(ScoreboardService.Scoreboard board) {
             return new ScoreboardResponse(
@@ -125,11 +133,11 @@ public final class ScoringDtos {
 
     /** {@code celebrated}: whether the caller has already seen the confetti of this month. */
     public record WinnerResponse(
-            String yearMonth,
+            @Schema(required = true) String yearMonth,
             UUID winnerUserId,
-            int winnerPoints,
-            int totalPoints,
-            boolean celebrated) {
+            @Schema(required = true) int winnerPoints,
+            @Schema(required = true) int totalPoints,
+            @Schema(required = true) boolean celebrated) {
 
         public static WinnerResponse from(ScoreboardService.Winner winner) {
             return new WinnerResponse(
@@ -143,5 +151,5 @@ public final class ScoringDtos {
 
     public record CloseMonthRequest(@NotBlank String yearMonth) {}
 
-    public record CelebrationSeen(boolean seen) {}
+    public record CelebrationSeen(@Schema(required = true) boolean seen) {}
 }

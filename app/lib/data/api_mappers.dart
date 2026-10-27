@@ -1,4 +1,3 @@
-import 'package:betterhome/data/api_support.dart';
 import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/notifications_repository.dart';
@@ -6,34 +5,31 @@ import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome_api/api.dart' as api;
 
-// Generated response models have only nullable fields (the contract marks none as required),
-// so each mapper states which fields the app needs through `need`.
-
 UserProfile userProfileFromApi(api.UserResponse r) => UserProfile(
-  id: need(r.id, 'id'),
-  authSubject: need(r.authSubject, 'authSubject'),
-  email: need(r.email, 'email'),
-  givenName: r.givenName ?? '',
-  familyName: r.familyName ?? '',
-  language: r.language ?? 'en',
-  timezone: r.timezone ?? 'UTC',
+  id: r.id,
+  authSubject: r.authSubject,
+  email: r.email,
+  givenName: r.givenName,
+  familyName: r.familyName,
+  language: r.language,
+  timezone: r.timezone,
 );
 
 Household householdFromApi(api.HouseholdResponse r) => Household(
-  id: need(r.id, 'id'),
-  name: need(r.name, 'name'),
-  timezone: need(r.timezone, 'timezone'),
-  reminderDaysBefore: r.reminderDaysBefore ?? 0,
-  reminderTime: r.reminderTime ?? '08:00:00',
-  createdBy: need(r.createdBy, 'createdBy'),
+  id: r.id,
+  name: r.name,
+  timezone: r.timezone,
+  reminderDaysBefore: r.reminderDaysBefore,
+  reminderTime: r.reminderTime,
+  createdBy: r.createdBy,
 );
 
 Membership membershipFromApi(api.MembershipResponse r) => Membership(
-  id: need(r.id, 'id'),
-  userId: need(r.userId, 'userId'),
-  householdId: need(r.householdId, 'householdId'),
-  role: MembershipRole.values.byName(need(r.role, 'role').name),
-  joinedAt: need(r.joinedAt, 'joinedAt'),
+  id: r.id,
+  userId: r.userId,
+  householdId: r.householdId,
+  role: MembershipRole.values.byName(r.role.name),
+  joinedAt: r.joinedAt,
   awayFrom: r.awayFrom,
   awayUntil: r.awayUntil,
   awaySetBy: r.awaySetBy,
@@ -42,37 +38,37 @@ Membership membershipFromApi(api.MembershipResponse r) => Membership(
 );
 
 Invitation invitationFromApi(api.InvitationResponse r) => Invitation(
-  id: need(r.id, 'id'),
-  householdId: need(r.householdId, 'householdId'),
-  email: need(r.email, 'email'),
-  role: MembershipRole.values.byName(need(r.role, 'role').name),
-  token: need(r.token, 'token'),
-  expiresAt: need(r.expiresAt, 'expiresAt'),
+  id: r.id,
+  householdId: r.householdId,
+  email: r.email,
+  role: MembershipRole.values.byName(r.role.name),
+  token: r.token,
+  expiresAt: r.expiresAt,
   acceptedAt: r.acceptedAt,
 );
 
 TaskTemplate taskTemplateFromApi(api.TemplateResponse r) => TaskTemplate(
-  id: need(r.id, 'id'),
-  householdId: need(r.householdId, 'householdId'),
-  title: need(r.title, 'title'),
+  id: r.id,
+  householdId: r.householdId,
+  title: r.title,
   emoji: r.emoji,
-  description: r.description ?? '',
-  points: need(r.points, 'points'),
-  latePoints: need(r.latePoints, 'latePoints'),
-  defaultDueOffsetMinutes: r.defaultDueOffsetMinutes ?? 1440,
+  description: r.description,
+  points: r.points,
+  latePoints: r.latePoints,
+  defaultDueOffsetMinutes: r.defaultDueOffsetMinutes,
 );
 
 ChoreTask choreTaskFromApi(api.TaskResponse r) => ChoreTask(
-  id: need(r.id, 'id'),
-  householdId: need(r.householdId, 'householdId'),
-  templateId: need(r.templateId, 'templateId'),
-  origin: TaskOrigin.values.byName(need(r.origin, 'origin').name),
-  title: need(r.title, 'title'),
+  id: r.id,
+  householdId: r.householdId,
+  templateId: r.templateId,
+  origin: TaskOrigin.values.byName(r.origin.name),
+  title: r.title,
   emoji: r.emoji,
-  points: need(r.points, 'points'),
-  latePoints: need(r.latePoints, 'latePoints'),
-  status: TaskStatus.values.byName(need(r.status, 'status').name),
-  assigneeId: need(r.assigneeId, 'assigneeId'),
+  points: r.points,
+  latePoints: r.latePoints,
+  status: TaskStatus.values.byName(r.status.name),
+  assigneeId: r.assigneeId,
   dueAt: r.dueAt,
   completedAt: r.completedAt,
   pointsAwarded: r.pointsAwarded,
@@ -81,73 +77,71 @@ ChoreTask choreTaskFromApi(api.TaskResponse r) => ChoreTask(
 
 TaskRecurrence taskRecurrenceFromApi(api.RecurrenceResponse r) =>
     TaskRecurrence(
-      id: need(r.id, 'id'),
-      householdId: need(r.householdId, 'householdId'),
-      templateId: need(r.templateId, 'templateId'),
-      rrule: need(r.rrule, 'rrule'),
-      assignmentMode: AssignmentMode.values.byName(
-        need(r.assignmentMode, 'assignmentMode').name,
-      ),
+      id: r.id,
+      householdId: r.householdId,
+      templateId: r.templateId,
+      rrule: r.rrule,
+      assignmentMode: AssignmentMode.values.byName(r.assignmentMode.name),
       fixedAssigneeId: r.fixedAssigneeId,
-      timezone: need(r.timezone, 'timezone'),
-      startsAt: need(r.startsAt, 'startsAt'),
+      timezone: r.timezone,
+      startsAt: r.startsAt,
       endsAt: r.endsAt,
       lastGeneratedAt: r.lastGeneratedAt,
       nextRunAt: r.nextRunAt,
     );
 
 ScoreEntry scoreEntryFromApi(api.ScoreEntryResponse r) => ScoreEntry(
-  userId: need(r.userId, 'userId'),
-  points: need(r.points, 'points'),
-  effortShare: need(r.effortShare, 'effortShare'),
-  rank: need(r.rank, 'rank'),
+  userId: r.userId,
+  points: r.points,
+  effortShare: r.effortShare,
+  rank: r.rank,
 );
 
 Scoreboard scoreboardFromApi(api.ScoreboardResponse r) => Scoreboard(
-  period: ScorePeriod.values.byName(need(r.period, 'period').name),
+  period: ScorePeriod.values.byName(r.period.name),
   yearMonth: r.yearMonth,
-  totalPoints: need(r.totalPoints, 'totalPoints'),
+  totalPoints: r.totalPoints,
   entries: r.entries.map(scoreEntryFromApi).toList(),
   podium: r.podium.map(scoreEntryFromApi).toList(),
 );
 
 MonthlyWinner monthlyWinnerFromApi(api.WinnerResponse r) => MonthlyWinner(
-  yearMonth: need(r.yearMonth, 'yearMonth'),
+  yearMonth: r.yearMonth,
   winnerUserId: r.winnerUserId,
-  winnerPoints: need(r.winnerPoints, 'winnerPoints'),
-  totalPoints: need(r.totalPoints, 'totalPoints'),
-  celebrated: need(r.celebrated, 'celebrated'),
+  winnerPoints: r.winnerPoints,
+  totalPoints: r.totalPoints,
+  celebrated: r.celebrated,
 );
 
 Checklist checklistFromApi(api.ListResponse r) => Checklist(
-  id: need(r.id, 'id'),
-  householdId: need(r.householdId, 'householdId'),
-  title: need(r.title, 'title'),
+  id: r.id,
+  householdId: r.householdId,
+  title: r.title,
   archivedAt: r.archivedAt,
 );
 
 ChecklistItem checklistItemFromApi(api.ItemResponse r) => ChecklistItem(
-  id: need(r.id, 'id'),
-  listId: need(r.listId, 'listId'),
-  title: need(r.title, 'title'),
-  position: need(r.position, 'position'),
+  id: r.id,
+  listId: r.listId,
+  title: r.title,
+  position: r.position,
   completedAt: r.completedAt,
 );
 
 AppNotification appNotificationFromApi(api.NotificationResponse r) =>
     AppNotification(
-      id: need(r.id, 'id'),
-      type: NotificationType.values.byName(need(r.type, 'type').name),
-      title: need(r.title, 'title'),
-      body: need(r.body, 'body'),
-      createdAt: need(r.createdAt, 'createdAt'),
+      id: r.id,
+      type: NotificationType.values.byName(r.type.name),
+      title: r.title,
+      body: r.body,
+      createdAt: r.createdAt,
       readAt: r.readAt,
     );
 
 NotificationPreference notificationPreferenceFromApi(
   api.PreferenceResponse r,
 ) => NotificationPreference(
-  type: NotificationType.values.byName(need(r.type, 'type').name),
-  channel: NotificationChannel.values.byName(need(r.channel, 'channel').name),
-  enabled: need(r.enabled, 'enabled'),
+  type: NotificationType.values.byName(r.type.name),
+  channel: NotificationChannel.values.byName(r.channel.name),
+  enabled: r.enabled,
 );

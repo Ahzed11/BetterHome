@@ -48,6 +48,8 @@ components:
           maxLength: 8
     IngestResponse:
       type: object
+      required:
+      - outcome
       properties:
         outcome:
           $ref: "#/components/schemas/Outcome"
@@ -60,6 +62,15 @@ components:
       - 2022-03-10T16:15:50Z
     NotificationResponse:
       type: object
+      required:
+      - id
+      - householdId
+      - type
+      - channel
+      - title
+      - body
+      - payload
+      - createdAt
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -79,6 +90,7 @@ components:
             type: string
         createdAt:
           $ref: "#/components/schemas/Instant"
+          type: string
         readAt:
           $ref: "#/components/schemas/Instant"
     NotificationType:
@@ -95,6 +107,9 @@ components:
       - invitation
     NotificationsAnonymizationResponse:
       type: object
+      required:
+      - notificationsDeleted
+      - preferencesDeleted
       properties:
         notificationsDeleted:
           type: integer
@@ -110,6 +125,10 @@ components:
       - suppressed
     PreferenceResponse:
       type: object
+      required:
+      - type
+      - channel
+      - enabled
       properties:
         type:
           $ref: "#/components/schemas/NotificationType"
@@ -119,11 +138,16 @@ components:
           type: boolean
     PushTargetResponse:
       type: object
+      required:
+      - registeredAt
       properties:
         registeredAt:
           $ref: "#/components/schemas/Instant"
+          type: string
     ReadAllResponse:
       type: object
+      required:
+      - updated
       properties:
         updated:
           type: integer
@@ -139,6 +163,10 @@ components:
           maxLength: 128
     ServiceInfo:
       type: object
+      required:
+      - service
+      - now
+      - authSubject
       properties:
         service:
           type: string

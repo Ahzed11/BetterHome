@@ -127,7 +127,7 @@ class HttpNotificationsRepository implements NotificationsRepository {
   @override
   Future<int> markAllRead() async {
     final result = await call(_notifications.markAllMyNotificationsRead);
-    return need(result.updated, 'updated');
+    return result.updated;
   }
 
   @override

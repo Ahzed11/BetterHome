@@ -55,5 +55,8 @@ public class ServiceInfoResource {
     }
 
     /** Who answered, when, and which subject the caller authenticated as (empty if unknown). */
-    public record ServiceInfo(String service, String now, String authSubject) {}
+    public record ServiceInfo(
+            @Schema(required = true) String service,
+            @Schema(required = true) String now,
+            @Schema(required = true) String authSubject) {}
 }

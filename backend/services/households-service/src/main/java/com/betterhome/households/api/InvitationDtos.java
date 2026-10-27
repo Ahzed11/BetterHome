@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 public final class InvitationDtos {
 
@@ -16,12 +17,12 @@ public final class InvitationDtos {
             @NotBlank @Email String email, @NotNull MembershipRole role) {}
 
     public record InvitationResponse(
-            UUID id,
-            UUID householdId,
-            String email,
-            MembershipRole role,
-            String token,
-            Instant expiresAt,
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID householdId,
+            @Schema(required = true) String email,
+            @Schema(required = true) MembershipRole role,
+            @Schema(required = true) String token,
+            @Schema(required = true) Instant expiresAt,
             Instant acceptedAt) {
 
         public static InvitationResponse from(Invitation invitation) {

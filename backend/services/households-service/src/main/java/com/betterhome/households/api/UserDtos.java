@@ -4,6 +4,7 @@ import com.betterhome.households.domain.AppUser;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 public final class UserDtos {
 
@@ -17,13 +18,13 @@ public final class UserDtos {
             String timezone) {}
 
     public record UserResponse(
-            UUID id,
-            UUID authSubject,
-            String email,
-            String givenName,
-            String familyName,
-            String language,
-            String timezone) {
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID authSubject,
+            @Schema(required = true) String email,
+            @Schema(required = true) String givenName,
+            @Schema(required = true) String familyName,
+            @Schema(required = true) String language,
+            @Schema(required = true) String timezone) {
 
         public static UserResponse from(AppUser user) {
             return new UserResponse(

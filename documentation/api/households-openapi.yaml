@@ -46,6 +46,13 @@ components:
           type: string
     HouseholdResponse:
       type: object
+      required:
+      - id
+      - name
+      - timezone
+      - reminderDaysBefore
+      - reminderTime
+      - createdBy
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -74,6 +81,12 @@ components:
       - 2022-03-10T16:15:50Z
     InternalMemberResponse:
       type: object
+      required:
+      - userId
+      - authSubject
+      - role
+      - away
+      - joinedAt
       properties:
         userId:
           $ref: "#/components/schemas/UUID"
@@ -85,8 +98,13 @@ components:
           type: boolean
         joinedAt:
           $ref: "#/components/schemas/Instant"
+          type: string
     InternalSettingsResponse:
       type: object
+      required:
+      - timezone
+      - reminderDaysBefore
+      - reminderTime
       properties:
         timezone:
           type: string
@@ -104,6 +122,10 @@ components:
           - 08:00:00
     InternalUserResponse:
       type: object
+      required:
+      - userId
+      - authSubject
+      - language
       properties:
         userId:
           $ref: "#/components/schemas/UUID"
@@ -113,6 +135,13 @@ components:
           type: string
     InvitationResponse:
       type: object
+      required:
+      - id
+      - householdId
+      - email
+      - role
+      - token
+      - expiresAt
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -126,6 +155,7 @@ components:
           type: string
         expiresAt:
           $ref: "#/components/schemas/Instant"
+          type: string
         acceptedAt:
           $ref: "#/components/schemas/Instant"
     LocalTime:
@@ -136,6 +166,12 @@ components:
         url: https://www.rfc-editor.org/rfc/rfc3339.html#section-5.6
     MembershipResponse:
       type: object
+      required:
+      - id
+      - userId
+      - householdId
+      - role
+      - joinedAt
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -147,6 +183,7 @@ components:
           $ref: "#/components/schemas/MembershipRole"
         joinedAt:
           $ref: "#/components/schemas/Instant"
+          type: string
         awayFrom:
           $ref: "#/components/schemas/Instant"
         awayUntil:
@@ -164,6 +201,10 @@ components:
       - member
     ServiceInfo:
       type: object
+      required:
+      - service
+      - now
+      - authSubject
       properties:
         service:
           type: string
@@ -219,6 +260,14 @@ components:
           - 08:00:00
     UserResponse:
       type: object
+      required:
+      - id
+      - authSubject
+      - email
+      - givenName
+      - familyName
+      - language
+      - timezone
       properties:
         id:
           $ref: "#/components/schemas/UUID"
