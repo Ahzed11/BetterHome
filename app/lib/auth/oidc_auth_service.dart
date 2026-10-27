@@ -5,7 +5,9 @@ import 'package:oidc/oidc.dart';
 import 'package:oidc_default_store/oidc_default_store.dart';
 
 /// Keycloak sign-in with the authorization code flow and PKCE, on Android and on the web.
-/// The manager refreshes the access token before it expires.
+/// The manager refreshes the access token before it expires. On the web the tokens live in memory
+/// only, so no script on the page can read them from browser storage; a reload signs the user out
+/// (ADR 0020). Android keeps them in the platform's secure storage.
 class OidcAuthService implements AuthService {
   OidcAuthService({
     required Uri issuer,
@@ -13,10 +15,11 @@ class OidcAuthService implements AuthService {
     required Uri redirectUri,
     required Uri postLogoutRedirectUri,
     http.Client? httpClient,
+    OidcStore? store,
   }) : _manager = OidcUserManager.lazy(
          discoveryDocumentUri: OidcUtils.getOpenIdConfigWellKnownUri(issuer),
          clientCredentials: OidcClientAuthentication.none(clientId: clientId),
-         store: OidcDefaultStore(),
+         store: store ?? (kIsWeb ? OidcMemoryStore() : OidcDefaultStore()),
          httpClient: httpClient,
          settings: OidcUserManagerSettings(
            scope: const ['openid', 'profile', 'email'],

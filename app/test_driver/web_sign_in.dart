@@ -83,6 +83,16 @@ Future<void> _journey(
     'the households screen',
   );
 
+  // The tokens are kept in memory only (T-0072): nothing token-like in browser storage.
+  final stored = await driver.execute(
+    'return Object.keys(localStorage).concat(Object.keys(sessionStorage))'
+    ".filter(function (k) { return /token/i.test(k) || /token/i.test(localStorage.getItem(k) || ''); });",
+    [],
+  );
+  if ((stored as List<Object?>).isNotEmpty) {
+    throw StateError('Tokens found in browser storage: $stored');
+  }
+
   await _click(driver, 'Sign out');
   await _until(
     () => _contains(driver, 'Welcome to BetterHome'),
