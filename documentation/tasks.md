@@ -723,9 +723,10 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0072 · Decide where the web build keeps its tokens
 
-* Status: todo
+* Status: in-review
 * Issue / PR: — (suggested: "Web tokens are stored in localStorage")
-* Decisions and deviations: Product decision from the owner: in memory only (re-login on reload, no full-page redirect).
+* Decisions and deviations: Product decision from the owner: in memory only. On web `OidcAuthService` uses `OidcMemoryStore`, so a reload signs the user out; sign-in already opens in a new tab and answers over a `BroadcastChannel`, so no full-page redirect is involved. Android keeps `oidc_default_store`. ADR 0020 updated. The web sign-in journey checks that no token-like key is in `localStorage` or `sessionStorage`.
+* Verification: `make e2e` (JDK 21, Podman) passes, including `web_sign_in.dart`. Not covered: that a reload signs out (the journey ends with sign-out), Android.
 * Depends on: T-0006
 * Spec: §9, AGENTS §8
 * Acceptance criteria: Decide between the library's default (browser `localStorage`, session survives a reload, readable by any script injected into the page) and an in-memory store (needs a re-login on reload, and the sign-in must then avoid a full-page redirect); implement the choice and record it in ADR 0020.
