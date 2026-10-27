@@ -61,7 +61,8 @@ Shared memory for agents and humans. Read before starting; update before finishi
 
 ## In progress
 
-_(none)_
+* T-0080 · Restyle the existing screens with the shared widgets (slices done, see its entry)
+* T-0119 · e2e journeys that need the clock (3 of 4 done: the month-end recap journey is left)
 
 ## Roadmap
 
@@ -699,7 +700,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0071 · Contract: mark response fields as required
 
-* Status: in-review
+* Status: done
 * Issue / PR: — / (this PR)
 * Depends on: T-0019
 * Spec: AGENTS §5.1 (API contract), ADR 0006
@@ -827,7 +828,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0083 · Drop the unused title and body columns of tasks' outbox
 
-* Status: in-review
+* Status: done
 * Issue / PR: — / (this PR)
 * Depends on: T-0026
 * Spec: AGENTS §4 (expand then contract)
@@ -973,7 +974,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0099 · Local stack Postgres on the Red Hat hardened image
 
-* Status: in-review
+* Status: done
 * Issue / PR: — / (this PR)
 * Depends on: T-0098
 * Spec: —
@@ -995,7 +996,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0103 · App: contrast of the dialog buttons in lists and the text prompt
 
-* Status: in-review
+* Status: done
 * Issue / PR: — / (this PR)
 * Depends on: T-0059
 * Spec: AGENTS §5.2
