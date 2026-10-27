@@ -61,7 +61,8 @@ Shared memory for agents and humans. Read before starting; update before finishi
 
 ## In progress
 
-_(none)_
+* T-0080 · Restyle the existing screens with the shared widgets (slices done, see its entry)
+* T-0119 · e2e journeys that need the clock (3 of 4 done: the month-end recap journey is left)
 
 ## Roadmap
 
