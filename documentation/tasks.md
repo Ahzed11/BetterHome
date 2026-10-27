@@ -699,11 +699,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0071 · Contract: mark response fields as required
 
-* Status: todo
-* Issue / PR: — (suggested: "OpenAPI response fields are all optional")
+* Status: in-review
+* Issue / PR: — / (this PR)
 * Depends on: T-0019
 * Spec: AGENTS §5.1 (API contract), ADR 0006
 * Acceptance criteria: Response records of every service declare their always-present fields as required in the generated OpenAPI (for example `@Schema(required = true)` or `@NotNull`), so the generated Dart models are non-nullable and `need` in `app/lib/data/api_mappers.dart` can go. Contract and committed documents regenerated; the response validation (T-0039) keeps passing.
+* Summary: Every response record of the five services marks its always-present fields `@Schema(required = true)`, including primitives (SmallRye does not mark `int` or `boolean` as required by itself); the nullable ones stay unmarked, decided from the database columns (`NOT NULL` or not) and the mapping code: for example `archivedAt`, `completedAt`, `dueAt`, `emoji`, `readAt`, the optional away and winner fields, and `IngestResponse.notification` (absent when an event is suppressed). The five `*-openapi.yaml` files and the aggregate are regenerated. In the app, the regenerated Dart models have non-nullable required fields, so `need` and the `?? default` fallbacks in `api_mappers.dart` are gone.
+* Decisions and deviations: A response that lacks a required field now fails inside the generated model (an assertion in debug builds, a type error in release builds), so `call` in `api_support.dart` converts those two typed errors into `ApiException`, which keeps the behavior the user sees (an error, not a crash) and the existing test. Request records are unchanged. `ServiceInfo.authSubject` is required: it is the empty string, never null, when unknown. `ScoreboardResponse.yearMonth`, `from` and `to` stay optional: the first e2e run found them absent for the week and all-time views.
+* Verification: `make openapi`; `make test-backend` per service on JDK 21 for scoring, lists, notifications and tasks (pass, with the contract and response validation tests); `make test-app`; `make e2e` (all journeys pass; a first run failed on the scoreboard fields above, which is how they were found). households-service: 88 tests pass, but `HttpNotificationsGatewayTest.aDroppedConnectionIsWorthRetrying` errors with a Testcontainers Postgres start failure (`Broken pipe`) and skips the other 12 tests of its class; it fails the same way on an unchanged `master` on this VM, so it is not caused by this change. Not run: CI.
 
 ### T-0072 · Decide where the web build keeps its tokens
 

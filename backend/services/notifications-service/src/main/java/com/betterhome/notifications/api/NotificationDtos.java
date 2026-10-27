@@ -14,20 +14,21 @@ import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 public final class NotificationDtos {
 
     private NotificationDtos() {}
 
     public record NotificationResponse(
-            UUID id,
-            UUID householdId,
-            NotificationType type,
-            Channel channel,
-            String title,
-            String body,
-            Map<String, String> payload,
-            Instant createdAt,
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID householdId,
+            @Schema(required = true) NotificationType type,
+            @Schema(required = true) Channel channel,
+            @Schema(required = true) String title,
+            @Schema(required = true) String body,
+            @Schema(required = true) Map<String, String> payload,
+            @Schema(required = true) Instant createdAt,
             Instant readAt) {
 
         public static NotificationResponse from(Notification notification) {
@@ -44,11 +45,12 @@ public final class NotificationDtos {
         }
     }
 
-    public record ReadAllResponse(int updated) {}
+    public record ReadAllResponse(@Schema(required = true) int updated) {}
 
     /** Rows deleted per kind by an account deletion; both zero when nothing was left. */
     public record NotificationsAnonymizationResponse(
-            long notificationsDeleted, long preferencesDeleted) {
+            @Schema(required = true) long notificationsDeleted,
+            @Schema(required = true) long preferencesDeleted) {
 
         public static NotificationsAnonymizationResponse from(AnonymizationService.Result result) {
             return new NotificationsAnonymizationResponse(
@@ -56,7 +58,10 @@ public final class NotificationDtos {
         }
     }
 
-    public record PreferenceResponse(NotificationType type, Channel channel, boolean enabled) {
+    public record PreferenceResponse(
+            @Schema(required = true) NotificationType type,
+            @Schema(required = true) Channel channel,
+            @Schema(required = true) boolean enabled) {
 
         public static PreferenceResponse from(PreferenceService.Preference preference) {
             return new PreferenceResponse(
@@ -71,7 +76,7 @@ public final class NotificationDtos {
             @NotBlank @Size(max = 128) @Pattern(regexp = "[A-Za-z0-9._~-]*") String token) {}
 
     /** Says that a target exists and since when; the token is never returned. */
-    public record PushTargetResponse(Instant registeredAt) {
+    public record PushTargetResponse(@Schema(required = true) Instant registeredAt) {
 
         public static PushTargetResponse from(PushTargetService.Registration registration) {
             return new PushTargetResponse(registration.registeredAt());
@@ -88,5 +93,6 @@ public final class NotificationDtos {
             @Size(max = 8) String localeHint) {}
 
     public record IngestResponse(
-            IngestService.Outcome outcome, NotificationResponse notification) {}
+            @Schema(required = true) IngestService.Outcome outcome,
+            NotificationResponse notification) {}
 }

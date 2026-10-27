@@ -6,6 +6,7 @@ import com.betterhome.lists.service.AnonymizationService;
 import jakarta.validation.constraints.NotBlank;
 import java.time.Instant;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 public final class ListDtos {
 
@@ -14,11 +15,11 @@ public final class ListDtos {
     public record TitleRequest(@NotBlank String title) {}
 
     public record ListResponse(
-            UUID id,
-            UUID householdId,
-            String title,
-            UUID createdBy,
-            Instant createdAt,
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID householdId,
+            @Schema(required = true) String title,
+            @Schema(required = true) UUID createdBy,
+            @Schema(required = true) Instant createdAt,
             Instant archivedAt) {
 
         public static ListResponse from(Checklist list) {
@@ -33,11 +34,11 @@ public final class ListDtos {
     }
 
     public record ItemResponse(
-            UUID id,
-            UUID listId,
-            String title,
-            int position,
-            UUID creator,
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID listId,
+            @Schema(required = true) String title,
+            @Schema(required = true) int position,
+            @Schema(required = true) UUID creator,
             UUID completer,
             Instant completedAt) {
 
@@ -55,7 +56,10 @@ public final class ListDtos {
 
     /** Rows changed per column by an account deletion; all zero when nothing was left. */
     public record AnonymizationResponse(
-            int listsCreated, int itemsCreated, int itemsCompleted, int itemsDeleted) {
+            @Schema(required = true) int listsCreated,
+            @Schema(required = true) int itemsCreated,
+            @Schema(required = true) int itemsCompleted,
+            @Schema(required = true) int itemsDeleted) {
 
         public static AnonymizationResponse from(AnonymizationService.Result result) {
             return new AnonymizationResponse(

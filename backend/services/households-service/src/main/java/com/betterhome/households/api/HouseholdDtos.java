@@ -30,17 +30,18 @@ public final class HouseholdDtos {
                     LocalTime reminderTime) {}
 
     public record HouseholdResponse(
-            UUID id,
-            String name,
-            String timezone,
-            int reminderDaysBefore,
+            @Schema(required = true) UUID id,
+            @Schema(required = true) String name,
+            @Schema(required = true) String timezone,
+            @Schema(required = true) int reminderDaysBefore,
             @Schema(
+                            required = true,
                             type = SchemaType.STRING,
                             format = "partial-time",
                             pattern = "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",
                             example = "08:00:00")
                     LocalTime reminderTime,
-            UUID createdBy) {
+            @Schema(required = true) UUID createdBy) {
 
         public static HouseholdResponse from(Household household) {
             return new HouseholdResponse(
@@ -54,11 +55,11 @@ public final class HouseholdDtos {
     }
 
     public record MembershipResponse(
-            UUID id,
-            UUID userId,
-            UUID householdId,
-            MembershipRole role,
-            Instant joinedAt,
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID userId,
+            @Schema(required = true) UUID householdId,
+            @Schema(required = true) MembershipRole role,
+            @Schema(required = true) Instant joinedAt,
             Instant awayFrom,
             Instant awayUntil,
             UUID awaySetBy,

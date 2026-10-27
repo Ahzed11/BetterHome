@@ -13,6 +13,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 public final class TaskDtos {
 
@@ -35,15 +36,15 @@ public final class TaskDtos {
             @Min(0) Integer defaultDueOffsetMinutes) {}
 
     public record TemplateResponse(
-            UUID id,
-            UUID householdId,
-            String title,
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID householdId,
+            @Schema(required = true) String title,
             String emoji,
-            String description,
-            int points,
-            int latePoints,
-            int defaultDueOffsetMinutes,
-            UUID rotationId,
+            @Schema(required = true) String description,
+            @Schema(required = true) int points,
+            @Schema(required = true) int latePoints,
+            @Schema(required = true) int defaultDueOffsetMinutes,
+            @Schema(required = true) UUID rotationId,
             Instant archivedAt) {
 
         public static TemplateResponse from(TaskTemplate template) {
@@ -65,18 +66,18 @@ public final class TaskDtos {
 
     public record QuickLogRequest(@NotNull UUID templateId) {}
 
-    public record DismissedCount(int dismissed) {}
+    public record DismissedCount(@Schema(required = true) int dismissed) {}
 
     /** Rows changed per kind by an account deletion; all zero when nothing was left. */
     public record TasksAnonymizationResponse(
-            int openTasksDismissed,
-            int tasksAssigned,
-            int tasksCompleted,
-            int tasksDismissed,
-            int templatesCreated,
-            int recurrencesFixed,
-            int rotationCursors,
-            long queuedNotificationsDropped) {
+            @Schema(required = true) int openTasksDismissed,
+            @Schema(required = true) int tasksAssigned,
+            @Schema(required = true) int tasksCompleted,
+            @Schema(required = true) int tasksDismissed,
+            @Schema(required = true) int templatesCreated,
+            @Schema(required = true) int recurrencesFixed,
+            @Schema(required = true) int rotationCursors,
+            @Schema(required = true) long queuedNotificationsDropped) {
 
         public static TasksAnonymizationResponse from(AnonymizationService.Result result) {
             return new TasksAnonymizationResponse(
@@ -91,7 +92,7 @@ public final class TaskDtos {
         }
     }
 
-    public record ReassignedCount(int reassigned) {}
+    public record ReassignedCount(@Schema(required = true) int reassigned) {}
 
     public record RevertRequest(@NotBlank String reason) {}
 
@@ -103,14 +104,14 @@ public final class TaskDtos {
             Instant endsAt) {}
 
     public record RecurrenceResponse(
-            UUID id,
-            UUID householdId,
-            UUID templateId,
-            String rrule,
-            AssignmentMode assignmentMode,
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID householdId,
+            @Schema(required = true) UUID templateId,
+            @Schema(required = true) String rrule,
+            @Schema(required = true) AssignmentMode assignmentMode,
             UUID fixedAssigneeId,
-            String timezone,
-            Instant startsAt,
+            @Schema(required = true) String timezone,
+            @Schema(required = true) Instant startsAt,
             Instant endsAt,
             Instant lastGeneratedAt,
             Instant nextRunAt) {
@@ -132,17 +133,17 @@ public final class TaskDtos {
     }
 
     public record TaskResponse(
-            UUID id,
-            UUID householdId,
-            UUID templateId,
-            TaskOrigin origin,
-            String title,
+            @Schema(required = true) UUID id,
+            @Schema(required = true) UUID householdId,
+            @Schema(required = true) UUID templateId,
+            @Schema(required = true) TaskOrigin origin,
+            @Schema(required = true) String title,
             String emoji,
-            String description,
-            int points,
-            int latePoints,
-            TaskStatus status,
-            UUID assigneeId,
+            @Schema(required = true) String description,
+            @Schema(required = true) int points,
+            @Schema(required = true) int latePoints,
+            @Schema(required = true) TaskStatus status,
+            @Schema(required = true) UUID assigneeId,
             UUID completerId,
             UUID dismissedBy,
             DismissalReason dismissalReason,

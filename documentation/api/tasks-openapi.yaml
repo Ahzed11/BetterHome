@@ -58,6 +58,8 @@ components:
       - assignee_away
     DismissedCount:
       type: object
+      required:
+      - dismissed
       properties:
         dismissed:
           type: integer
@@ -83,12 +85,22 @@ components:
           $ref: "#/components/schemas/UUID"
     ReassignedCount:
       type: object
+      required:
+      - reassigned
       properties:
         reassigned:
           type: integer
           format: int32
     RecurrenceResponse:
       type: object
+      required:
+      - id
+      - householdId
+      - templateId
+      - rrule
+      - assignmentMode
+      - timezone
+      - startsAt
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -106,6 +118,7 @@ components:
           type: string
         startsAt:
           $ref: "#/components/schemas/Instant"
+          type: string
         endsAt:
           $ref: "#/components/schemas/Instant"
         lastGeneratedAt:
@@ -122,6 +135,10 @@ components:
           pattern: \S
     ServiceInfo:
       type: object
+      required:
+      - service
+      - now
+      - authSubject
       properties:
         service:
           type: string
@@ -137,6 +154,17 @@ components:
       - recurrence
     TaskResponse:
       type: object
+      required:
+      - id
+      - householdId
+      - templateId
+      - origin
+      - title
+      - description
+      - points
+      - latePoints
+      - status
+      - assigneeId
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -186,6 +214,15 @@ components:
       - reverted
     TasksAnonymizationResponse:
       type: object
+      required:
+      - openTasksDismissed
+      - tasksAssigned
+      - tasksCompleted
+      - tasksDismissed
+      - templatesCreated
+      - recurrencesFixed
+      - rotationCursors
+      - queuedNotificationsDropped
       properties:
         openTasksDismissed:
           type: integer
@@ -213,6 +250,15 @@ components:
           format: int64
     TemplateResponse:
       type: object
+      required:
+      - id
+      - householdId
+      - title
+      - description
+      - points
+      - latePoints
+      - defaultDueOffsetMinutes
+      - rotationId
       properties:
         id:
           $ref: "#/components/schemas/UUID"

@@ -40,6 +40,8 @@ components:
           $ref: "#/components/schemas/PointReason"
     CelebrationSeen:
       type: object
+      required:
+      - seen
       properties:
         seen:
           type: boolean
@@ -96,6 +98,15 @@ components:
           $ref: "#/components/schemas/ReversionResultingStatus"
     ReversionResponse:
       type: object
+      required:
+      - id
+      - householdId
+      - taskId
+      - adminUserId
+      - reason
+      - pointsReversed
+      - resultingStatus
+      - createdAt
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -114,6 +125,7 @@ components:
           $ref: "#/components/schemas/ReversionResultingStatus"
         createdAt:
           $ref: "#/components/schemas/Instant"
+          type: string
     ReversionResultingStatus:
       type: string
       enum:
@@ -122,6 +134,11 @@ components:
       - dismissed
     ScoreEntryResponse:
       type: object
+      required:
+      - userId
+      - points
+      - effortShare
+      - rank
       properties:
         userId:
           $ref: "#/components/schemas/UUID"
@@ -143,6 +160,11 @@ components:
       - all
     ScoreboardResponse:
       type: object
+      required:
+      - period
+      - totalPoints
+      - entries
+      - podium
       properties:
         period:
           $ref: "#/components/schemas/ScorePeriod"
@@ -165,6 +187,11 @@ components:
             $ref: "#/components/schemas/ScoreEntryResponse"
     ScoringAnonymizationResponse:
       type: object
+      required:
+      - ledgerRows
+      - reversions
+      - recapsWon
+      - celebrationsForgotten
       properties:
         ledgerRows:
           type: integer
@@ -180,6 +207,10 @@ components:
           format: int64
     ServiceInfo:
       type: object
+      required:
+      - service
+      - now
+      - authSubject
       properties:
         service:
           type: string
@@ -189,6 +220,13 @@ components:
           type: string
     TransactionResponse:
       type: object
+      required:
+      - id
+      - householdId
+      - userId
+      - points
+      - reason
+      - createdAt
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -207,12 +245,18 @@ components:
           $ref: "#/components/schemas/PointReason"
         createdAt:
           $ref: "#/components/schemas/Instant"
+          type: string
     UUID:
       type: string
       format: uuid
       pattern: "[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
     WinnerResponse:
       type: object
+      required:
+      - yearMonth
+      - winnerPoints
+      - totalPoints
+      - celebrated
       properties:
         yearMonth:
           type: string

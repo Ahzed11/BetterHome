@@ -20,13 +20,19 @@ api.ApiClient buildApiClient({
   return apiClient;
 }
 
-/// Runs a generated call and turns its failures and empty answers into [ApiException].
+/// Runs a generated call and turns its failures and empty answers into [ApiException]. The
+/// generated models require the fields the contract marks as required: an answer without one
+/// fails their parsing (an assertion in debug builds, a type error in release builds).
 Future<T> call<T>(Future<T?> Function() request) async {
   final T? result;
   try {
     result = await request();
   } on api.ApiException catch (e) {
     throw ApiException(e.message ?? 'HTTP ${e.code}', statusCode: e.code);
+  } on AssertionError catch (e) {
+    throw ApiException('Unexpected response: ${e.message}');
+  } on TypeError catch (e) {
+    throw ApiException('Unexpected response: $e');
   }
   if (result == null) {
     throw ApiException('Empty response');
@@ -41,12 +47,4 @@ Future<void> callVoid(Future<void> Function() request) async {
   } on api.ApiException catch (e) {
     throw ApiException(e.message ?? 'HTTP ${e.code}', statusCode: e.code);
   }
-}
-
-/// The contract marks no response field as required, so the app checks the ones it needs.
-T need<T>(T? value, String field) {
-  if (value == null) {
-    throw ApiException('Missing field in response: $field');
-  }
-  return value;
 }

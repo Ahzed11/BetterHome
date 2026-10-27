@@ -15,10 +15,17 @@ public final class InternalDtos {
     private InternalDtos() {}
 
     public record InternalMemberResponse(
-            UUID userId, UUID authSubject, MembershipRole role, boolean away, Instant joinedAt) {}
+            @Schema(required = true) UUID userId,
+            @Schema(required = true) UUID authSubject,
+            @Schema(required = true) MembershipRole role,
+            @Schema(required = true) boolean away,
+            @Schema(required = true) Instant joinedAt) {}
 
     /** Who a user is for other services: our id, the token subject and the display language. */
-    public record InternalUserResponse(UUID userId, UUID authSubject, String language) {
+    public record InternalUserResponse(
+            @Schema(required = true) UUID userId,
+            @Schema(required = true) UUID authSubject,
+            @Schema(required = true) String language) {
 
         public static InternalUserResponse from(AppUser user) {
             return new InternalUserResponse(user.id, user.authSubject, user.language);
@@ -26,9 +33,10 @@ public final class InternalDtos {
     }
 
     public record InternalSettingsResponse(
-            String timezone,
-            int reminderDaysBefore,
+            @Schema(required = true) String timezone,
+            @Schema(required = true) int reminderDaysBefore,
             @Schema(
+                            required = true,
                             type = SchemaType.STRING,
                             format = "partial-time",
                             pattern = "^([01]\\d|2[0-3]):[0-5]\\d(:[0-5]\\d)?$",

@@ -2553,6 +2553,8 @@ components:
       - "round_robin"
     CelebrationSeen:
       type: "object"
+      required:
+      - "seen"
       properties:
         seen:
           type: "boolean"
@@ -2642,6 +2644,8 @@ components:
       - "assignee_away"
     DismissedCount:
       type: "object"
+      required:
+      - "dismissed"
       properties:
         dismissed:
           type: "integer"
@@ -2655,6 +2659,13 @@ components:
           type: "string"
     HouseholdResponse:
       type: "object"
+      required:
+      - "id"
+      - "name"
+      - "timezone"
+      - "reminderDaysBefore"
+      - "reminderTime"
+      - "createdBy"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -2683,6 +2694,13 @@ components:
       - "2022-03-10T16:15:50Z"
     InvitationResponse:
       type: "object"
+      required:
+      - "id"
+      - "householdId"
+      - "email"
+      - "role"
+      - "token"
+      - "expiresAt"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -2696,10 +2714,17 @@ components:
           type: "string"
         expiresAt:
           $ref: "#/components/schemas/Instant"
+          type: "string"
         acceptedAt:
           $ref: "#/components/schemas/Instant"
     ItemResponse:
       type: "object"
+      required:
+      - "id"
+      - "listId"
+      - "title"
+      - "position"
+      - "creator"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -2718,6 +2743,12 @@ components:
           $ref: "#/components/schemas/Instant"
     ListResponse:
       type: "object"
+      required:
+      - "id"
+      - "householdId"
+      - "title"
+      - "createdBy"
+      - "createdAt"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -2729,10 +2760,17 @@ components:
           $ref: "#/components/schemas/UUID"
         createdAt:
           $ref: "#/components/schemas/Instant"
+          type: "string"
         archivedAt:
           $ref: "#/components/schemas/Instant"
     MembershipResponse:
       type: "object"
+      required:
+      - "id"
+      - "userId"
+      - "householdId"
+      - "role"
+      - "joinedAt"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -2744,6 +2782,7 @@ components:
           $ref: "#/components/schemas/MembershipRole"
         joinedAt:
           $ref: "#/components/schemas/Instant"
+          type: "string"
         awayFrom:
           $ref: "#/components/schemas/Instant"
         awayUntil:
@@ -2761,6 +2800,15 @@ components:
       - "member"
     NotificationResponse:
       type: "object"
+      required:
+      - "id"
+      - "householdId"
+      - "type"
+      - "channel"
+      - "title"
+      - "body"
+      - "payload"
+      - "createdAt"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -2780,6 +2828,7 @@ components:
             type: "string"
         createdAt:
           $ref: "#/components/schemas/Instant"
+          type: "string"
         readAt:
           $ref: "#/components/schemas/Instant"
     NotificationType:
@@ -2803,6 +2852,10 @@ components:
       - "manual_adjust"
     PreferenceResponse:
       type: "object"
+      required:
+      - "type"
+      - "channel"
+      - "enabled"
       properties:
         type:
           $ref: "#/components/schemas/NotificationType"
@@ -2812,9 +2865,12 @@ components:
           type: "boolean"
     PushTargetResponse:
       type: "object"
+      required:
+      - "registeredAt"
       properties:
         registeredAt:
           $ref: "#/components/schemas/Instant"
+          type: "string"
     QuickLogRequest:
       type: "object"
       required:
@@ -2824,18 +2880,30 @@ components:
           $ref: "#/components/schemas/UUID"
     ReadAllResponse:
       type: "object"
+      required:
+      - "updated"
       properties:
         updated:
           type: "integer"
           format: "int32"
     ReassignedCount:
       type: "object"
+      required:
+      - "reassigned"
       properties:
         reassigned:
           type: "integer"
           format: "int32"
     RecurrenceResponse:
       type: "object"
+      required:
+      - "id"
+      - "householdId"
+      - "templateId"
+      - "rrule"
+      - "assignmentMode"
+      - "timezone"
+      - "startsAt"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -2853,6 +2921,7 @@ components:
           type: "string"
         startsAt:
           $ref: "#/components/schemas/Instant"
+          type: "string"
         endsAt:
           $ref: "#/components/schemas/Instant"
         lastGeneratedAt:
@@ -2878,6 +2947,11 @@ components:
           pattern: "\\S"
     ScoreEntryResponse:
       type: "object"
+      required:
+      - "userId"
+      - "points"
+      - "effortShare"
+      - "rank"
       properties:
         userId:
           $ref: "#/components/schemas/UUID"
@@ -2899,6 +2973,11 @@ components:
       - "all"
     ScoreboardResponse:
       type: "object"
+      required:
+      - "period"
+      - "totalPoints"
+      - "entries"
+      - "podium"
       properties:
         period:
           $ref: "#/components/schemas/ScorePeriod"
@@ -2950,6 +3029,17 @@ components:
       - "recurrence"
     TaskResponse:
       type: "object"
+      required:
+      - "id"
+      - "householdId"
+      - "templateId"
+      - "origin"
+      - "title"
+      - "description"
+      - "points"
+      - "latePoints"
+      - "status"
+      - "assigneeId"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -2999,6 +3089,15 @@ components:
       - "reverted"
     TemplateResponse:
       type: "object"
+      required:
+      - "id"
+      - "householdId"
+      - "title"
+      - "description"
+      - "points"
+      - "latePoints"
+      - "defaultDueOffsetMinutes"
+      - "rotationId"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -3033,6 +3132,13 @@ components:
           pattern: "\\S"
     TransactionResponse:
       type: "object"
+      required:
+      - "id"
+      - "householdId"
+      - "userId"
+      - "points"
+      - "reason"
+      - "createdAt"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -3051,6 +3157,7 @@ components:
           $ref: "#/components/schemas/PointReason"
         createdAt:
           $ref: "#/components/schemas/Instant"
+          type: "string"
     UUID:
       type: "string"
       format: "uuid"
@@ -3121,6 +3228,14 @@ components:
           $ref: "#/components/schemas/Instant"
     UserResponse:
       type: "object"
+      required:
+      - "id"
+      - "authSubject"
+      - "email"
+      - "givenName"
+      - "familyName"
+      - "language"
+      - "timezone"
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -3138,6 +3253,11 @@ components:
           type: "string"
     WinnerResponse:
       type: "object"
+      required:
+      - "yearMonth"
+      - "winnerPoints"
+      - "totalPoints"
+      - "celebrated"
       properties:
         yearMonth:
           type: "string"

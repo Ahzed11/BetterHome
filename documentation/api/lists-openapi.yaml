@@ -9,6 +9,11 @@ components:
   schemas:
     AnonymizationResponse:
       type: object
+      required:
+      - listsCreated
+      - itemsCreated
+      - itemsCompleted
+      - itemsDeleted
       properties:
         listsCreated:
           type: integer
@@ -36,6 +41,12 @@ components:
       - 2022-03-10T16:15:50Z
     ItemResponse:
       type: object
+      required:
+      - id
+      - listId
+      - title
+      - position
+      - creator
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -54,6 +65,12 @@ components:
           $ref: "#/components/schemas/Instant"
     ListResponse:
       type: object
+      required:
+      - id
+      - householdId
+      - title
+      - createdBy
+      - createdAt
       properties:
         id:
           $ref: "#/components/schemas/UUID"
@@ -65,10 +82,15 @@ components:
           $ref: "#/components/schemas/UUID"
         createdAt:
           $ref: "#/components/schemas/Instant"
+          type: string
         archivedAt:
           $ref: "#/components/schemas/Instant"
     ServiceInfo:
       type: object
+      required:
+      - service
+      - now
+      - authSubject
       properties:
         service:
           type: string
