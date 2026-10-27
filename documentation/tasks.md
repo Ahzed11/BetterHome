@@ -517,7 +517,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0038 · OWASP Dependency-Check and `make test-policy`
 
-* Status: blocked (parked by the product owner: "we'll add this later"; needs a free NVD API key, kept as a CI secret and in `NVD_API_KEY` locally)
+* Status: dismissed (the product owner dropped the dependency audit; it needed an NVD API key)
 * Issue / PR: #31
 * Depends on: T-0017
 * Spec: AGENTS §5.3, §8
@@ -594,7 +594,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0053 · Require the CI `check` job on master
 
-* Status: todo
+* Status: dismissed (the product owner does not want branch protection; merging stays governed by AGENTS §6.2)
 * Issue / PR: #49
 * Depends on: T-0018
 * Spec: AGENTS §6.2
@@ -725,6 +725,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 * Status: todo
 * Issue / PR: — (suggested: "Web tokens are stored in localStorage")
+* Decisions and deviations: Product decision from the owner: in memory only (re-login on reload, no full-page redirect).
 * Depends on: T-0006
 * Spec: §9, AGENTS §8
 * Acceptance criteria: Decide between the library's default (browser `localStorage`, session survives a reload, readable by any script injected into the page) and an in-memory store (needs a re-login on reload, and the sign-in must then avoid a full-page redirect); implement the choice and record it in ADR 0020.
@@ -739,7 +740,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0075 · App: no way to create an open task or a template, and accepting an invitation needs a household
 
-* Status: todo
+* Status: dismissed (product decision: templates are created from the household management screen, in a full-screen form, by admins only; that is already built, see the entry above)
 * Issue / PR: — (suggested: "Chores screen cannot create tasks or templates")
 * Depends on: —
 * Spec: §3.1, §8.2
@@ -888,8 +889,9 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0087 · The ledger sum can go below zero after an adjustment followed by a reversal
 
-* Status: todo
-* Issue / PR: — (suggested: "Reverse can push a member's ledger below zero") — needs a product decision first
+* Status: in-review
+* Issue / PR: — (suggested: "Reverse can push a member's ledger below zero")
+* Decisions and deviations: Product decision from the owner: refuse. `reverse` now also checks the assignee's ledger sum, like `adjust`, and answers 409 "Scores never go negative".
 * Depends on: T-0030
 * Spec: §3.4 ("scores never go negative: reversals equal what was awarded, and manual adjustments are guarded"), AGENTS §7
 * Acceptance criteria: Found by the T-0030 ledger tests, documented in `LedgerSequenceTest`. `reverse` checks that the task has enough points left, not the member's total, so a manual adjustment of -5 followed by reversing a 5-point task leaves the member's ledger sum at -5 while the score shown stays at 0; later awards then show as 0 until the sum is back above zero, hiding points the member earned. Decide: refuse the reversal, clamp it, or keep the behavior and say so in the spec; then change the code, the spec and the test together.

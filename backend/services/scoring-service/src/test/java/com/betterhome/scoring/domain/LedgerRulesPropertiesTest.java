@@ -94,7 +94,9 @@ class LedgerRulesPropertiesTest {
         /** The same decision as LedgerService.reverse. */
         boolean reverse(int task, int points) {
             Integer owner = ownerOfTask.get(task);
-            if (owner == null || !LedgerRules.canReverse(net(task), points)) {
+            if (owner == null
+                    || !LedgerRules.canReverse(net(task), points)
+                    || !LedgerRules.adjustmentKeepsScoreNonNegative(sum(owner), -points)) {
                 return false;
             }
             rows.add(new Row(owner, task, -points, "reversal"));

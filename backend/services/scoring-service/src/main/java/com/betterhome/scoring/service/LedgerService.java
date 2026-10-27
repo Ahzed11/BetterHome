@@ -87,7 +87,8 @@ public class LedgerService {
     /**
      * Reverse points for a done task: creates {@link TaskReversion} and a negative ledger row in
      * one transaction. Called by tasks-service with its service token, which names the admin who
-     * ordered the reversion; that user must be an active admin of the household.
+     * ordered the reversion; that user must be an active admin of the household. Refused when it
+     * would take the assignee's ledger sum below zero, like an adjustment.
      */
     @Transactional
     public TaskReversion reverse(
@@ -112,6 +113,10 @@ public class LedgerService {
         if (!LedgerRules.canReverse(netForTask, pointsToReverse)) {
             throw new ScoringException.Conflict(
                     "Cannot reverse more points than remain on this task");
+        }
+        int current = PointTransaction.sumForUser(householdId, assigneeUserId);
+        if (!LedgerRules.adjustmentKeepsScoreNonNegative(current, -pointsToReverse)) {
+            throw new ScoringException.Conflict("Scores never go negative");
         }
         Instant now = clock.now();
 
