@@ -226,7 +226,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0027 · Real push delivery through Gotify (was: FCM and APNs)
 
-* Status: in-review
+* Status: done
 * Issue / PR: #20 / —
 * Depends on: T-0025
 * Spec: §5, AGENTS §8
@@ -331,7 +331,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0032 · Account deletion and anonymization
 
-* Status: in-review
+* Status: done
 * Issue / PR: #25
 * Depends on: T-0016, T-0025
 * Spec: §9 Privacy, AGENTS §8
@@ -351,7 +351,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0034 · Observability: tracing and request IDs
 
-* Status: in-review
+* Status: done
 * Issue / PR: #27
 * Depends on: T-0016
 * Spec: §7, AGENTS §8
@@ -532,7 +532,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0046 · Build the five container images in make check and CI
 
-* Status: in-review
+* Status: done
 * Issue / PR: #37 / (this PR)
 * Depends on: T-0016, T-0018
 * Spec: AGENTS §5.3
@@ -557,7 +557,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0041 · Validate test requests against the contract
 
-* Status: in-review
+* Status: done
 * Issue / PR: #40 / not opened yet
 * Depends on: T-0039
 * Spec: AGENTS §5.1 (API contract)
@@ -569,7 +569,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0042 · HTTP tests for endpoints without one
 
-* Status: in-review
+* Status: done
 * Issue / PR: #41 / none yet
 * Depends on: T-0039
 * Spec: AGENTS §5.1 (API contract)
@@ -601,7 +601,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0057 · Render readable text and icons in app golden images
 
-* Status: in-review
+* Status: done
 * Issue / PR: #44 / (pull request to follow)
 * Depends on: T-0022
 * Spec: AGENTS §5.2
@@ -613,7 +613,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0058 · Externalize remaining hard-coded strings and raw ids in app screens
 
-* Status: in-review
+* Status: done
 * Issue / PR: #45 / (this PR; stacked on #107, T-0079 golden fonts)
 * Depends on: T-0022
 * Spec: AGENTS §9; §2 (members named on screen)
@@ -625,7 +625,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0059 · Golden and accessibility coverage for dialogs and non-admin views
 
-* Status: in-review
+* Status: done
 * Issue / PR: #46 / (pull request to follow; stacked on #107, T-0057)
 * Depends on: T-0022, T-0057
 * Spec: AGENTS §5.2
@@ -637,7 +637,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0061 · Spec: who may reset a list, and archived-list rules
 
-* Status: in-review
+* Status: done
 * Issue / PR: #50
 * Depends on: T-0023
 * Spec: §2, §4
@@ -886,7 +886,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0092 · Self-hosted fallback runner for CI
 
-* Status: in-review
+* Status: done
 * Issue / PR: — (suggested: "CI minutes quota") / this PR
 * Depends on: T-0070
 * Spec: AGENTS §6.2, ADR 0024
@@ -897,7 +897,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0096 · `deploy/migrate.sh` waits for Postgres
 
-* Status: in-review
+* Status: done
 * Issue / PR: — (suggested: "e2e fails with 'Connection to postgres:5432 refused' in migrate") / this PR
 * Depends on: —
 * Spec: AGENTS §3 (migrations as a one-shot job)
@@ -908,7 +908,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0093 · Backend tests bind a random port so jobs can share a host
 
-* Status: in-review
+* Status: done
 * Issue / PR: — (suggested: "Backend tests collide on port 8081 on a shared CI host") / this PR
 * Depends on: —
 * Spec: AGENTS §5.1
@@ -919,7 +919,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0094 · App: manage chore templates from the household screen
 
-* Status: in-review
+* Status: done
 * Issue / PR: — (suggested: "Add and edit templates in the app") / this PR
 * Depends on: —
 * Spec: §3.1, §8.2
@@ -934,7 +934,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0095 · `make run-app`: try the app by hand against the local stack
 
-* Status: in-review
+* Status: done
 * Issue / PR: — (suggested: "One command to run the app locally") / this PR
 * Depends on: —
 * Spec: AGENTS §6.1
@@ -1020,7 +1020,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0106 · Account deletion: e2e journey and real Keycloak check (part of T-0032)
 
-* Status: in-review
+* Status: done
 * Issue / PR: #25 / (pull request to follow)
 * Depends on: T-0032
 * Spec: §9 Privacy, AGENTS §8
