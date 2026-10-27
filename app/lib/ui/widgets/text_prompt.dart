@@ -1,4 +1,5 @@
 import 'package:betterhome/l10n/app_localizations.dart';
+import 'package:betterhome/theme/tokens.dart';
 import 'package:flutter/material.dart';
 
 /// Asks for one line of text. Returns the trimmed text, or null when cancelled or left blank.
@@ -13,6 +14,7 @@ Future<String?> promptForText(
   final text = await showDialog<String>(
     context: context,
     builder: (context) => AlertDialog(
+      backgroundColor: AppTokens.card,
       title: Text(title),
       content: TextField(
         controller: controller,
