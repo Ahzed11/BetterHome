@@ -27,7 +27,7 @@ x-service-env: &service-env
 
 services:
   postgres:
-    image: docker.io/library/postgres:16-alpine
+    image: registry.access.redhat.com/hi/postgresql:17
     environment:
       POSTGRES_USER: betterhome
       POSTGRES_PASSWORD: betterhome
