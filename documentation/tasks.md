@@ -661,7 +661,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0063 · lists-service: anonymize user ids on account deletion
 
-* Status: todo
+* Status: dismissed (duplicate of T-0102, merged in #111)
 * Issue / PR: #52
 * Depends on: T-0023
 * Spec: AGENTS §8
@@ -1001,7 +1001,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0102 · lists-service: anonymize a deleted user's id (part of T-0032)
 
-* Status: in-review
+* Status: done
 * Issue / PR: #52 / —
 * Depends on: T-0016
 * Spec: §9 Privacy, AGENTS §8
