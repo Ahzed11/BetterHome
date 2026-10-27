@@ -889,8 +889,8 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0087 · The ledger sum can go below zero after an adjustment followed by a reversal
 
-* Status: in-review
-* Issue / PR: — (suggested: "Reverse can push a member's ledger below zero")
+* Status: done
+* Issue / PR: — (suggested: "Reverse can push a member's ledger below zero") / #157
 * Decisions and deviations: Product decision from the owner: refuse. `reverse` now also checks the assignee's ledger sum, like `adjust`, and answers 409 "Scores never go negative".
 * Depends on: T-0030
 * Spec: §3.4 ("scores never go negative: reversals equal what was awarded, and manual adjustments are guarded"), AGENTS §7
