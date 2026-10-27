@@ -372,6 +372,18 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ## Discovered
 
+### T-0120 · The Podman API exits when idle and breaks the Testcontainers start between test classes
+
+* Status: done
+* Issue / PR: — / (this PR)
+* Depends on: T-0015
+* Spec: AGENTS §6
+* Acceptance criteria: `make test-backend SERVICE=households-service` passes on a machine set up by the repository's tooling; `make doctor` fails when the Podman API would exit while idle.
+* Summary: `podman system service` exits after 5 idle seconds by default. In households-service several test classes restart Quarkus (`@QuarkusTestResource(restrictToAnnotatedClass)`), and shutting the previous application down takes about 5 seconds; the next Testcontainers Postgres start then failed with `java.io.IOException: Broken pipe` (`HttpNotificationsGatewayTest` errored and skipped the other 12 tests of its class). `tooling/configure-podman-api.sh` (idempotent; called by `tooling/install-dev-tools.sh`) writes a systemd user drop-in that runs the service with `--time=0` and restarts `podman.socket`; `make doctor` has a new check for it; README names the requirement.
+* Decisions and deviations: Per-user systemd configuration under `~/.config`, no sudo. CI is not affected (hosted runners use Docker). The mechanism is inferred from the timing and confirmed by the result, not traced inside Testcontainers.
+* Verification: before: `make test-backend SERVICE=households-service` failed the same way on an unchanged `master` (also earlier runs of tasks-service failed once on a cold start). After the drop-in: 101 tests, 0 failures, 0 skipped. The script run twice (second run changes nothing); `make doctor` reports MISSING with the drop-in removed and ok with it. Not run: a fresh machine through the whole installer.
+* Follow-ups: none.
+
 ### T-0003 · Away members: dismiss their open tasks when marked away
 
 * Status: done

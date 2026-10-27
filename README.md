@@ -14,6 +14,7 @@ See [documentation/project-specification.md](documentation/project-specification
 
 - JDK 21 (`jbang jdk install 21` works)
 - Podman with a compose provider, and its API socket: `systemctl --user enable --now podman.socket`
+- The Podman API must not exit when idle (its default is 5 idle seconds; Testcontainers then fails with `Broken pipe` between test classes). `tooling/install-dev-tools.sh` sets this with `tooling/configure-podman-api.sh`, and `make doctor` checks it
 - Flutter, Chrome for Testing (web end-to-end), the Android SDK and an emulator image for the app module
 
 Versions are pinned in [tooling/versions.env](tooling/versions.env). On Fedora, `tooling/install-dev-tools.sh`
