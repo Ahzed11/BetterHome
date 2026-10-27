@@ -444,7 +444,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0012 · Dismiss open tasks when a future-dated away period starts
 
-* Status: in-review
+* Status: done
 * Issue / PR: #5 / #59
 * Depends on: T-0003
 * Spec: §2 Away, §3.3 Away
@@ -649,7 +649,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0062 · tasks-service: body-less POST actions answer 415 without a Content-Type
 
-* Status: in-review
+* Status: done
 * Issue / PR: #51 / —
 * Depends on: —
 * Spec: AGENTS §3 (API style)
@@ -782,7 +782,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0079 · Bundle the design fonts
 
-* Status: in-review
+* Status: done
 * Issue / PR: — (suggested: "Use Bricolage Grotesque and Figtree")
 * Depends on: T-0024
 * Spec: §8, ADR 0021
@@ -877,7 +877,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0091 · App: restyle the quick-log picker after the design
 
-* Status: in-review
+* Status: done
 * Issue / PR: — (suggested: "Quick-log picker after the design's Quick log board")
 * Depends on: T-0090
 * Spec: §8.2
@@ -953,7 +953,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0098 · Service images on the Red Hat hardened OpenJDK image
 
-* Status: in-review
+* Status: done
 * Issue / PR: — / (this PR)
 * Depends on: T-0004
 * Spec: —
@@ -972,7 +972,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0100 · Publish the service images to GHCR when a pull request is merged
 
-* Status: in-review
+* Status: done
 * Issue / PR: — / (this PR; stacked on T-0098)
 * Depends on: T-0098
 * Spec: —
@@ -990,7 +990,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 * Acceptance criteria: The archive-list confirmation (`lists_screen.dart`) and `promptForText` use the same dialog surface as the dialogs fixed in T-0059 (or the theme sets it for all dialogs, with the month-recap golden regenerated), and scenarios open them with the accessibility checks.
 ### T-0101 · Recurrence: an occurrence in a daylight-saving gap at the end of the day moved to the next day
 
-* Status: in-review
+* Status: done
 * Issue / PR: — / —
 * Depends on: T-0011
 * Spec: §3.1 (recurrence)
@@ -1032,7 +1032,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0107 · ADR and design for the Caddy reverse proxy
 
-* Status: in-review
+* Status: done
 * Issue / PR: #117 / (pull request to follow; stacked on #124)
 * Depends on: —
 * Spec: §7
@@ -1044,7 +1044,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0108 · NAS compose stack with Caddy
 
-* Status: in-review
+* Status: done
 * Issue / PR: #118 / (pull request to follow; stacked on #130)
 * Depends on: T-0107
 * Spec: §7, AGENTS §3
@@ -1056,7 +1056,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0109 · Keycloak production mode behind Caddy
 
-* Status: in-review
+* Status: done
 * Issue / PR: #119 / (pull request to follow; stacked on #131)
 * Depends on: T-0108
 * Spec: §7, §9
@@ -1076,7 +1076,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0111 · Android build against the NAS (`make apk`)
 
-* Status: in-review
+* Status: done
 * Issue / PR: #121 / (pull request to follow; stacked on #132)
 * Depends on: T-0107 (the phone check also needs T-0115 and a running NAS stack)
 * Spec: §1
@@ -1088,7 +1088,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0112 · NAS smoke check (`make nas-smoke`)
 
-* Status: in-review
+* Status: done
 * Issue / PR: #122 / (pull request to follow; stacked on #135)
 * Depends on: T-0108, T-0109
 * Spec: §7
@@ -1100,7 +1100,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0113 · NAS operations: updates and backups
 
-* Status: in-review
+* Status: done
 * Issue / PR: #123 / (pull request to follow; stacked on the T-0112 branch)
 * Depends on: T-0108
 * Spec: §7
@@ -1112,7 +1112,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0114 · Gotify push server on the NAS
 
-* Status: in-review
+* Status: done
 * Issue / PR: #126 / (pull request to follow; stacked on #134)
 * Depends on: T-0108, T-0109, T-0110
 * Spec: §5, §7
@@ -1124,7 +1124,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0115 · App: server URL entered in the app
 
-* Status: in-review
+* Status: done
 * Issue / PR: #127 / (pull request to follow; stacked on #133)
 * Depends on: T-0107
 * Spec: §1, §7
@@ -1136,7 +1136,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0116 · Release workflow: signed APK as a GitHub Release
 
-* Status: in-review
+* Status: done
 * Issue / PR: #128 / (pull request to follow)
 * Depends on: T-0115
 * Spec: §1, §10 Phase 6
@@ -1158,7 +1158,7 @@ Out of scope of T-0107 to T-0117, to be filed when wanted: Caddy in the dev comp
 
 ### T-0118 · App golden tests render the real date and fail the day after they were made
 
-* Status: in-review
+* Status: done
 * Issue / PR: #139 / (pull request to follow)
 * Depends on: T-0080
 * Spec: AGENTS §5.2 (golden tests), §2 (no direct system clock in domain code)
