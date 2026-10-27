@@ -824,11 +824,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0083 · Drop the unused title and body columns of tasks' outbox
 
-* Status: todo
-* Issue / PR: — (suggested: "Contract step for the tasks outbox")
+* Status: in-review
+* Issue / PR: — / (this PR)
 * Depends on: T-0026
 * Spec: AGENTS §4 (expand then contract)
 * Acceptance criteria: A new Flyway migration drops `notification_outbox.title` and `.body` once no running replica writes them (T-0026 stopped writing them).
+* Summary: tasks-service `V9__drop_outbox_title_body.sql` drops `notification_outbox.title` and `.body`. The entity and the relay no longer touch them (T-0026), so no code changed. `OutboxSchemaTest` asserts that the columns are gone and `payload_json` remains.
+* Decisions and deviations: V6 was the expand step; this is the contract step. Deploy order: the migration runs as a separate job (AGENTS §3), so apply it after every replica runs the image from T-0026 or later; a replica older than T-0026 would still write the dropped columns and fail on insert.
+* Verification: `make test-backend SERVICE=tasks-service` on JDK 21 (Spotless, Checkstyle, 147 tests, coverage floor) passes. Not run: other services, app, e2e, CI.
 
 ### T-0084 · Retry the tool downloads in CI and local setup
 
