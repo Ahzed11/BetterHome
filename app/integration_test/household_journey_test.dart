@@ -277,6 +277,13 @@ Future<void> _createHousehold(
     name,
   );
   await _tap(tester, find.widgetWithText(FilledButton, words.save));
+  // The typed name already matches the text field, so wait for the form to close first: the
+  // household exists on the server only once Save has been answered.
+  await _seeCount(
+    tester,
+    find.widgetWithText(TextField, words.householdName),
+    0,
+  );
   await _see(tester, find.textContaining(name));
 }
 

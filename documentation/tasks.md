@@ -945,11 +945,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0097 · e2e: the first journey fails intermittently when creating the household
 
-* Status: todo
+* Status: in-review
 * Issue / PR: — (suggested: "e2e first journey flaky: household not found after creation")
 * Depends on: T-0021
 * Spec: AGENTS §6.2
 * Acceptance criteria: `household_journey_test.dart` "sign in profile sync, create a household…" sometimes fails at `firstWhere` (line 192, `Bad state: No element`: the household created through the UI is not in `listHouseholds()` yet) or with `FocusManager used after being disposed`, and every later journey then fails because they depend on its `householdId`. Seen on the self-hosted runner in runs 38925223407, 38936281427 and 38946063647 (a re-run of the same commit passed), and once on master on 2026-10-14 on a hosted runner (run 38611183796, cause not examined). Measured on 2026-10-16 on a quiet machine with a fresh stack per run (`make down`/`make up`; reusing one stack makes the second run fail on the first run's leftover notification, which is not this flake): 1 failure in 5 runs, so it is not caused by CI load. The failing run reports the first test as failed by `A FocusManager was used after being disposed` thrown after the test had completed, `householdId` is then never assigned, and the later journeys fail in cascade; the log has no per-step progress. One suspect, not confirmed: `_createHousehold` ends by waiting for `find.textContaining(name)`, which already matches the text field holding the typed name, so it can continue before Save has finished (this fits the `firstWhere` variant, not the `FocusManager` one). Instrument the steps, find the real first error, and make the journey wait for the real condition.
+* Summary: The suspect in the entry was the cause of the `firstWhere` variant. `_createHousehold` ended with `find.textContaining(name)`, which the text field holding the typed name already matches, so the journey went on before Save was answered and `listHouseholds()` could still be empty. It now first waits until the household-name field is gone (the form closes only after the server answered), then looks for the name. The `FocusManager` variant is the same failure seen later: the test throws at `firstWhere`, the widget tree is disposed, and the framework reports the focus error after the test has ended. Every journey calls `_createHousehold`, so all of them wait on the real condition.
+* Decisions and deviations: Only the wait changed; no timeout was raised and nothing was retried. I did not add per-step progress logging, because the failing step is now named by the `expect` in `_seeCount`.
+* Verification: `make e2e` five times, each on a fresh stack (`make down` first): 5 of 5 passed. The failure rate before was about 1 in 5, so five passes is moderate evidence only (a 20% flake would still pass five times in a row about one run in three): watch the next CI runs, and reopen if it fails again. Not run: CI.
 
 ### T-0098 · Service images on the Red Hat hardened OpenJDK image
 
