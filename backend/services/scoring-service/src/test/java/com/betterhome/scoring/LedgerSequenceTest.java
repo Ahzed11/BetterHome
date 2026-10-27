@@ -184,30 +184,25 @@ class LedgerSequenceTest {
     }
 
     @Test
-    void anAdjustmentFollowedByAReversalCanTakeTheLedgerBelowZeroButTheShownScoreStaysAtZero() {
-        // Documents today's behaviour (T-0087 asks whether it is wanted): reverse checks the task,
-        // not the member's total, so adjust -5 then reverse a 5-point task leaves the sum at -5.
+    void aReversalThatWouldTakeTheLedgerBelowZeroIsRefused() {
+        // T-0087: adjust -5 then reversing a 5-point task would leave the sum at -5.
         UUID user = USERS.get(1);
         UUID task = UUID.randomUUID();
         ledgerService.award(household, user, task, 1, 5, PointReason.task_completed);
         ledgerService.adjust(household, user, -5);
-        ledgerService.reverse(
-                household,
-                task,
-                user,
-                ADMIN_USER,
-                5,
-                "Wrong person",
-                ReversionResultingStatus.open);
 
-        assertEquals(-5, PointTransaction.sumForUser(household, user));
-        var board = scoreboardService.scoreboard(household, ScorePeriod.all, null);
-        assertEquals(
-                0,
-                board.entries().stream()
-                        .filter(e -> e.userId().equals(user))
-                        .findFirst()
-                        .orElseThrow()
-                        .points());
+        assertThrows(
+                ScoringException.Conflict.class,
+                () ->
+                        ledgerService.reverse(
+                                household,
+                                task,
+                                user,
+                                ADMIN_USER,
+                                5,
+                                "Wrong person",
+                                ReversionResultingStatus.open));
+
+        assertEquals(0, PointTransaction.sumForUser(household, user));
     }
 }
