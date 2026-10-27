@@ -964,11 +964,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0099 · Local stack Postgres on the Red Hat hardened image
 
-* Status: todo
-* Issue / PR: — (suggested: "Use hi/postgresql in the local Compose stack")
+* Status: in-review
+* Issue / PR: — / (this PR)
 * Depends on: T-0098
 * Spec: —
 * Acceptance criteria: `deploy/podman-compose.yml` uses `registry.access.redhat.com/hi/postgresql` (17 is the lowest tag found) instead of `postgres:16-alpine`; init script, healthcheck (`pg_isready`) and volume path work; Testcontainers keeps its own image.
+* Summary: `deploy/podman-compose.yml` runs `registry.access.redhat.com/hi/postgresql:17`. The image keeps the entrypoint conventions of the official one (`POSTGRES_*` variables, `/docker-entrypoint-initdb.d`, `PGDATA=/var/lib/postgresql/data`), so the init script, the `pg_isready` healthcheck and the volume path are unchanged. Testcontainers and the NAS stack keep `postgres:16-alpine`.
+* Decisions and deviations: Local Postgres moves from 16 to 17; a `postgres-data` volume made by 16 cannot be opened by 17, so run `make down` (it removes volumes) once. The NAS stack is left on 16 on purpose: it holds real data and a major upgrade needs a dump and restore, not an image swap.
+* Verification: `make down`, `make up` (smoke OK, container healthy), `make seed`, a Postgres restart that kept the seeded household, and `make e2e` (all journeys passed). Not run: CI.
 
 ### T-0100 · Publish the service images to GHCR when a pull request is merged
 
