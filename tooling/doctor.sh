@@ -19,6 +19,7 @@ flutter_version() { flutter --version --machine 2>/dev/null | python3 -c 'import
 is_pinned_java() { [[ "$(java_major)" == "$JAVA_MAJOR" ]]; }
 is_pinned_flutter() { [[ "$(flutter_version)" == "$FLUTTER_VERSION" ]]; }
 has_podman_socket() { [[ -S "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/podman/podman.sock" ]]; }
+podman_api_stays_up() { systemctl --user show podman.service -p ExecStart 2>/dev/null | grep -q -- "--time=0"; }
 has_avd() { avdmanager list avd -c | grep -qx "$AVD_NAME"; }
 has_kvm() { [[ -r /dev/kvm && -w /dev/kvm ]]; }
 IMAGE_DIR="$ANDROID_SDK_ROOT/system-images/android-${ANDROID_API}/${ANDROID_IMAGE_TAG}/${ANDROID_ABI}"
@@ -28,6 +29,7 @@ check "JDK ${JAVA_MAJOR} (jbang jdk install ${JAVA_MAJOR})" is_pinned_java
 check "podman" podman --version
 check "podman compose provider" podman compose version
 check "podman API socket (systemctl --user enable --now podman.socket)" has_podman_socket
+check "podman API without idle timeout (tooling/configure-podman-api.sh)" podman_api_stays_up
 echo "App"
 check "Flutter ${FLUTTER_VERSION}" is_pinned_flutter
 check "dart" dart --version

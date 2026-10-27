@@ -21,6 +21,9 @@ if ((${#MISSING[@]})); then
   sudo dnf install -y "${MISSING[@]}"
 fi
 
+echo "== Podman API idle timeout"
+bash "$TOOLING_DIR/configure-podman-api.sh"
+
 echo "== Flutter ${FLUTTER_VERSION}"
 if [[ "$(cat "$DEV_TOOLS_DIR/flutter/.betterhome-version" 2>/dev/null || true)" != "$FLUTTER_VERSION" ]]; then
   mkdir -p "$DEV_TOOLS_DIR"
