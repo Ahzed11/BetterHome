@@ -758,6 +758,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noIcon => 'No icon';
 
   @override
+  String get pickTimezoneTitle => 'Choose a timezone';
+
+  @override
+  String get timezoneSearchHint => 'Search, for example Paris';
+
+  @override
+  String get timezoneNoMatch => 'No timezone matches your search';
+
+  @override
   String get emojiCleaning => 'Cleaning';
 
   @override

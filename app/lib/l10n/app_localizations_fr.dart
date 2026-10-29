@@ -764,6 +764,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get noIcon => 'Aucune icône';
 
   @override
+  String get pickTimezoneTitle => 'Choisir un fuseau horaire';
+
+  @override
+  String get timezoneSearchHint => 'Rechercher, par exemple Paris';
+
+  @override
+  String get timezoneNoMatch =>
+      'Aucun fuseau horaire ne correspond à votre recherche';
+
+  @override
   String get emojiCleaning => 'Ménage';
 
   @override

@@ -214,6 +214,7 @@ AGENTS.md
 
 ### 8.2 Navigation & Screens
 - **Navigation:** Four bottom tabs (All Chores, My Chores, Leaderboard, Lists; the design names the fourth "Lists") and a Household Switcher at the top.
+- **Creating a household:** the form asks for the household name and its timezone. The timezone is chosen from a searchable list of IANA zone names (for example `Europe/Paris`) and cannot be typed freely; a new household starts on `Europe/Paris`. The search ignores case and treats a space, an underscore, a hyphen and a slash alike ("new york" finds `America/New_York`).
 - **Household screen, templates:** a "Chore templates" section lists the household's active templates as cards (emoji, title, points on time and if late). Admins see an "Add a template" button and open a template's edit form by tapping its card; the form has title (required), emoji, description, points and late points (whole numbers, 0 or more). Members see the list without these actions. Editing a template never changes past tasks (§3.1).
 - **Quick-log flow:** "+ I just did…" floating button; picking a template logs it after 5 seconds unless the person taps Undo in that time (nothing is created, so there is nothing to revert). Leaving the screen within the 5 seconds sends the log.
 

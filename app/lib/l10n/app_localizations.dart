@@ -1346,6 +1346,24 @@ abstract class AppLocalizations {
   /// **'No icon'**
   String get noIcon;
 
+  /// No description provided for @pickTimezoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a timezone'**
+  String get pickTimezoneTitle;
+
+  /// No description provided for @timezoneSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search, for example Paris'**
+  String get timezoneSearchHint;
+
+  /// No description provided for @timezoneNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No timezone matches your search'**
+  String get timezoneNoMatch;
+
   /// No description provided for @emojiCleaning.
   ///
   /// In en, this message translates to:
