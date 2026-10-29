@@ -7,7 +7,6 @@ the server ([ADR 0029](../../documentation/decisions/0029-caddy-reverse-proxy-on
 |---|---|
 | `compose.yml` | The stack. No Caddy, no Tailscale, no published port, no `.env`: values are inline |
 | `Caddyfile` | A snippet for your Caddy: the routes of BetterHome, no host name in it |
-| `install.sh` | Fills in every `CHANGE_ME` (host, generated secrets, backup folder), creates the `edge` network and starts the stack |
 | `update.sh` | Backs up, moves the images to a tag, pulls and restarts |
 | `restore.sh` | Restores one database from a backup |
 
@@ -19,15 +18,45 @@ the server ([ADR 0029](../../documentation/decisions/0029-caddy-reverse-proxy-on
 
 ## Install
 
-1. Copy this folder's `compose.yml`, `Caddyfile`, `install.sh`, `update.sh` and `restore.sh` to the NAS (for example `/volume1/docker/betterhome/`), or `git clone` the repository there and work in `deploy/nas`.
-2. From SSH in that folder, run the installer with the NAS's name on your tailnet and a folder of a NAS volume for the backups:
+Everything is done over SSH on the NAS, in the folder where you put the files.
+
+1. **Copy the files.** Put `compose.yml` and `Caddyfile` (and `update.sh`, `restore.sh`) in a folder of the NAS, for example `/volume1/docker/betterhome/`, or `git clone` the repository and work in `deploy/nas`.
+2. **Generate the secrets.** You need five random values; run this five times (or once per value) and keep the results at hand:
 
    ```bash
-   ./install.sh nas.example.ts.net /volume1/backups/betterhome
+   openssl rand -hex 32
    ```
 
-   It generates every password and secret (nothing to invent), writes them into `compose.yml` (readable by you only), makes the backup folder writable, creates the `edge` network if it is missing, starts the stack and prints the Keycloak and Gotify admin passwords. Postgres starts, the databases are created, the migrations run, then Keycloak and the services start. `--no-start` fills the file in without starting. It refuses to run a second time, since nothing is left to fill in.
-3. In your Caddyfile, add the import inside the site block of your tailnet host, **before** any catch-all `handle` of yours, then reload Caddy (the installer prints the exact line):
+3. **Edit `compose.yml`.** Replace every `CHANGE_ME_...` (`grep -n CHANGE_ME compose.yml` lists them). The same name always gets the same value:
+
+   | Placeholder | Value | Places |
+   |---|---|---|
+   | `CHANGE_ME_NAS_HOST` | The NAS's name on your tailnet, for example `nas.example.ts.net` | 3 |
+   | `CHANGE_ME_POSTGRES_PASSWORD` | A generated secret | every one |
+   | `CHANGE_ME_KEYCLOAK_ADMIN_PASSWORD` | A password for the Keycloak admin console | 1 |
+   | `CHANGE_ME_GOTIFY_ADMIN_PASSWORD` | A password for the Gotify admin | 1 |
+   | `CHANGE_ME_SERVICE_CLIENT_SECRET` | A generated secret, shared by the five services and Keycloak | every one |
+   | `CHANGE_ME_API_CLIENT_SECRET` | A generated secret (used by `make nas-smoke` and scripts) | 1 |
+   | `CHANGE_ME_BACKUP_DIR` | A folder of a NAS volume, for example `/volume1/backups/betterhome` (see Backups) | 2 |
+
+   Do not edit the copy in a Git checkout if you plan to pull updates; work on a copy, and keep it: it is the only place the real values exist.
+4. **Prepare the backup folder and the network.** The folder must exist and be writable by the container (without it `backup` restarts in a loop), and the `edge` network is the one shared with your Caddy (skip the second command if it already exists):
+
+   ```bash
+   mkdir -p /volume1/backups/betterhome && chmod 777 /volume1/backups/betterhome
+   docker network create edge
+   ```
+
+5. **Start the stack.** Postgres starts, the databases are created, the migrations run, then Keycloak and the services start (the first start takes a few minutes while the images are pulled):
+
+   ```bash
+   docker compose -f compose.yml up -d
+   docker compose -f compose.yml ps        # every service "running"; init-databases and migrate "exited (0)"
+   docker compose -f compose.yml logs -f   # Ctrl-C to leave; look here if a service restarts
+   ```
+
+   This needs Docker Compose v2 (`depends_on: condition: service_completed_successfully`). Loading the file as a project in the UGOS Docker app should work the same way; that route has not been tried yet.
+6. **Let your Caddy serve it.** In your Caddyfile, add the import inside the site block of your tailnet host, **before** any catch-all `handle` of yours, then reload Caddy:
 
    ```
    nas.example.ts.net {
@@ -36,24 +65,8 @@ the server ([ADR 0029](../../documentation/decisions/0029-caddy-reverse-proxy-on
    }
    ```
 
-   The snippet only claims `/auth`, `/api/households|tasks|scoring|lists|notifications` and `/gotify`. Check none of them is a route of another app on that host.
-
-The Compose file uses `depends_on: condition: service_completed_successfully`, which needs Docker Compose v2.
-
-<details>
-<summary>Without the script (UGOS Docker app, or by hand)</summary>
-
-Replace every `CHANGE_ME_...` in the copy of `compose.yml`, then `docker compose -f compose.yml up -d` (loading the file as a project in the UGOS Docker app should work the same way; that route has not been tried yet):
-
-- `CHANGE_ME_NAS_HOST`: the NAS's name on your tailnet (for example `nas.example.ts.net`). Three places.
-- `CHANGE_ME_POSTGRES_PASSWORD`: one strong password, the same value everywhere it appears.
-- `CHANGE_ME_KEYCLOAK_ADMIN_PASSWORD` and `CHANGE_ME_GOTIFY_ADMIN_PASSWORD`.
-- `CHANGE_ME_BACKUP_DIR`: a folder of a NAS volume for the backups (see Backups). Two places.
-- `CHANGE_ME_SERVICE_CLIENT_SECRET` (the same value in the five services and in Keycloak) and `CHANGE_ME_API_CLIENT_SECRET`: long random strings, for example `openssl rand -hex 32`.
-
-Create the network once if needed: `docker network create edge`.
-
-</details>
+   The snippet only claims `/auth`, `/api/households|tasks|scoring|lists|notifications` and `/gotify`. Check none of them is a route of another app on that host. Your Caddy container must be on the `edge` network.
+7. **Check it** with the next section.
 
 ## Check it
 

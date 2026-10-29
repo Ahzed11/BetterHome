@@ -41,11 +41,6 @@ for name in households tasks scoring lists notifications keycloak; do
 done
 grep -q "^      - gotify-data:/data:ro\$" "$compose" || fail "compose.yml: Gotify's data is not backed up (read-only mount)"
 [ -x "$root/deploy/nas/update.sh" ] && [ -x "$root/deploy/nas/restore.sh" ] || fail "deploy/nas: update.sh and restore.sh must exist and be executable"
-[ -x "$root/deploy/nas/install.sh" ] || fail "deploy/nas: install.sh must exist and be executable"
-# install.sh fills in every placeholder family of compose.yml; a new CHANGE_ME_<name> it does not know would be left behind.
-for placeholder in $(grep -v '^ *#' "$compose" | grep -o 'CHANGE_ME_[A-Z_]*' | sort -u); do
-  grep -q "$placeholder" "$root/deploy/nas/install.sh" || fail "install.sh does not fill in $placeholder"
-done
 
 grep -Eq '^ +ports:' "$compose" && fail "compose.yml: a port is published to the host, only Caddy may reach the stack"
 grep -Eq 'env_file|(^|[^$])\$\{' "$compose" && fail "compose.yml: it must not need a .env file or environment interpolation"
