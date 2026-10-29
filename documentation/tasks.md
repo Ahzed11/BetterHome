@@ -1220,3 +1220,15 @@ Out of scope of T-0107 to T-0117, to be filed when wanted: Caddy in the dev comp
 * Decisions and deviations: an install script was tried and dropped: the product owner asked for documentation, and uses the UGOS interface without SSH. The menu names are from UGREEN's public pages, not from a NAS, so they are described loosely; restoring a database still needs a shell. ADR 0026's consequence line still says the packages are private; ADRs are history and it was left alone.
 * Verification: `make test-nas`, `make test-docs`. Not run: the real NAS, Docker Compose v2, the UGOS Docker app, a real Caddy and Tailscale (T-0110), and the phone (T-0111, T-0114).
 * Follow-ups: none.
+
+### T-0122 · NAS Postgres healthcheck fills the log with FATAL lines
+
+* Status: in-review
+* Issue / PR: — / (this PR)
+* Depends on: T-0108
+* Spec: —
+* Acceptance criteria: The Postgres healthcheck of `deploy/nas/compose.yml` no longer makes Postgres log an error every 5 seconds.
+* Summary: `pg_isready -U betterhome` without `-d` connects to a database named after the user, which does not exist (the stack has `postgres` and `betterhome_<service>`), so Postgres logged `FATAL: database "betterhome" does not exist` on every check while the check itself passed. The healthcheck now passes `-d postgres`. Reported by the product owner from the UGOS Docker app, which showed it as an error.
+* Decisions and deviations: only `deploy/nas/compose.yml` changed. `deploy/podman-compose.yml` has the same command line and probably the same log noise; not changed here (surgical).
+* Verification: `make test-nas`, `make test-docs`. Not run: the change on the NAS or `pg_isready` against a live Postgres (no container runtime here); the cause is inferred from the check interval matching the log timestamps.
+* Follow-ups: the same `-d postgres` in `deploy/podman-compose.yml` if the noise shows there.
