@@ -78,6 +78,8 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
   }
 
   Future<void> _leave() async {
+    // Nothing of this user's household may be shown to whoever signs in next (ADR 0031).
+    widget.session.readCache.clear();
     await widget.auth?.signOut();
     _set(_Phase.signedOut);
   }
@@ -122,7 +124,10 @@ class _BetterHomeAppState extends State<BetterHomeApp> {
       return _synced
           ? HomeShell(
               session: widget.session,
-              onAccountDeleted: () => setState(() => _synced = false),
+              onAccountDeleted: () {
+                widget.session.readCache.clear();
+                setState(() => _synced = false);
+              },
             )
           : _demoProfileScreen();
     }

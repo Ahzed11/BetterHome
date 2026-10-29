@@ -3,6 +3,7 @@ import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/state/read_cache.dart';
 import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
@@ -41,52 +42,78 @@ class ChoresScreen extends StatefulWidget {
 }
 
 class _ChoresScreenState extends State<ChoresScreen> {
-  late Future<List<ChoreTask>> _future;
-  Future<_Week>? _week;
-  bool _isAdmin = false;
+  late final CachedRead<List<ChoreTask>> _tasks;
+  late final CachedRead<List<Membership>> _members;
+  CachedRead<_Week>? _week;
   _Filter _filter = _Filter.all;
-  String? _household;
   DateTime? _selectedDay;
 
   @override
   void initState() {
     super.initState();
-    _loadAdmin();
-    _reload();
-  }
-
-  Future<void> _loadAdmin() async {
-    final members = await widget.session.repository.listMembers(
-      widget.householdId,
+    final session = widget.session;
+    final householdId = widget.householdId;
+    _tasks = CachedRead(
+      cache: session.readCache,
+      key: session.readKey(
+        'tasks',
+        householdId: householdId,
+        params: widget.mine,
+      ),
+      fetch: () =>
+          session.tasksRepository.listTasks(householdId, mine: widget.mine),
+      onChange: _changed,
     );
-    final me = widget.session.profile?.id;
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isAdmin = members.any(
-        (m) => m.userId == me && m.role == MembershipRole.admin,
-      );
-    });
-  }
-
-  void _reload() {
-    _future = widget.session.tasksRepository.listTasks(
-      widget.householdId,
-      mine: widget.mine,
+    _members = CachedRead(
+      cache: session.readCache,
+      key: session.readKey('members', householdId: householdId),
+      fetch: () => session.repository.listMembers(householdId),
+      onChange: _changed,
     );
     if (widget.mine) {
-      _week = _loadWeek();
+      _week = CachedRead(
+        cache: session.readCache,
+        key: session.readKey('week', householdId: householdId),
+        fetch: _loadWeek,
+        onChange: _changed,
+      );
     }
+  }
+
+  @override
+  void dispose() {
+    _tasks.dispose();
+    _members.dispose();
+    _week?.dispose();
+    super.dispose();
+  }
+
+  void _changed() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// Asks for fresh data after the user's own action. What is on screen stays until it arrives.
+  void _refresh() {
+    _tasks.refresh();
+    _week?.refresh();
+  }
+
+  bool get _isAdmin {
+    final me = widget.session.profile?.id;
+    return switch (_members.state) {
+      ReadLoaded<List<Membership>>(:final data) => data.any(
+        (m) => m.userId == me && m.role == MembershipRole.admin,
+      ),
+      _ => false,
+    };
   }
 
   Future<_Week> _loadWeek() async {
     final household = await widget.session.repository.getHousehold(
       widget.householdId,
     );
-    if (mounted) {
-      setState(() => _household = household.name);
-    }
     final board = await widget.session.scoringRepository.getScoreboard(
       widget.householdId,
       period: ScorePeriod.week,
@@ -214,7 +241,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
       ),
     );
     if (logged && mounted) {
-      setState(_reload);
+      _refresh();
     }
   }
 
@@ -260,13 +287,15 @@ class _ChoresScreenState extends State<ChoresScreen> {
       task.id,
       reason: reason,
     );
-    setState(_reload);
+    if (mounted) {
+      _refresh();
+    }
   }
 
   Future<void> _complete(ChoreTask task) async {
     await widget.session.tasksRepository.complete(widget.householdId, task.id);
     if (mounted) {
-      setState(_reload);
+      _refresh();
     }
   }
 
@@ -292,7 +321,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
     if (ok == true) {
       await widget.session.tasksRepository.dismiss(widget.householdId, task.id);
       if (mounted) {
-        setState(_reload);
+        _refresh();
       }
     }
   }
@@ -339,43 +368,42 @@ class _ChoresScreenState extends State<ChoresScreen> {
   }
 
   String? _eyebrow(AppLocalizations l10n) {
-    final household = _household;
+    final household = switch (_week?.state) {
+      ReadLoaded<_Week>(:final data) => data.household,
+      _ => null,
+    };
     return household == null
         ? null
         : l10n.heyHousehold(widget.session.profile?.givenName ?? '', household);
   }
 
   Widget _summary(List<ChoreTask> tasks, AppLocalizations l10n) {
-    return FutureBuilder<_Week>(
-      future: _week,
-      builder: (context, snapshot) {
-        final week = snapshot.data;
-        if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
-            child: Text(l10n.errorGeneric),
-          );
-        }
-        if (week == null) {
-          return const SizedBox.shrink();
-        }
-        final open = tasks.where((t) => t.status == TaskStatus.open).toList();
-        final reach = open.fold<int>(0, (sum, t) => sum + t.points);
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceMd),
-          child: WeekSummaryCard(
-            heading: l10n.thisWeek,
-            points: l10n.pointsLabel(week.points),
-            rank: week.rank == 1
-                ? l10n.rankFirst
-                : l10n.rankBehind(week.rank, week.behind),
-            progress: week.points + reach == 0
-                ? 0
-                : week.points / (week.points + reach),
-            reach: l10n.withinReach(reach, open.length),
-          ),
-        );
-      },
+    return switch (_week?.state) {
+      ReadFailed<_Week>() => Padding(
+        padding: const EdgeInsets.all(AppTokens.spaceMd),
+        child: Text(l10n.errorGeneric),
+      ),
+      ReadLoaded<_Week>(:final data) => _weekCard(data, tasks, l10n),
+      _ => const SizedBox.shrink(),
+    };
+  }
+
+  Widget _weekCard(_Week week, List<ChoreTask> tasks, AppLocalizations l10n) {
+    final open = tasks.where((t) => t.status == TaskStatus.open).toList();
+    final reach = open.fold<int>(0, (sum, t) => sum + t.points);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppTokens.spaceMd),
+      child: WeekSummaryCard(
+        heading: l10n.thisWeek,
+        points: l10n.pointsLabel(week.points),
+        rank: week.rank == 1
+            ? l10n.rankFirst
+            : l10n.rankBehind(week.rank, week.behind),
+        progress: week.points + reach == 0
+            ? 0
+            : week.points / (week.points + reach),
+        reach: l10n.withinReach(reach, open.length),
+      ),
     );
   }
 
@@ -531,10 +559,13 @@ class _ChoresScreenState extends State<ChoresScreen> {
           label: Text(l10n.quickLog),
         ),
       ),
-      body: FutureBuilder<List<ChoreTask>>(
-        future: _future,
-        builder: (context, snapshot) {
-          final tasks = snapshot.data ?? const <ChoreTask>[];
+      body: Builder(
+        builder: (context) {
+          final state = _tasks.state;
+          final tasks = switch (state) {
+            ReadLoaded<List<ChoreTask>>(:final data) => data,
+            _ => const <ChoreTask>[],
+          };
           final me = widget.session.profile?.id;
           final mineTasks = tasks.where((t) => t.assigneeId == me).toList();
           final byFilter = switch (_filter) {
@@ -607,9 +638,9 @@ class _ChoresScreenState extends State<ChoresScreen> {
                   AppTokens.spaceMd,
                   0,
                 ),
-                child: snapshot.connectionState != ConnectionState.done
+                child: state is ReadLoading<List<ChoreTask>>
                     ? Center(child: Text(l10n.loading))
-                    : snapshot.hasError
+                    : state is ReadFailed<List<ChoreTask>>
                     ? Center(child: Text(l10n.errorGeneric))
                     : shown.isEmpty
                     ? Center(

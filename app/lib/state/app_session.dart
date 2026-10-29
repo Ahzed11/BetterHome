@@ -4,6 +4,7 @@ import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
+import 'package:betterhome/state/read_cache.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,12 +30,29 @@ class AppSession extends ChangeNotifier {
   ScoringRepository _scoringRepository;
   ListsRepository _listsRepository;
   NotificationsRepository _notificationsRepository;
-  UserProfile? profile;
+  UserProfile? _profile;
   Object? lastError;
   bool busy = false;
 
   /// The household every tab shows. Remembered per user, so it is the same after a restart.
   String? selectedHouseholdId;
+
+  /// The signed-in user. Another user means another person's data: the cache is emptied.
+  UserProfile? get profile => _profile;
+
+  set profile(UserProfile? value) {
+    if (value?.id != _profile?.id) {
+      readCache.clear();
+    }
+    _profile = value;
+  }
+
+  /// The last answer to each read, in memory only (ADR 0031).
+  final ReadCache readCache = ReadCache();
+
+  /// The key of one read in [readCache]: what it is, for which user, household and parameters.
+  Object readKey(String kind, {String? householdId, Object? params}) =>
+      (kind, profile?.id, householdId, params);
 
   HouseholdsRepository get repository => _repository;
   TasksRepository get tasksRepository => _tasksRepository;
@@ -72,26 +90,31 @@ class AppSession extends ChangeNotifier {
 
   void useRepository(HouseholdsRepository repository) {
     _repository = repository;
+    readCache.clear();
     notifyListeners();
   }
 
   void useTasksRepository(TasksRepository repository) {
     _tasksRepository = repository;
+    readCache.clear();
     notifyListeners();
   }
 
   void useListsRepository(ListsRepository repository) {
     _listsRepository = repository;
+    readCache.clear();
     notifyListeners();
   }
 
   void useNotificationsRepository(NotificationsRepository repository) {
     _notificationsRepository = repository;
+    readCache.clear();
     notifyListeners();
   }
 
   void useScoringRepository(ScoringRepository repository) {
     _scoringRepository = repository;
+    readCache.clear();
     notifyListeners();
   }
 
