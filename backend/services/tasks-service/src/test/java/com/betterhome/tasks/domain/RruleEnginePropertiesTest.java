@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
+import net.jqwik.api.Example;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
@@ -123,6 +124,35 @@ class RruleEnginePropertiesTest {
         return local.atZone(zone).toInstant();
     }
 
+    /**
+     * The local start the engine can see. It is given an {@code Instant}, so a start inside a
+     * daylight saving gap has already moved forward by the gap (02:00 is 03:00): that moved time is
+     * the time of day of the rule from then on, and what the expectations restate.
+     */
+    private static LocalDateTime seenBy(LocalDateTime start, ZoneId zone) {
+        return at(start, zone).atZone(zone).toLocalDateTime();
+    }
+
+    /**
+     * A start inside a daylight saving gap (clocks jump from 02:00 to 03:00 in Adak on 2029-03-11),
+     * which the random generator only reaches on some seeds (CI of 2026-10-29, seed
+     * -577492766145996246, T-0132). Every property that restates the time of day runs on it here.
+     */
+    @Example
+    void aStartInsideADaylightSavingGapIsHandledByEveryProperty() {
+        ZoneId zone = ZoneId.of("America/Adak");
+        LocalDateTime start = LocalDateTime.of(2029, 3, 11, 2, 0);
+        Schedule daily = new Schedule("DAILY", 1, List.of(), null);
+        Schedule weekly = new Schedule("WEEKLY", 1, List.of(), null);
+
+        aDailyRuleLeavesNoLocalDayOutAndKeepsTheLocalTimeOfDay(1, zone, start);
+        everyOccurrenceIsOnADayTheScheduleNames(daily, zone, start);
+        theEngineFindsExactlyTheOccurrencesTheScheduleNamesNoneMissedNoneInvented(
+                daily, zone, start);
+        theEngineFindsExactlyTheOccurrencesTheScheduleNamesNoneMissedNoneInvented(
+                weekly, zone, start);
+    }
+
     @Property
     void occurrencesComeInOrderNotBeforeTheStartAndNotAfterTheEnd(
             @ForAll("schedules") Schedule schedule,
@@ -146,7 +176,7 @@ class RruleEnginePropertiesTest {
             @ForAll("zones") ZoneId zone,
             @ForAll("starts") LocalDateTime start) {
         Instant startsAt = at(start, zone);
-        LocalDate startDay = start.toLocalDate();
+        LocalDate startDay = seenBy(start, zone).toLocalDate();
 
         for (Instant occurrence : chain(schedule, zone, startsAt, null)) {
             LocalDate day = occurrence.atZone(zone).toLocalDate();
@@ -241,11 +271,12 @@ class RruleEnginePropertiesTest {
             @ForAll("zones") ZoneId zone,
             @ForAll("starts") LocalDateTime start) {
         Instant startsAt = at(start, zone);
+        LocalDateTime seen = seenBy(start, zone);
         List<Instant> expected = new ArrayList<>();
         for (int offset = 0; offset < 3000 && expected.size() < CHAIN; offset++) {
-            LocalDate day = start.toLocalDate().plusDays(offset);
-            if (named(schedule, start.toLocalDate(), day)) {
-                Instant occurrence = at(day.atTime(start.toLocalTime()), zone);
+            LocalDate day = seen.toLocalDate().plusDays(offset);
+            if (named(schedule, seen.toLocalDate(), day)) {
+                Instant occurrence = at(day.atTime(seen.toLocalTime()), zone);
                 if (!occurrence.atZone(zone).toLocalDate().equals(day)) {
                     occurrence = at(day.plusDays(1).atStartOfDay(), zone).minusSeconds(1);
                 }
@@ -270,21 +301,22 @@ class RruleEnginePropertiesTest {
             @ForAll("starts") LocalDateTime start) {
         Schedule daily = new Schedule("DAILY", interval, List.of(), null);
         Instant startsAt = at(start, zone);
+        LocalDateTime seen = seenBy(start, zone);
 
         List<Instant> occurrences = chain(daily, zone, startsAt, null);
 
         for (int i = 0; i < occurrences.size(); i++) {
             LocalDateTime local = occurrences.get(i).atZone(zone).toLocalDateTime();
             assertEquals(
-                    start.toLocalDate().plusDays((long) i * interval),
+                    seen.toLocalDate().plusDays((long) i * interval),
                     local.toLocalDate(),
                     "no day skipped");
             if (zone.getRules()
-                            .getValidOffsets(local.toLocalDate().atTime(start.toLocalTime()))
+                            .getValidOffsets(local.toLocalDate().atTime(seen.toLocalTime()))
                             .size()
                     == 1) {
                 assertEquals(
-                        start.toLocalTime(), local.toLocalTime(), "the same local time every day");
+                        seen.toLocalTime(), local.toLocalTime(), "the same local time every day");
             }
         }
     }
