@@ -27,6 +27,16 @@ final class ReadFailed<T> extends ReadState<T> {
   final ApiException error;
 }
 
+/// What a read is: where its answer is kept and how to ask for it. Screens and the prefetch of
+/// the other tabs describe a read once (`reads.dart`), so the entry a prefetch fills is the one a
+/// screen reads.
+class ReadSpec<T> {
+  const ReadSpec({required this.key, required this.fetch});
+
+  final Object key;
+  final Future<T> Function() fetch;
+}
+
 /// The state of one cached read, which the screens listening to it redraw from.
 class ReadEntry<T> extends ValueNotifier<ReadState<T>> {
   ReadEntry() : super(const ReadLoading());
@@ -94,6 +104,17 @@ class ReadCache {
     });
   }
 
+  /// Fills an entry that has never had an answer, for a read nobody has asked for yet (the
+  /// prefetch of the other tabs). One that already has an answer is left alone: the screen
+  /// refreshes it when it is opened. A request already running is joined. Completes with whether
+  /// the entry has an answer.
+  Future<bool> fill<T>(ReadSpec<T> spec) {
+    if (entry<T>(spec.key).value is ReadLoaded<T>) {
+      return Future.value(true);
+    }
+    return refresh<T>(spec.key, spec.fetch);
+  }
+
   Future<bool> _run<T>(ReadEntry<T> entry, Future<T> Function() fetch) async {
     entry.value = switch (entry.value) {
       ReadLoaded<T>(:final data) => ReadLoaded(data, refreshing: true),
@@ -135,6 +156,18 @@ class CachedRead<T> {
     refresh();
     _entry.addListener(_onChange);
   }
+
+  /// A read described by a [ReadSpec].
+  factory CachedRead.of(
+    ReadCache cache,
+    ReadSpec<T> spec, {
+    required VoidCallback onChange,
+  }) => CachedRead(
+    cache: cache,
+    key: spec.key,
+    fetch: spec.fetch,
+    onChange: onChange,
+  );
 
   final ReadCache _cache;
   final Object _key;

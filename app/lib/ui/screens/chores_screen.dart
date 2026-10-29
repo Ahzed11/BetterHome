@@ -1,9 +1,9 @@
 import 'package:betterhome/data/models.dart';
-import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/state/read_cache.dart';
+import 'package:betterhome/state/reads.dart';
 import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
@@ -27,6 +27,7 @@ class ChoresScreen extends StatefulWidget {
     required this.householdId,
     this.mine = false,
     this.now = DateTime.now,
+    this.onLoaded,
   });
 
   final AppSession session;
@@ -38,6 +39,10 @@ class ChoresScreen extends StatefulWidget {
   /// The current time, used to tell which open chores are overdue.
   final DateTime Function() now;
 
+  /// Called once, when the chores of this screen have been loaded, fresh from the server: the
+  /// first tab says so, and the app starts loading the other tabs behind it.
+  final VoidCallback? onLoaded;
+
   @override
   State<ChoresScreen> createState() => _ChoresScreenState();
 }
@@ -45,46 +50,38 @@ class ChoresScreen extends StatefulWidget {
 class _ChoresScreenState extends State<ChoresScreen> {
   late final CachedRead<List<ChoreTask>> _tasks;
   late final CachedRead<List<Membership>> _members;
-  CachedRead<_Week>? _week;
+  CachedRead<WeekStanding>? _week;
   CachedRead<Household>? _household;
   _Filter _filter = _Filter.all;
   DateTime? _selectedDay;
+  bool _signalledLoaded = false;
 
   @override
   void initState() {
     super.initState();
     final session = widget.session;
     final householdId = widget.householdId;
-    _tasks = CachedRead(
-      cache: session.readCache,
-      key: session.readKey(
-        'tasks',
-        householdId: householdId,
-        params: widget.mine,
-      ),
-      fetch: () =>
-          session.tasksRepository.listTasks(householdId, mine: widget.mine),
+    _tasks = CachedRead.of(
+      session.readCache,
+      session.tasksRead(householdId, mine: widget.mine),
       onChange: _changed,
     );
-    _members = CachedRead(
-      cache: session.readCache,
-      key: session.readKey('members', householdId: householdId),
-      fetch: () => session.repository.listMembers(householdId),
+    _members = CachedRead.of(
+      session.readCache,
+      session.membersRead(householdId),
       onChange: _changed,
     );
     if (widget.mine) {
       // The week summary and the household's name do not depend on each other: asked together
       // with the tasks and the members.
-      _week = CachedRead(
-        cache: session.readCache,
-        key: session.readKey('week', householdId: householdId),
-        fetch: _loadWeek,
+      _week = CachedRead.of(
+        session.readCache,
+        session.weekRead(householdId),
         onChange: _changed,
       );
-      _household = CachedRead(
-        cache: session.readCache,
-        key: session.readKey('household', householdId: householdId),
-        fetch: () => session.repository.getHousehold(householdId),
+      _household = CachedRead.of(
+        session.readCache,
+        session.householdRead(householdId),
         onChange: _changed,
       );
     }
@@ -100,8 +97,16 @@ class _ChoresScreenState extends State<ChoresScreen> {
   }
 
   void _changed() {
-    if (mounted) {
-      setState(() {});
+    if (!mounted) {
+      return;
+    }
+    setState(() {});
+    if (_signalledLoaded) {
+      return;
+    }
+    if (_tasks.state case ReadLoaded<List<ChoreTask>>(refreshing: false)) {
+      _signalledLoaded = true;
+      widget.onLoaded?.call();
     }
   }
 
@@ -119,21 +124,6 @@ class _ChoresScreenState extends State<ChoresScreen> {
       ),
       _ => false,
     };
-  }
-
-  Future<_Week> _loadWeek() async {
-    final board = await widget.session.scoringRepository.getScoreboard(
-      widget.householdId,
-      period: ScorePeriod.week,
-    );
-    final me = widget.session.profile?.id;
-    final mine = board.entries.where((e) => e.userId == me).firstOrNull;
-    final leader = board.entries.firstOrNull;
-    return _Week(
-      points: mine?.points ?? 0,
-      rank: mine?.rank ?? board.entries.length + 1,
-      behind: leader == null ? 0 : leader.points - (mine?.points ?? 0),
-    );
   }
 
   String _statusLabel(TaskStatus status, AppLocalizations l10n) =>
@@ -386,16 +376,20 @@ class _ChoresScreenState extends State<ChoresScreen> {
 
   Widget _summary(List<ChoreTask> tasks, AppLocalizations l10n) {
     return switch (_week?.state) {
-      ReadFailed<_Week>() => Padding(
+      ReadFailed<WeekStanding>() => Padding(
         padding: const EdgeInsets.all(AppTokens.spaceMd),
         child: Text(l10n.errorGeneric),
       ),
-      ReadLoaded<_Week>(:final data) => _weekCard(data, tasks, l10n),
+      ReadLoaded<WeekStanding>(:final data) => _weekCard(data, tasks, l10n),
       _ => const SizedBox.shrink(),
     };
   }
 
-  Widget _weekCard(_Week week, List<ChoreTask> tasks, AppLocalizations l10n) {
+  Widget _weekCard(
+    WeekStanding week,
+    List<ChoreTask> tasks,
+    AppLocalizations l10n,
+  ) {
     final open = tasks.where((t) => t.status == TaskStatus.open).toList();
     final reach = open.fold<int>(0, (sum, t) => sum + t.points);
     return Padding(
@@ -673,12 +667,4 @@ class _ChoresScreenState extends State<ChoresScreen> {
       ),
     );
   }
-}
-
-class _Week {
-  const _Week({required this.points, required this.rank, required this.behind});
-
-  final int points;
-  final int rank;
-  final int behind;
 }

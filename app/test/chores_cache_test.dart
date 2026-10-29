@@ -22,8 +22,11 @@ DateTime _now() => DateTime.utc(2026, 10, 14, 10);
 class _HeldTasks extends FakeTasksRepository {
   _HeldTasks() : super(now: _now);
 
-  /// Every `listTasks` the screens asked for, in order.
+  /// Every `listTasks` of the All chores tab, in order; the prefetch of My chores asks apart.
   final List<Completer<List<ChoreTask>>> asked = [];
+
+  /// Every `listTasks` of My chores, in order.
+  final List<Completer<List<ChoreTask>>> askedMine = [];
 
   @override
   Future<List<ChoreTask>> listTasks(
@@ -32,13 +35,17 @@ class _HeldTasks extends FakeTasksRepository {
     bool mine = false,
   }) {
     final held = Completer<List<ChoreTask>>();
-    asked.add(held);
+    (mine ? askedMine : asked).add(held);
     return held.future;
   }
 
   /// Answers the [index]th question with what the fake holds now.
   Future<void> answer(int index, String householdId) async {
     asked[index].complete(await super.listTasks(householdId));
+  }
+
+  Future<void> answerMine(int index, String householdId) async {
+    askedMine[index].complete(await super.listTasks(householdId, mine: true));
   }
 }
 
@@ -238,7 +245,7 @@ void main() {
     final w = await _world();
     await _pumpShell(tester, w);
     await _openTab(tester, 'My chores');
-    await w.tasks.answer(1, w.householdId);
+    await w.tasks.answerMine(0, w.householdId);
     await tester.pumpAndSettle();
     expect(find.byType(WeekSummaryCard), findsOneWidget);
     await _openTab(tester, 'Lists');

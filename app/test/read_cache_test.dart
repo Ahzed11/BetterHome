@@ -150,6 +150,87 @@ void main() {
       },
     );
 
+    test('fill gives an entry that has no answer one, and says so', () async {
+      final cache = ReadCache();
+      var calls = 0;
+      final spec = ReadSpec<List<String>>(
+        key: 'k',
+        fetch: () async => ['filled ${++calls}'],
+      );
+
+      final filled = await cache.fill(spec);
+
+      expect(filled, isTrue);
+      expect(_data(cache.entry<List<String>>('k').value), ['filled 1']);
+    });
+
+    test('fill leaves an entry that already has an answer alone', () async {
+      final cache = ReadCache();
+      await cache.refresh<List<String>>('k', () async => ['seen']);
+      var calls = 0;
+      final spec = ReadSpec<List<String>>(
+        key: 'k',
+        fetch: () async => ['filled ${++calls}'],
+      );
+
+      final filled = await cache.fill(spec);
+
+      expect(filled, isTrue);
+      expect(calls, 0);
+      expect(_data(cache.entry<List<String>>('k').value), ['seen']);
+    });
+
+    test('fill joins a request that is already running', () async {
+      final cache = ReadCache();
+      final release = Completer<List<String>>();
+      var calls = 0;
+      Future<List<String>> fetch() {
+        calls++;
+        return release.future;
+      }
+
+      final running = cache.refresh<List<String>>('k', fetch);
+      final filling = cache.fill(
+        ReadSpec<List<String>>(key: 'k', fetch: fetch),
+      );
+      release.complete(['a']);
+      await Future.wait([running, filling]);
+
+      expect(calls, 1);
+    });
+
+    test('fill asks again for an entry whose last request failed', () async {
+      final cache = ReadCache();
+      await cache.refresh<List<String>>(
+        'k',
+        () async => throw ApiException('down', statusCode: 503),
+      );
+
+      final filled = await cache.fill(
+        ReadSpec<List<String>>(key: 'k', fetch: () async => ['back']),
+      );
+
+      expect(filled, isTrue);
+      expect(_data(cache.entry<List<String>>('k').value), ['back']);
+    });
+
+    test('fill says no when the request fails and leaves no answer', () async {
+      final cache = ReadCache();
+
+      final filled = await cache.fill(
+        ReadSpec<List<String>>(
+          key: 'k',
+          fetch: () async => throw ApiException('down', statusCode: 503),
+        ),
+      );
+
+      expect(filled, isFalse);
+      expect(
+        cache.entry<List<String>>('k').value,
+        isA<ReadFailed<List<String>>>(),
+      );
+    });
+
     test('a failed refresh keeps the old answer and shows no error', () async {
       final cache = ReadCache();
       await cache.refresh<List<String>>('k', () async => ['kept']);

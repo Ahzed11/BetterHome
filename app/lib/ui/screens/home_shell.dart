@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/state/prefetch.dart';
 import 'package:betterhome/state/read_cache.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/screens/chores_screen.dart';
@@ -47,6 +50,9 @@ class _HomeShellState extends State<HomeShell> {
   late final CachedRead<List<Household>> _households;
   _Tab _tab = _Tab.allChores;
 
+  /// The household whose other tabs were loaded in the background, once per household.
+  String? _prefetchedFor;
+
   @override
   void initState() {
     super.initState();
@@ -80,6 +86,26 @@ class _HomeShellState extends State<HomeShell> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  /// The first tab has its answer: the other tabs of this household are loaded behind it.
+  void _firstTabLoaded(String householdId) {
+    if (_prefetchedFor == householdId) {
+      return;
+    }
+    _prefetchedFor = householdId;
+    final session = widget.session;
+    final userId = session.profile?.id;
+    unawaited(
+      prefetchOtherTabs(
+        session,
+        householdId,
+        wanted: () =>
+            mounted &&
+            session.selectedHouseholdId == householdId &&
+            session.profile?.id == userId,
+      ),
+    );
   }
 
   Future<void> _create() async {
@@ -158,6 +184,7 @@ class _HomeShellState extends State<HomeShell> {
         session: widget.session,
         householdId: householdId,
         now: widget.now,
+        onLoaded: () => _firstTabLoaded(householdId),
       ),
       _Tab.myChores => ChoresScreen(
         key: key,
