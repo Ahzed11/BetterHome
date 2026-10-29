@@ -1,7 +1,9 @@
 import 'package:betterhome/data/models.dart';
+import 'package:betterhome/data/timezones.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
+import 'package:betterhome/ui/widgets/timezone_picker_sheet.dart';
 import 'package:flutter/material.dart';
 
 class CreateHouseholdScreen extends StatefulWidget {
@@ -15,14 +17,13 @@ class CreateHouseholdScreen extends StatefulWidget {
 
 class _CreateHouseholdScreenState extends State<CreateHouseholdScreen> {
   final _name = TextEditingController();
-  final _timezone = TextEditingController(text: 'Europe/Paris');
+  String _timezone = defaultTimezone;
   bool _busy = false;
   String? _error;
 
   @override
   void dispose() {
     _name.dispose();
-    _timezone.dispose();
     super.dispose();
   }
 
@@ -34,7 +35,7 @@ class _CreateHouseholdScreenState extends State<CreateHouseholdScreen> {
     try {
       final household = await widget.session.repository.createHousehold(
         name: _name.text.trim(),
-        timezone: _timezone.text.trim(),
+        timezone: _timezone,
       );
       if (mounted) {
         Navigator.of(context).pop(household);
@@ -45,6 +46,13 @@ class _CreateHouseholdScreenState extends State<CreateHouseholdScreen> {
       if (mounted) {
         setState(() => _busy = false);
       }
+    }
+  }
+
+  Future<void> _pickTimezone() async {
+    final picked = await showTimezonePicker(context, current: _timezone);
+    if (picked != null && mounted) {
+      setState(() => _timezone = picked);
     }
   }
 
@@ -61,9 +69,25 @@ class _CreateHouseholdScreenState extends State<CreateHouseholdScreen> {
             decoration: InputDecoration(labelText: l10n.householdName),
           ),
           const SizedBox(height: AppTokens.spaceMd),
-          TextField(
-            controller: _timezone,
-            decoration: InputDecoration(labelText: l10n.timezone),
+          Semantics(
+            container: true,
+            button: true,
+            label: l10n.timezone,
+            value: _timezone,
+            onTap: _pickTimezone,
+            child: ExcludeSemantics(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppTokens.radiusMd),
+                onTap: _pickTimezone,
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: l10n.timezone,
+                    suffixIcon: const Icon(Icons.arrow_drop_down),
+                  ),
+                  child: Text(_timezone, style: AppTypography.body),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: AppTokens.spaceLg),
           if (_error != null)

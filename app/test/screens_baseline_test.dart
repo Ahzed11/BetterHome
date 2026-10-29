@@ -371,6 +371,14 @@ final List<_Scenario> _scenarios = [
     () async => CreateHouseholdScreen(session: await _sessionWith()),
   ),
   _Scenario(
+    'create_household_timezone_picker',
+    () async => CreateHouseholdScreen(session: await _sessionWith()),
+    act: (tester, l10n) async {
+      await tester.tap(find.bySemanticsLabel(l10n.timezone));
+      await tester.pumpAndSettle();
+    },
+  ),
+  _Scenario(
     'household_detail_loading',
     () async => HouseholdDetailScreen(
       session: await _sessionWith(households: PendingHouseholdsRepository()),
