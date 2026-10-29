@@ -46,6 +46,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
   late final CachedRead<List<ChoreTask>> _tasks;
   late final CachedRead<List<Membership>> _members;
   CachedRead<_Week>? _week;
+  CachedRead<Household>? _household;
   _Filter _filter = _Filter.all;
   DateTime? _selectedDay;
 
@@ -72,10 +73,18 @@ class _ChoresScreenState extends State<ChoresScreen> {
       onChange: _changed,
     );
     if (widget.mine) {
+      // The week summary and the household's name do not depend on each other: asked together
+      // with the tasks and the members.
       _week = CachedRead(
         cache: session.readCache,
         key: session.readKey('week', householdId: householdId),
         fetch: _loadWeek,
+        onChange: _changed,
+      );
+      _household = CachedRead(
+        cache: session.readCache,
+        key: session.readKey('household', householdId: householdId),
+        fetch: () => session.repository.getHousehold(householdId),
         onChange: _changed,
       );
     }
@@ -86,6 +95,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
     _tasks.dispose();
     _members.dispose();
     _week?.dispose();
+    _household?.dispose();
     super.dispose();
   }
 
@@ -112,9 +122,6 @@ class _ChoresScreenState extends State<ChoresScreen> {
   }
 
   Future<_Week> _loadWeek() async {
-    final household = await widget.session.repository.getHousehold(
-      widget.householdId,
-    );
     final board = await widget.session.scoringRepository.getScoreboard(
       widget.householdId,
       period: ScorePeriod.week,
@@ -123,7 +130,6 @@ class _ChoresScreenState extends State<ChoresScreen> {
     final mine = board.entries.where((e) => e.userId == me).firstOrNull;
     final leader = board.entries.firstOrNull;
     return _Week(
-      household: household.name,
       points: mine?.points ?? 0,
       rank: mine?.rank ?? board.entries.length + 1,
       behind: leader == null ? 0 : leader.points - (mine?.points ?? 0),
@@ -369,8 +375,8 @@ class _ChoresScreenState extends State<ChoresScreen> {
   }
 
   String? _eyebrow(AppLocalizations l10n) {
-    final household = switch (_week?.state) {
-      ReadLoaded<_Week>(:final data) => data.household,
+    final household = switch (_household?.state) {
+      ReadLoaded<Household>(:final data) => data.name,
       _ => null,
     };
     return household == null
@@ -670,14 +676,8 @@ class _ChoresScreenState extends State<ChoresScreen> {
 }
 
 class _Week {
-  const _Week({
-    required this.household,
-    required this.points,
-    required this.rank,
-    required this.behind,
-  });
+  const _Week({required this.points, required this.rank, required this.behind});
 
-  final String household;
   final int points;
   final int rank;
   final int behind;

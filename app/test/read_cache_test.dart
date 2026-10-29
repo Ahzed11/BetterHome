@@ -4,6 +4,7 @@ import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/state/read_cache.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// The data of [state], or null when it holds none.
@@ -24,6 +25,8 @@ UserProfile _profile(String id) => UserProfile(
 );
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('ReadCache', () {
     test('an entry nobody has read yet is loading', () {
       final cache = ReadCache();
@@ -245,6 +248,33 @@ void main() {
     });
   });
 
+  group('a read started while a frame is built', () {
+    testWidgets(
+      'a screen that sets its state on a change is not asked to in the middle of a build',
+      (tester) async {
+        final cache = ReadCache();
+        await cache.refresh<List<String>>('k', () async => ['old']);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: _Listener(cache: cache, child: const SizedBox()),
+          ),
+        );
+        // A second screen starts a read of the same key in its initState, while building.
+        await tester.pumpWidget(
+          MaterialApp(
+            home: _Listener(
+              cache: cache,
+              child: _StartsAReadWhenBuilt(cache: cache),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
   group('CachedRead', () {
     test(
       'starts a refresh as soon as it is made, even when an answer is cached',
@@ -386,4 +416,74 @@ void main() {
       );
     });
   });
+}
+
+/// A screen that listens to the entry of 'k' and sets its state when it changes.
+class _Listener extends StatefulWidget {
+  const _Listener({required this.cache, required this.child});
+
+  final ReadCache cache;
+  final Widget child;
+
+  @override
+  State<_Listener> createState() => _ListenerState();
+}
+
+class _ListenerState extends State<_Listener> {
+  late final CachedRead<List<String>> _read = CachedRead(
+    cache: widget.cache,
+    key: 'k',
+    fetch: () async => ['listener'],
+    onChange: () {
+      if (mounted) {
+        setState(() {});
+      }
+    },
+  );
+
+  @override
+  void dispose() {
+    _read.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _read.state;
+    return widget.child;
+  }
+}
+
+/// A screen that starts a read of 'k' in its `initState`, as every screen does.
+class _StartsAReadWhenBuilt extends StatefulWidget {
+  const _StartsAReadWhenBuilt({required this.cache});
+
+  final ReadCache cache;
+
+  @override
+  State<_StartsAReadWhenBuilt> createState() => _StartsAReadWhenBuiltState();
+}
+
+class _StartsAReadWhenBuiltState extends State<_StartsAReadWhenBuilt> {
+  late final CachedRead<List<String>> _read = CachedRead(
+    cache: widget.cache,
+    key: 'k',
+    fetch: () async => ['new'],
+    onChange: () {},
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _read.state;
+  }
+
+  @override
+  void dispose() {
+    _read.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox();
 }

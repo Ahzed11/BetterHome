@@ -1,5 +1,6 @@
 import 'package:betterhome/data/models.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 
 /// What a screen knows about one read ([ReadCache]).
 sealed class ReadState<T> {
@@ -35,6 +36,19 @@ class ReadEntry<T> extends ValueNotifier<ReadState<T>> {
 
   /// The request that follows [_inFlight] after a change, shared by everyone who asked meanwhile.
   Future<bool>? _followUp;
+
+  /// Screens share entries, and a screen under another one (a pushed route) is still listening:
+  /// a read started in a new screen's `initState` must not make it call `setState` in the middle
+  /// of the build. A change made while the frame is being built is announced when it ends.
+  @override
+  void notifyListeners() {
+    final binding = SchedulerBinding.instance;
+    if (binding.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      binding.addPostFrameCallback((_) => super.notifyListeners());
+    } else {
+      super.notifyListeners();
+    }
+  }
 }
 
 /// The last answer to each read, kept in memory only (ADR 0031), so a screen opened again shows

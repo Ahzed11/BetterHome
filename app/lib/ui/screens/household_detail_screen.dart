@@ -32,60 +32,71 @@ class HouseholdDetailScreen extends StatefulWidget {
 }
 
 class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
-  late final CachedRead<_DetailData> _detail;
+  late final CachedRead<_Rules> _rules;
+  late final CachedRead<List<Membership>> _members;
+  late final CachedRead<Household> _household;
 
   @override
   void initState() {
     super.initState();
-    _detail = CachedRead(
-      cache: widget.session.readCache,
-      key: widget.session.readKey(
-        'household-detail',
-        householdId: widget.householdId,
-      ),
-      fetch: _load,
-      onChange: () {
-        if (mounted) {
-          setState(() {});
-        }
-      },
+    final session = widget.session;
+    final householdId = widget.householdId;
+    // Three reads that do not depend on each other, asked together. The members and the
+    // household are shared with the other screens: one request each, whoever asks first.
+    _rules = CachedRead(
+      cache: session.readCache,
+      key: session.readKey('household-rules', householdId: householdId),
+      fetch: _loadRules,
+      onChange: _changed,
+    );
+    _members = CachedRead(
+      cache: session.readCache,
+      key: session.readKey('members', householdId: householdId),
+      fetch: () => session.repository.listMembers(householdId),
+      onChange: _changed,
+    );
+    _household = CachedRead(
+      cache: session.readCache,
+      key: session.readKey('household', householdId: householdId),
+      fetch: () => session.repository.getHousehold(householdId),
+      onChange: _changed,
     );
   }
 
   @override
   void dispose() {
-    _detail.dispose();
+    _rules.dispose();
+    _members.dispose();
+    _household.dispose();
     super.dispose();
   }
 
-  /// Asks for fresh data after something was changed on this screen.
-  void _reload() => _detail.refreshAfterChange();
-
-  Future<_DetailData> _load() async {
-    final household = await widget.session.repository.getHousehold(
-      widget.householdId,
-    );
-    final members = await widget.session.repository.listMembers(
-      widget.householdId,
-    );
-    final templates = await widget.session.tasksRepository.listTemplates(
-      widget.householdId,
-    );
-    final recurrences = <String, TaskRecurrence>{};
-    for (final template in templates) {
-      final recurrence = await widget.session.tasksRepository.getRecurrence(
-        widget.householdId,
-        template.id,
-      );
-      if (recurrence != null) {
-        recurrences[template.id] = recurrence;
-      }
+  void _changed() {
+    if (mounted) {
+      setState(() {});
     }
-    return _DetailData(
-      household: household,
-      members: members,
+  }
+
+  /// Asks for fresh data after something was changed on this screen.
+  void _reload() {
+    _rules.refreshAfterChange();
+    _members.refreshAfterChange();
+    _household.refreshAfterChange();
+  }
+
+  /// The templates, then the recurrence of each, all asked together once the templates are known.
+  Future<_Rules> _loadRules() async {
+    final tasks = widget.session.tasksRepository;
+    final templates = await tasks.listTemplates(widget.householdId);
+    final found = await Future.wait([
+      for (final template in templates)
+        tasks.getRecurrence(widget.householdId, template.id),
+    ]);
+    return _Rules(
       templates: templates,
-      recurrences: recurrences,
+      recurrences: {
+        for (var i = 0; i < templates.length; i++) templates[i].id: ?found[i],
+      },
     );
   }
 
@@ -244,17 +255,34 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
       ),
       body: Builder(
         builder: (context) {
-          final state = _detail.state;
-          if (state is ReadLoading<_DetailData>) {
+          final states = [_rules.state, _members.state, _household.state];
+          if (states.any((state) => state is ReadFailed)) {
+            return Center(child: Text(l10n.errorGeneric));
+          }
+          final data = switch ((
+            _rules.state,
+            _members.state,
+            _household.state,
+          )) {
+            (
+              ReadLoaded<_Rules>(data: final rules),
+              ReadLoaded<List<Membership>>(data: final members),
+              ReadLoaded<Household>(data: final household),
+            ) =>
+              _DetailData(
+                household: household,
+                members: members,
+                templates: rules.templates,
+                recurrences: rules.recurrences,
+              ),
+            _ => null,
+          };
+          if (data == null) {
             return ListView(
               padding: const EdgeInsets.all(AppTokens.spaceMd),
               children: const [HouseholdSkeleton()],
             );
           }
-          if (state is! ReadLoaded<_DetailData>) {
-            return Center(child: Text(l10n.errorGeneric));
-          }
-          final data = state.data;
           final isAdmin = data.members.any(
             (m) => m.userId == me?.id && m.role == MembershipRole.admin,
           );
@@ -634,6 +662,14 @@ class _InviteRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// What is cached for the chore rules of a household: its templates and their recurrences.
+class _Rules {
+  const _Rules({required this.templates, required this.recurrences});
+
+  final List<TaskTemplate> templates;
+  final Map<String, TaskRecurrence> recurrences;
 }
 
 class _DetailData {
