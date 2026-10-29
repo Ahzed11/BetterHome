@@ -9,6 +9,7 @@ import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/notification_row.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
+import 'package:betterhome/ui/widgets/screen_skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -137,7 +138,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   List<Widget> _body(AppLocalizations l10n) {
     switch (_status) {
       case _Status.loading:
-        return [Center(child: Text(l10n.loading))];
+        return [const NotificationsSkeleton()];
       case _Status.error:
         return [
           Center(

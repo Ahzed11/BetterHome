@@ -12,6 +12,7 @@ import 'package:betterhome/ui/screens/template_form_screen.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/app_toast.dart';
 
+import 'package:betterhome/ui/widgets/screen_skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -225,7 +226,10 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return Center(child: Text(l10n.loading));
+            return ListView(
+              padding: const EdgeInsets.all(AppTokens.spaceMd),
+              children: const [HouseholdSkeleton()],
+            );
           }
           if (snapshot.hasError || !snapshot.hasData) {
             return Center(child: Text(l10n.errorGeneric));

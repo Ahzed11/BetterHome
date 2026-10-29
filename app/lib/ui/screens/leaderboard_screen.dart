@@ -11,6 +11,7 @@ import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/segmented_tabs.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/month_recap_dialog.dart';
+import 'package:betterhome/ui/widgets/screen_skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -194,7 +195,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             future: _future,
             builder: (context, snapshot) {
               if (snapshot.connectionState != ConnectionState.done) {
-                return Center(child: Text(l10n.loading));
+                return const LeaderboardSkeleton();
               }
               final data = snapshot.data;
               if (snapshot.hasError || data == null) {

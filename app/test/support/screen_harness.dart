@@ -39,6 +39,10 @@ Future<void> _loadAppFonts() async {
 /// [textScale] is applied through `MediaQuery`, as the operating system's font
 /// size setting would be. [settle] false leaves running animations (a toast) alone.
 ///
+/// [reduceMotion] (the default) is the system's "reduce motion" setting: the pulse of the
+/// loading skeletons stops, so a screen that is still loading lets `pumpAndSettle` end and a
+/// golden shows one fixed frame. Pass false to see the pulse, and then pump by durations.
+///
 /// [realFonts] loads the bundled fonts (see [loadAppFonts]); golden tests set it. Fonts stay
 /// loaded for the rest of the test file, and the contrast guideline of [expectAccessible]
 /// samples anti-aliased pixels, so it reports false failures on real glyphs (Ahem blocks are
@@ -50,6 +54,7 @@ Future<void> pumpScreen(
   double textScale = 1,
   bool settle = true,
   bool realFonts = false,
+  bool reduceMotion = true,
 }) async {
   if (realFonts) {
     await tester.runAsync(loadAppFonts);
@@ -71,9 +76,10 @@ Future<void> pumpScreen(
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(
-          context,
-        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(textScale),
+          disableAnimations: reduceMotion,
+        ),
         child: child ?? const SizedBox.shrink(),
       ),
       home: home,

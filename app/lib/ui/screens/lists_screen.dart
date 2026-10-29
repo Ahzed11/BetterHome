@@ -13,6 +13,7 @@ import 'package:betterhome/ui/widgets/round_icon_button.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/text_prompt.dart';
+import 'package:betterhome/ui/widgets/screen_skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 
@@ -287,7 +288,7 @@ class _ListsScreenState extends State<ListsScreen> {
       future: _lists,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return Scaffold(body: Center(child: Text(l10n.loading)));
+          return const Scaffold(body: ListsScreenSkeleton());
         }
         if (snapshot.hasError) {
           return Scaffold(
@@ -455,7 +456,10 @@ class _Items extends StatelessWidget {
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return Center(child: Text(l10n.loading));
+          return const Padding(
+            padding: EdgeInsets.all(AppTokens.spaceMd),
+            child: ChecklistSkeleton(),
+          );
         }
         if (snapshot.hasError) {
           return _Message(

@@ -14,6 +14,7 @@ import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/undoable_action.dart';
 import 'package:betterhome/ui/widgets/week_strip.dart';
 import 'package:betterhome/ui/widgets/week_summary_card.dart';
+import 'package:betterhome/ui/widgets/screen_skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -639,7 +640,7 @@ class _ChoresScreenState extends State<ChoresScreen> {
                   0,
                 ),
                 child: state is ReadLoading<List<ChoreTask>>
-                    ? Center(child: Text(l10n.loading))
+                    ? const ChoreListSkeleton()
                     : state is ReadFailed<List<ChoreTask>>
                     ? Center(child: Text(l10n.errorGeneric))
                     : shown.isEmpty

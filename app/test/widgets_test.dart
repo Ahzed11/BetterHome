@@ -429,6 +429,8 @@ void main() {
         tester,
         home: const Scaffold(body: ConfettiBurst()),
         locale: const Locale('en'),
+        // The confetti is a motion: it is not drawn when the system asks to reduce motion.
+        reduceMotion: false,
       );
       expect(find.byType(ConfettiBurst), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 900));
