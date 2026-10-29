@@ -14,7 +14,7 @@ See [documentation/project-specification.md](documentation/project-specification
 
 For using the app rather than developing it. You need a server with Docker Compose v2, a Caddy and Tailscale already running on it (see [deploy/nas](deploy/nas/README.md)), and an Android phone on the same tailnet.
 
-1. On the server: fill in the `CHANGE_ME` values of `deploy/nas/compose.yml`, run `docker compose -f compose.yml up -d`, then import the Caddyfile snippet into your Caddy (step by step in [deploy/nas](deploy/nas/README.md#install)).
+1. On the server: fill in the `CHANGE_ME` values of `deploy/nas/compose.yml`, create a project from it in the Docker app of the UGOS interface (or `docker compose up -d` over SSH), then add the Caddyfile snippet to your Caddy (step by step in [deploy/nas](deploy/nas/README.md#install)).
 2. On the phone: install the APK (from the GitHub Release, or `make apk`; see [Try the app on a phone](#try-the-app-on-a-phone)), open it and enter `https://<your-nas>.ts.net`.
 3. Tap "Sign up" in the app, create your household, and optionally set up push ([deploy/nas](deploy/nas/README.md#push-notifications-gotify)).
 

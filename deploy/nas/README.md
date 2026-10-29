@@ -7,27 +7,20 @@ the server ([ADR 0029](../../documentation/decisions/0029-caddy-reverse-proxy-on
 |---|---|
 | `compose.yml` | The stack. No Caddy, no Tailscale, no published port, no `.env`: values are inline |
 | `Caddyfile` | A snippet for your Caddy: the routes of BetterHome, no host name in it |
-| `update.sh` | Backs up, moves the images to a tag, pulls and restarts |
-| `restore.sh` | Restores one database from a backup |
+| `update.sh` | SSH only: backs up, moves the images to a tag, pulls and restarts |
+| `restore.sh` | SSH only: restores one database from a backup |
 
 ## Before you start
 
-1. **Caddy and Tailscale** run in your own stack, with the tailnet's HTTPS certificates enabled, and Caddy is on an external Docker network named `edge`. Create it once if needed: `docker network create edge`.
+1. **Caddy and Tailscale** run in your own stack, with the tailnet's HTTPS certificates enabled, and Caddy is on an external Docker network named `edge`. See Install, step 3, if it does not exist.
 2. **The images are public** on GHCR (`ghcr.io/ahzed11/betterhome-*`). They are built when a pull request is merged into `master` ([ADR 0026](../../documentation/decisions/0026-publish-images-to-ghcr.md)); besides the five services there are `betterhome-migrations` (Flyway with every service's SQL) and `betterhome-keycloak` (production mode, realm baked in), [ADR 0030](../../documentation/decisions/0030-migrations-and-keycloak-images.md).
 3. **Your tailnet name** is only ever written on the NAS, never in the repository.
 
 ## Install
 
-Everything is done over SSH on the NAS, in the folder where you put the files.
+This is done in the UGOS web interface, from a browser: no SSH needed. (UGOS menu names change between versions; where a label below differs on your NAS, the idea is the same. The same steps work with `docker compose` over SSH, see the end of this section.)
 
-1. **Copy the files.** Put `compose.yml` and `Caddyfile` (and `update.sh`, `restore.sh`) in a folder of the NAS, for example `/volume1/docker/betterhome/`, or `git clone` the repository and work in `deploy/nas`.
-2. **Generate the secrets.** You need five random values; run this five times (or once per value) and keep the results at hand:
-
-   ```bash
-   openssl rand -hex 32
-   ```
-
-3. **Edit `compose.yml`.** Replace every `CHANGE_ME_...` (`grep -n CHANGE_ME compose.yml` lists them). The same name always gets the same value:
+1. **Prepare the file on your computer.** Download `compose.yml` and `Caddyfile` from this folder (on GitHub: open the file, then "Raw", then save). Open `compose.yml` in a text editor and use find and replace to fill in every `CHANGE_ME_...`. The same name always gets the same value:
 
    | Placeholder | Value | Places |
    |---|---|---|
@@ -36,27 +29,14 @@ Everything is done over SSH on the NAS, in the folder where you put the files.
    | `CHANGE_ME_KEYCLOAK_ADMIN_PASSWORD` | A password for the Keycloak admin console | 1 |
    | `CHANGE_ME_GOTIFY_ADMIN_PASSWORD` | A password for the Gotify admin | 1 |
    | `CHANGE_ME_SERVICE_CLIENT_SECRET` | A generated secret, shared by the five services and Keycloak | every one |
-   | `CHANGE_ME_API_CLIENT_SECRET` | A generated secret (used by `make nas-smoke` and scripts) | 1 |
-   | `CHANGE_ME_BACKUP_DIR` | A folder of a NAS volume, for example `/volume1/backups/betterhome` (see Backups) | 2 |
+   | `CHANGE_ME_API_CLIENT_SECRET` | A generated secret (for scripts and checks) | 1 |
+   | `CHANGE_ME_BACKUP_DIR` | The path of the backup folder from step 2, for example `/volume1/backups/betterhome` | 2 |
 
-   Do not edit the copy in a Git checkout if you plan to pull updates; work on a copy, and keep it: it is the only place the real values exist.
-4. **Prepare the backup folder and the network.** The folder must exist and be writable by the container (without it `backup` restarts in a loop), and the `edge` network is the one shared with your Caddy (skip the second command if it already exists):
-
-   ```bash
-   mkdir -p /volume1/backups/betterhome && chmod 777 /volume1/backups/betterhome
-   docker network create edge
-   ```
-
-5. **Start the stack.** Postgres starts, the databases are created, the migrations run, then Keycloak and the services start (the first start takes a few minutes while the images are pulled):
-
-   ```bash
-   docker compose -f compose.yml up -d
-   docker compose -f compose.yml ps        # every service "running"; init-databases and migrate "exited (0)"
-   docker compose -f compose.yml logs -f   # Ctrl-C to leave; look here if a service restarts
-   ```
-
-   This needs Docker Compose v2 (`depends_on: condition: service_completed_successfully`). Loading the file as a project in the UGOS Docker app should work the same way; that route has not been tried yet.
-6. **Let your Caddy serve it.** In your Caddyfile, add the import inside the site block of your tailnet host, **before** any catch-all `handle` of yours, then reload Caddy:
+   Generate each secret with your password manager: 40 characters, **letters and digits only** (a `#`, `&`, `:` or quote breaks the file or the database URL). Write the values in your password manager: the file on the NAS is the only other place they exist. Never commit or share the edited file.
+2. **Create the backup folder.** In the Files app, create a folder on a NAS volume (for example `backups/betterhome`), outside the Docker folder. Its path as Docker sees it is `/volume1/...` (the volume number is the one of your NAS). The backup container writes as user `999`; if the `backup` container restarts in a loop with "insufficient permissions" (see its logs), give the folder read and write rights to everyone, or ask for help with an SSH `chown 999:999`.
+3. **Check the `edge` network.** In the Docker app open Network. If your Caddy stack already runs, a network named `edge` exists. If not, create one named `edge` (bridge). The BetterHome project joins it so your Caddy can reach the containers.
+4. **Create the project.** In the Docker app open Project, then Create. Name it `betterhome`, choose a folder for it (for example `docker/betterhome`), and give the edited `compose.yml` (upload the file, or paste its content in the editor). Deploy it. Postgres starts, the databases are created, the migrations run, then Keycloak and the services start. The first start takes a few minutes while the images are pulled. In Containers, wait until every `betterhome-*` container runs; `init-databases` and `migrate` stop by themselves once done, which is normal. If one restarts in a loop, open its logs.
+5. **Let your Caddy serve it.** Open the Caddyfile of your existing Caddy (in the Files app, in the folder of its project) and add the content of this folder's `Caddyfile` inside the site block of your tailnet host, **before** any catch-all `handle` of yours, or save the file next to your Caddyfile and `import` it:
 
    ```
    nas.example.ts.net {
@@ -65,19 +45,40 @@ Everything is done over SSH on the NAS, in the folder where you put the files.
    }
    ```
 
-   The snippet only claims `/auth`, `/api/households|tasks|scoring|lists|notifications` and `/gotify`. Check none of them is a route of another app on that host. Your Caddy container must be on the `edge` network.
-7. **Check it** with the next section.
+   Then restart the Caddy container (Containers, Restart). The snippet only claims `/auth`, `/api/households|tasks|scoring|lists|notifications` and `/gotify`. Check none of them is a route of another app on that host. The path of an `import` is the one **inside** the Caddy container, so the file must be in a folder the container mounts.
+6. **Check it** with the next section.
+
+The Compose file needs Docker Compose v2 (`depends_on: condition: service_completed_successfully`), which current UGOS versions use. Not yet tried on a UGREEN NAS: report what differs.
+
+<details>
+<summary>With SSH instead</summary>
+
+Put `compose.yml` and `Caddyfile` in a folder, fill the placeholders (`openssl rand -hex 32` makes secrets), `mkdir -p` the backup folder with `chmod 777`, `docker network create edge` if it does not exist, then:
+
+```bash
+docker compose -f compose.yml up -d
+docker compose -f compose.yml ps        # init-databases and migrate "exited (0)", the rest running
+docker compose -f compose.yml logs -f
+```
+
+</details>
 
 ## Check it
 
-From any machine on the tailnet (replace the host):
+Open these addresses in the browser of a device on the tailnet (replace the host). Each must show `"status": "UP"` (or `ok` for Gotify):
+
+- `https://nas.example.ts.net/api/households/q/health/ready`, and the same for `tasks`, `scoring`, `lists` and `notifications`
+- `https://nas.example.ts.net/gotify/health`
+- `https://nas.example.ts.net/auth/realms/betterhome/.well-known/openid-configuration`: its `issuer` must be `https://nas.example.ts.net/auth/realms/betterhome`
+
+A certificate warning means Tailscale HTTPS certificates are not enabled for the host. If you can run commands from a computer, `make nas-smoke` (in the repository) does all of this and one sign-in:
 
 ```bash
 NAS_URL=https://nas.example.ts.net API_CLIENT_SECRET=<betterhome-api secret> \
   SMOKE_USER=<member user> SMOKE_PASSWORD=<its password> make nas-smoke
 ```
 
-It checks the HTTPS certificate, that Keycloak's issuer is the public URL, that each service is ready through `/api/<service>`, that Gotify answers `/gotify/health`, and that one password-grant token is accepted by all five services. The user must already exist with the `member` role (see First user). It needs `curl` and `jq`.
+It needs `curl` and `jq`, and a user that already exists with the `member` role (see First user).
 
 ## The app
 
@@ -110,7 +111,9 @@ Registration is open in the realm, so a user can sign up from the app's sign-in 
 
 ## Update
 
-From the folder of `compose.yml` on the NAS:
+**In the UGOS interface:** in the Docker app open the project, make sure last night's backup exists in the backup folder (the migrations are forward-only, so a backup is the way back), then pull the new images and redeploy the project (the project's update or rebuild action; if your version has none, stop the project, delete the BetterHome images in Images, and start it again, which pulls them). The migrations run first, then the services restart. To pin a version, change the tag of the seven `ghcr.io/ahzed11/betterhome-*` images in the project's `compose.yml` from `:latest` to a commit SHA tag, and keep the old file so you can go back.
+
+**With SSH**, from the folder of `compose.yml` on the NAS:
 
 ```bash
 ./update.sh 3f9c2ab      # a commit SHA tag (the images are tagged with it when a pull request is merged)
@@ -130,7 +133,7 @@ Both write to `CHANGE_ME_BACKUP_DIR` in `compose.yml`: use a folder on a NAS vol
 
 ### Restore
 
-Replaces one database entirely. Stop its services first (Postgres refuses to drop a database in use, and then nothing changes):
+Restoring runs `psql` inside the Postgres container, which the interface alone does not offer. Either enable SSH on the NAS for the time of the restore, or open a terminal on the `postgres` container if your UGOS version has one, and run what `restore.sh` does: drop and recreate the database, then load the dump with `gunzip -c <dump> | psql -U betterhome -d <database>` (the dump must be reachable from the container; `restore.sh` reads the file on the host). With SSH it is one script. It replaces one database entirely. Stop its services first (Postgres refuses to drop a database in use, and then nothing changes):
 
 ```bash
 docker compose -f compose.yml stop betterhome-tasks
