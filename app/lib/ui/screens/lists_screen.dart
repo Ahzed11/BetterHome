@@ -3,20 +3,23 @@ import 'package:betterhome/data/models.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/theme/tokens.dart';
-import 'package:betterhome/ui/widgets/add_field.dart';
+import 'package:betterhome/ui/widgets/add_bar.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
 import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
+import 'package:betterhome/ui/widgets/list_options_sheet.dart';
 import 'package:betterhome/ui/widgets/round_icon_button.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/text_prompt.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
-/// The household's shared checklists (spec section 4, design "Lists"): a pill per list, a field to
-/// add items, the open items and the checked ones. Admins create, rename and archive lists; any
-/// member adds, checks, unchecks and deletes items or unchecks them all.
+/// The household's shared checklists (spec section 4, design "Lists v2"): a pill per list and a
+/// button for the list's options, the open items and the checked ones, and a bar docked at the
+/// bottom to add items. Admins create, rename and archive lists; any member adds, checks, unchecks
+/// and deletes items (a swipe on the row), unchecks them all or removes the checked ones.
 class ListsScreen extends StatefulWidget {
   const ListsScreen({
     super.key,
@@ -37,6 +40,10 @@ class _ListsScreenState extends State<ListsScreen> {
   String? _selectedId;
   String? _householdName;
   bool _isAdmin = false;
+
+  /// Items swiped away: hidden at once, as a swiped row must leave the tree in the same frame,
+  /// until the reloaded list no longer has them.
+  final Set<String> _removed = {};
 
   ListsRepository get _repository => widget.session.listsRepository;
 
@@ -90,11 +97,13 @@ class _ListsScreenState extends State<ListsScreen> {
   }
 
   /// A failed request is shown, and the items are reloaded so the screen shows the truth.
-  Future<void> _guard(Future<void> Function() action) async {
+  /// Returns whether the request succeeded.
+  Future<bool> _guard(Future<void> Function() action) async {
     final ok = await runGuarded(context, action);
     if (!ok && mounted) {
       setState(_reloadItems);
     }
+    return ok;
   }
 
   Future<void> _create() async {
@@ -218,102 +227,160 @@ class _ListsScreenState extends State<ListsScreen> {
   }
 
   Future<void> _delete(Checklist list, ChecklistItem item) async {
-    await _guard(() async {
+    setState(() => _removed.add(item.id));
+    final ok = await _guard(() async {
       await _repository.deleteItem(widget.householdId, list.id, item.id);
+      if (mounted) {
+        setState(_reloadItems);
+      }
+    });
+    if (!ok && mounted) {
+      setState(() => _removed.remove(item.id));
+    }
+  }
+
+  Future<void> _removeChecked(Checklist list) async {
+    final l10n = AppLocalizations.of(context);
+    if (!await _confirm(
+      title: l10n.removeCheckedConfirmTitle,
+      body: l10n.removeCheckedConfirmBody,
+      action: l10n.removeChecked,
+    )) {
+      return;
+    }
+    await _guard(() async {
+      final items = await _repository.listItems(widget.householdId, list.id);
+      for (final item in items.where((i) => i.isChecked)) {
+        await _repository.deleteItem(widget.householdId, list.id, item.id);
+      }
       if (mounted) {
         setState(_reloadItems);
       }
     });
   }
 
+  Future<void> _showOptions(Checklist list) async {
+    final action = await showListOptions(
+      context,
+      title: list.title,
+      isAdmin: _isAdmin,
+    );
+    if (action == null || !mounted) {
+      return;
+    }
+    switch (action) {
+      case ListAction.reset:
+        await _reset(list);
+      case ListAction.removeChecked:
+        await _removeChecked(list);
+      case ListAction.rename:
+        await _rename(list);
+      case ListAction.archive:
+        await _archive(list);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      body: FutureBuilder<List<Checklist>>(
-        future: _lists,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return Center(child: Text(l10n.loading));
-          }
-          if (snapshot.hasError) {
-            return _Message(
+    return FutureBuilder<List<Checklist>>(
+      future: _lists,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return Scaffold(body: Center(child: Text(l10n.loading)));
+        }
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: _Message(
               text: l10n.errorGeneric,
               actionLabel: l10n.retry,
               onAction: () => setState(_reloadLists),
-            );
-          }
-          final lists = snapshot.data ?? const <Checklist>[];
-          final selected = lists.where((l) => l.id == _selectedId).firstOrNull;
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppTokens.spaceMd,
-              AppTokens.spaceMd,
-              AppTokens.spaceMd,
-              AppTokens.spaceLg,
             ),
+          );
+        }
+        final lists = snapshot.data ?? const <Checklist>[];
+        final selected = lists.where((l) => l.id == _selectedId).firstOrNull;
+        return Scaffold(
+          body: Column(
             children: [
-              ScreenHeader(
-                eyebrow: _householdName,
-                title: l10n.listsTitle,
-                actions: [
-                  if (selected != null)
-                    AppPill(
-                      icon: Icons.restart_alt,
-                      label: l10n.resetList,
-                      onPressed: () => _reset(selected),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppTokens.spaceMd,
+                  AppTokens.spaceMd,
+                  AppTokens.spaceMd,
+                  0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ScreenHeader(
+                      eyebrow: _householdName,
+                      title: l10n.listsTitle,
                     ),
-                  if (selected != null && _isAdmin)
-                    _ListActions(
-                      onRename: () => _rename(selected),
-                      onArchive: () => _archive(selected),
+                    const SizedBox(height: AppTokens.spaceSm + 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _Pills(
+                            lists: lists,
+                            selectedId: _selectedId,
+                            items: _items,
+                            canCreate: _isAdmin,
+                            onSelect: _select,
+                            onCreate: _create,
+                          ),
+                        ),
+                        if (selected != null)
+                          RoundIconButton(
+                            tooltip: l10n.listOptions,
+                            icon: Icons.more_horiz,
+                            onPressed: () => _showOptions(selected),
+                          ),
+                      ],
                     ),
-                ],
+                  ],
+                ),
               ),
-              const SizedBox(height: AppTokens.spaceMd),
-              _Pills(
-                lists: lists,
-                selectedId: _selectedId,
-                items: _items,
-                canCreate: _isAdmin,
-                onSelect: _select,
-                onCreate: _create,
+              Expanded(
+                child: selected == null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppTokens.spaceLg),
+                          child: Text(
+                            l10n.listsEmpty,
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodyMuted,
+                          ),
+                        ),
+                      )
+                    : _Items(
+                        future: _items,
+                        removed: _removed,
+                        householdName: _householdName,
+                        onToggle: (item) => _toggle(selected, item),
+                        onDelete: (item) => _delete(selected, item),
+                        onReset: () => _reset(selected),
+                        onRetry: () => setState(_reloadItems),
+                      ),
               ),
-              if (selected == null)
-                Padding(
-                  padding: const EdgeInsets.only(top: AppTokens.spaceLg),
-                  child: Text(
-                    l10n.listsEmpty,
-                    textAlign: TextAlign.center,
-                    style: AppTypography.bodyMuted,
-                  ),
-                )
-              else ...[
-                const SizedBox(height: AppTokens.spaceMd),
-                AddField(
+            ],
+          ),
+          bottomNavigationBar: selected == null
+              ? null
+              : AddBar(
                   label: l10n.addItem,
-                  hint: l10n.addItemHint,
+                  hint: l10n.addToListHint(selected.title),
                   buttonLabel: l10n.addItemButton,
                   onSubmitted: (title) => _add(selected, title),
                 ),
-                const SizedBox(height: AppTokens.spaceMd),
-                _Items(
-                  future: _items,
-                  onToggle: (item) => _toggle(selected, item),
-                  onDelete: (item) => _delete(selected, item),
-                  onRetry: () => setState(_reloadItems),
-                ),
-              ],
-            ],
-          );
-        },
-      ),
+        );
+      },
     );
   }
 }
 
-/// One pill per list, plus the add pill for admins. The selected pill shows how many items are
-/// still open.
+/// One pill per list, plus the add pill for admins, in a row that scrolls sideways when the lists
+/// do not fit. The selected pill shows how many items are still open, when there are some.
 class _Pills extends StatelessWidget {
   const _Pills({
     required this.lists,
@@ -334,40 +401,51 @@ class _Pills extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Wrap(
-      spacing: AppTokens.spaceSm,
-      runSpacing: AppTokens.spaceSm,
-      children: [
-        for (final list in lists)
-          FutureBuilder<List<ChecklistItem>>(
-            future: list.id == selectedId ? items : null,
-            builder: (context, snapshot) {
-              final open = snapshot.data?.where((i) => !i.isChecked).length;
-              return AppPill(
-                selected: list.id == selectedId,
-                label: open == null ? list.title : '${list.title} · $open',
-                onPressed: () => onSelect(list.id),
-              );
-            },
-          ),
-        if (canCreate) AppAddPill(tooltip: l10n.newList, onPressed: onCreate),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final list in lists) ...[
+            FutureBuilder<List<ChecklistItem>>(
+              future: list.id == selectedId ? items : null,
+              builder: (context, snapshot) {
+                final open =
+                    snapshot.data?.where((i) => !i.isChecked).length ?? 0;
+                return AppPill(
+                  selected: list.id == selectedId,
+                  label: open == 0 ? list.title : '${list.title} · $open',
+                  onPressed: () => onSelect(list.id),
+                );
+              },
+            ),
+            const SizedBox(width: AppTokens.spaceSm),
+          ],
+          if (canCreate) AppAddPill(tooltip: l10n.newList, onPressed: onCreate),
+        ],
+      ),
     );
   }
 }
 
-/// The open items in one card and the checked ones in a quieter card below.
+/// The open items in one card, the checked ones in a quieter card below, or a friendly note when
+/// the list has no item at all. A row is deleted by swiping it away.
 class _Items extends StatelessWidget {
   const _Items({
     required this.future,
+    required this.removed,
+    required this.householdName,
     required this.onToggle,
     required this.onDelete,
+    required this.onReset,
     required this.onRetry,
   });
 
   final Future<List<ChecklistItem>>? future;
+  final Set<String> removed;
+  final String? householdName;
   final ValueChanged<ChecklistItem> onToggle;
   final ValueChanged<ChecklistItem> onDelete;
+  final VoidCallback onReset;
   final VoidCallback onRetry;
 
   @override
@@ -386,28 +464,55 @@ class _Items extends StatelessWidget {
             onAction: onRetry,
           );
         }
-        final items = snapshot.data ?? const <ChecklistItem>[];
+        final items = [
+          for (final item in snapshot.data ?? const <ChecklistItem>[])
+            if (!removed.contains(item.id)) item,
+        ];
         if (items.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(AppTokens.spaceLg),
-            child: Text(
-              l10n.itemsEmpty,
-              textAlign: TextAlign.center,
-              style: AppTypography.bodyMuted,
-            ),
-          );
+          return _EmptyList(householdName: householdName);
         }
         final open = items.where((i) => !i.isChecked).toList();
         final done = items.where((i) => i.isChecked).toList();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return ListView(
+          padding: const EdgeInsets.all(AppTokens.spaceMd),
           children: [
-            if (open.isNotEmpty) AppCard(child: _rows(l10n, open)),
+            if (open.isNotEmpty)
+              AppCard(child: _rows(open, fill: AppTokens.card, dividers: true)),
             if (done.isNotEmpty) ...[
               const SizedBox(height: AppTokens.spaceMd),
-              SectionLabel('${l10n.basketTitle} · ${done.length}'),
-              const SizedBox(height: AppTokens.spaceSm),
-              AppCard(subdued: true, child: _rows(l10n, done)),
+              // A Wrap, not a Row: with large text the button goes under the label.
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  SectionLabel('${l10n.basketTitle} · ${done.length}'),
+                  TextButton.icon(
+                    onPressed: onReset,
+                    icon: const Icon(Icons.restart_alt, size: 16),
+                    label: Text(l10n.resetList),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTokens.brand,
+                      minimumSize: const Size(0, AppTokens.minTapTarget),
+                      textStyle: AppTypography.label.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              AppCard(
+                subdued: true,
+                child: _rows(
+                  done,
+                  // What the translucent card looks like over the page, since a swiped row needs
+                  // an opaque fill.
+                  fill: Color.alphaBlend(
+                    AppTokens.card.withValues(alpha: 0.6),
+                    AppTokens.surface,
+                  ),
+                  dividers: false,
+                ),
+              ),
             ],
           ],
         );
@@ -415,52 +520,157 @@ class _Items extends StatelessWidget {
     );
   }
 
-  Widget _rows(AppLocalizations l10n, List<ChecklistItem> items) {
-    return Column(
-      children: [
-        for (final item in items)
-          CheckRow(
-            title: item.title,
-            checked: item.isChecked,
-            semanticLabel: item.isChecked
-                ? l10n.uncheckItem(item.title)
-                : l10n.checkItem(item.title),
-            onChanged: () => onToggle(item),
-            trailing: IconButton(
-              tooltip: l10n.deleteItem,
-              icon: const Icon(Icons.delete_outline, color: AppTokens.inkMuted),
-              onPressed: () => onDelete(item),
+  Widget _rows(
+    List<ChecklistItem> items, {
+    required Color fill,
+    required bool dividers,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppTokens.radiusLg),
+      child: Column(
+        children: [
+          for (final item in items)
+            _ItemRow(
+              item: item,
+              fill: fill,
+              divider: dividers,
+              onToggle: () => onToggle(item),
+              onDelete: () => onDelete(item),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-/// The rename and archive buttons of the selected list, an admin's.
-class _ListActions extends StatelessWidget {
-  const _ListActions({required this.onRename, required this.onArchive});
+/// One item: a check row that is deleted by swiping it to the left. Screen readers get the
+/// same action from the row's custom actions.
+class _ItemRow extends StatelessWidget {
+  const _ItemRow({
+    required this.item,
+    required this.fill,
+    required this.divider,
+    required this.onToggle,
+    required this.onDelete,
+  });
 
-  final VoidCallback onRename;
-  final VoidCallback onArchive;
+  final ChecklistItem item;
+  final Color fill;
+  final bool divider;
+  final VoidCallback onToggle;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        RoundIconButton(
-          tooltip: l10n.renameList,
-          icon: Icons.edit_outlined,
-          onPressed: onRename,
+    return Dismissible(
+      key: ValueKey(item.id),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => onDelete(),
+      background: Container(
+        color: AppTokens.overdueTint,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: AppTokens.spaceMd),
+        child: const ExcludeSemantics(
+          child: Icon(Icons.delete_outline, color: AppTokens.overdueText),
         ),
-        RoundIconButton(
-          tooltip: l10n.archiveList,
-          icon: Icons.archive_outlined,
-          onPressed: onArchive,
+      ),
+      child: Semantics(
+        customSemanticsActions: {
+          CustomSemanticsAction(label: l10n.deleteItem): onDelete,
+        },
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: fill,
+            border: divider
+                ? const Border(bottom: BorderSide(color: AppTokens.divider))
+                : null,
+          ),
+          child: Padding(
+            padding: const EdgeInsetsDirectional.only(
+              start: AppTokens.spaceXs,
+              end: AppTokens.spaceMd,
+            ),
+            child: CheckRow(
+              title: item.title,
+              checked: item.isChecked,
+              semanticLabel: item.isChecked
+                  ? l10n.uncheckItem(item.title)
+                  : l10n.checkItem(item.title),
+              onChanged: onToggle,
+            ),
+          ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+/// A list with no item: a round tile, a title and a line saying everyone sees what is added.
+class _EmptyList extends StatelessWidget {
+  const _EmptyList({required this.householdName});
+
+  final String? householdName;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final name = householdName;
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppTokens.spaceLg),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 84,
+                    height: 84,
+                    decoration: BoxDecoration(
+                      color: AppTokens.brandTint,
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: const ExcludeSemantics(
+                      child: Icon(
+                        Icons.shopping_bag_outlined,
+                        size: 40,
+                        color: AppTokens.brand,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTokens.spaceMd - 2),
+                  Semantics(
+                    container: true,
+                    header: true,
+                    child: Text(
+                      l10n.itemsEmptyTitle,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.display.copyWith(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTokens.spaceXs),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 280),
+                    child: Text(
+                      name == null
+                          ? l10n.itemsEmptyBodyHome
+                          : l10n.itemsEmptyBody(name),
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodyMuted.copyWith(fontSize: 15),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

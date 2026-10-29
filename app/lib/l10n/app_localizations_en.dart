@@ -288,10 +288,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get listName => 'List name';
 
   @override
-  String get renameList => 'Rename';
+  String get renameList => 'Rename list';
 
   @override
-  String get archiveList => 'Archive';
+  String get archiveList => 'Archive list';
 
   @override
   String get archiveListConfirmTitle => 'Archive this list?';
@@ -299,9 +299,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get archiveListConfirmBody =>
       'Archived lists disappear from this screen and can no longer be changed.';
-
-  @override
-  String get itemsEmpty => 'Nothing here yet. Add the first item.';
 
   @override
   String get deleteItem => 'Delete item';
@@ -317,6 +314,48 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use this to start the list over, for example a packing list.';
 
   @override
+  String get listOptions => 'List options';
+
+  @override
+  String get resetListHint => 'Start the list over — handy for packing lists';
+
+  @override
+  String get removeChecked => 'Remove checked items';
+
+  @override
+  String get removeCheckedHint => 'Clear the basket after shopping';
+
+  @override
+  String get removeCheckedConfirmTitle => 'Remove the checked items?';
+
+  @override
+  String get removeCheckedConfirmBody =>
+      'They are deleted for everyone in the household.';
+
+  @override
+  String get renameListHint => 'Everyone sees the new name';
+
+  @override
+  String get archiveListHint => 'Hide it for the whole household';
+
+  @override
+  String addToListHint(String title) {
+    return 'Add to $title…';
+  }
+
+  @override
+  String get itemsEmptyTitle => 'All stocked up';
+
+  @override
+  String itemsEmptyBody(String household) {
+    return 'Add what you need below — everyone in $household sees it.';
+  }
+
+  @override
+  String get itemsEmptyBodyHome =>
+      'Add what you need below — everyone in your home sees it.';
+
+  @override
   String get listsTitle => 'Lists';
 
   @override
@@ -327,9 +366,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addItem => 'Add an item';
-
-  @override
-  String get addItemHint => 'Add an item…';
 
   @override
   String get addItemButton => 'Add';

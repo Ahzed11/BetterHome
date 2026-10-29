@@ -290,10 +290,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get listName => 'Nom de la liste';
 
   @override
-  String get renameList => 'Renommer';
+  String get renameList => 'Renommer la liste';
 
   @override
-  String get archiveList => 'Archiver';
+  String get archiveList => 'Archiver la liste';
 
   @override
   String get archiveListConfirmTitle => 'Archiver cette liste ?';
@@ -301,10 +301,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get archiveListConfirmBody =>
       'Les listes archivées disparaissent de cet écran et ne peuvent plus être modifiées.';
-
-  @override
-  String get itemsEmpty =>
-      'Rien ici pour le moment. Ajoutez le premier élément.';
 
   @override
   String get deleteItem => 'Supprimer l\'élément';
@@ -320,6 +316,49 @@ class AppLocalizationsFr extends AppLocalizations {
       'Pratique pour repartir de zéro, par exemple une liste de valise.';
 
   @override
+  String get listOptions => 'Options de la liste';
+
+  @override
+  String get resetListHint =>
+      'Repartir de zéro — pratique pour une liste de valise';
+
+  @override
+  String get removeChecked => 'Retirer les éléments cochés';
+
+  @override
+  String get removeCheckedHint => 'Vider le panier après les courses';
+
+  @override
+  String get removeCheckedConfirmTitle => 'Retirer les éléments cochés ?';
+
+  @override
+  String get removeCheckedConfirmBody =>
+      'Ils sont supprimés pour tout le foyer.';
+
+  @override
+  String get renameListHint => 'Tout le monde voit le nouveau nom';
+
+  @override
+  String get archiveListHint => 'La masquer pour tout le foyer';
+
+  @override
+  String addToListHint(String title) {
+    return 'Ajouter à $title…';
+  }
+
+  @override
+  String get itemsEmptyTitle => 'Tout est en stock';
+
+  @override
+  String itemsEmptyBody(String household) {
+    return 'Ajoutez ci-dessous ce dont vous avez besoin — tout le monde chez $household le voit.';
+  }
+
+  @override
+  String get itemsEmptyBodyHome =>
+      'Ajoutez ci-dessous ce dont vous avez besoin — tout le monde à la maison le voit.';
+
+  @override
   String get listsTitle => 'Listes';
 
   @override
@@ -331,9 +370,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get addItem => 'Ajouter un élément';
-
-  @override
-  String get addItemHint => 'Ajouter un élément…';
 
   @override
   String get addItemButton => 'Ajouter';

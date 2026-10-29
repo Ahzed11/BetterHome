@@ -223,6 +223,23 @@ Future<AppSession> _choresSession({required bool populated}) async {
   return session;
 }
 
+/// Opens the options sheet of the selected list.
+Future<void> _openListOptions(WidgetTester tester, AppLocalizations l10n) =>
+    _tap(tester, find.byTooltip(l10n.listOptions));
+
+/// Opens the options sheet and taps one of its rows.
+Future<void> _chooseListOption(
+  WidgetTester tester,
+  AppLocalizations l10n,
+  String title,
+) async {
+  await _openListOptions(tester, l10n);
+  await _tap(
+    tester,
+    find.descendant(of: find.byType(BottomSheet), matching: find.text(title)),
+  );
+}
+
 Future<AppSession> _listsSession({required bool populated}) async {
   final session = await _sessionWith();
   if (populated) {
@@ -545,9 +562,7 @@ final List<_Scenario> _scenarios = [
       session: await _listsSession(populated: true),
       householdId: _household,
     ),
-    act: (tester, l10n) async {
-      await _tap(tester, find.byTooltip(l10n.renameList));
-    },
+    act: (tester, l10n) => _chooseListOption(tester, l10n, l10n.renameList),
   ),
   _Scenario(
     'lists_archive_dialog',
@@ -555,10 +570,36 @@ final List<_Scenario> _scenarios = [
       session: await _listsSession(populated: true),
       householdId: _household,
     ),
-    act: (tester, l10n) async {
-      await _tap(tester, find.byTooltip(l10n.archiveList));
-    },
+    act: (tester, l10n) => _chooseListOption(tester, l10n, l10n.archiveList),
   ),
+  _Scenario(
+    'lists_options_sheet',
+    () async => ListsScreen(
+      session: await _listsSession(populated: true),
+      householdId: _household,
+    ),
+    act: _openListOptions,
+  ),
+  _Scenario('lists_options_sheet_member', () async {
+    final session = await _sessionWith(
+      households: _MemberViewHouseholdsRepository(),
+    );
+    final lists = session.listsRepository;
+    final groceries = await lists.createList(_household, 'Groceries');
+    await lists.addItem(_household, groceries.id, 'Milk');
+    return ListsScreen(session: session, householdId: _household);
+  }, act: _openListOptions),
+  _Scenario('lists_all_checked', () async {
+    final session = await _listsSession(populated: true);
+    final lists = session.listsRepository;
+    final groceries = (await lists.listLists(_household)).first;
+    for (final item in await lists.listItems(_household, groceries.id)) {
+      if (!item.isChecked) {
+        await lists.checkItem(_household, groceries.id, item.id);
+      }
+    }
+    return ListsScreen(session: session, householdId: _household);
+  }),
   _Scenario(
     'notifications_loading',
     () async => NotificationsScreen(
