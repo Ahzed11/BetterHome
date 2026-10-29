@@ -1232,3 +1232,12 @@ Out of scope of T-0107 to T-0117, to be filed when wanted: Caddy in the dev comp
 * Decisions and deviations: only `deploy/nas/compose.yml` changed. `deploy/podman-compose.yml` has the same command line and probably the same log noise; not changed here (surgical).
 * Verification: `make test-nas`, `make test-docs`. Not run: the change on the NAS or `pg_isready` against a live Postgres (no container runtime here); the cause is inferred from the check interval matching the log timestamps.
 * Follow-ups: the same `-d postgres` in `deploy/podman-compose.yml` if the noise shows there.
+
+### T-0123 · App: pick the household timezone from a list instead of typing it
+
+* Status: todo
+* Issue / PR: — (suggested: "Timezone picker when creating a household") / —
+* Depends on: T-0002
+* Spec: §1 (recurrence is computed in the household timezone), §9 (data model: `HOUSEHOLD.timezone`)
+* Acceptance criteria: In the create-household screen, the timezone is chosen from a searchable list of IANA zone names (for example `Europe/Paris`) instead of a free text field, so a typo can no longer reach the API. The list is the set of zones the backend accepts; the default is the device's own zone when it is in the list, else `Europe/Paris`. Built from the shared widgets and design tokens (ADR 0021), FR/EN strings in the ARB files, no hard-coded user-facing text. Widget tests for the list (default, search, selection, no match) in French and English, golden and accessibility checks (44 px targets, 200% text scale) for the new screen state, and the `integration_test` journey that creates a household still passes. Editing the timezone of an existing household, if the app offers it, uses the same picker.
+* Notes for the implementer: `create_household_screen.dart` has a `TextField` with a `'Europe/Paris'` initial value (`_timezone`). `profile_sync_screen.dart` sends a fixed `'Europe/Paris'` as the user's own timezone; decide with the product owner whether the profile timezone gets the picker too (report it, do not guess). Check which zone names the households API validates before choosing the source of the list, and keep a single source of truth for it. The Dart client is generated from `documentation/api/openapi.yaml`; if the list is served by the API, that is a contract change and needs the OpenAPI file, the tests and the spec updated in the same change.
