@@ -7,6 +7,7 @@ the server ([ADR 0029](../../documentation/decisions/0029-caddy-reverse-proxy-on
 |---|---|
 | `compose.yml` | The stack. No Caddy, no Tailscale, no published port, no `.env`: values are inline |
 | `Caddyfile` | A snippet for your Caddy: the routes of BetterHome, no host name in it |
+| `install.sh` | Fills in every `CHANGE_ME` (host, generated secrets, backup folder), creates the `edge` network and starts the stack |
 | `update.sh` | Backs up, moves the images to a tag, pulls and restarts |
 | `restore.sh` | Restores one database from a backup |
 
@@ -18,14 +19,15 @@ the server ([ADR 0029](../../documentation/decisions/0029-caddy-reverse-proxy-on
 
 ## Install
 
-1. Copy `compose.yml` and `Caddyfile` to the NAS (for example to `/volume1/docker/betterhome/`).
-2. In the copy of `compose.yml`, replace every `CHANGE_ME_...`:
-   - `CHANGE_ME_NAS_HOST`: the NAS's name on your tailnet (for example `nas.example.ts.net`). Three places.
-   - `CHANGE_ME_POSTGRES_PASSWORD`: one strong password, the same value everywhere it appears.
-   - `CHANGE_ME_KEYCLOAK_ADMIN_PASSWORD` and `CHANGE_ME_GOTIFY_ADMIN_PASSWORD`.
-   - `CHANGE_ME_BACKUP_DIR`: a folder of a NAS volume for the backups (see Backups). Two places.
-   - `CHANGE_ME_SERVICE_CLIENT_SECRET` (the same value in the five services and in Keycloak) and `CHANGE_ME_API_CLIENT_SECRET`: long random strings, for example `openssl rand -hex 32`.
-3. In your Caddyfile, add the import inside the site block of your tailnet host, **before** any catch-all `handle` of yours, then reload Caddy:
+1. Copy this folder's `compose.yml`, `Caddyfile`, `install.sh`, `update.sh` and `restore.sh` to the NAS (for example `/volume1/docker/betterhome/`), or `git clone` the repository there and work in `deploy/nas`.
+2. From SSH in that folder, run the installer with the NAS's name on your tailnet and a folder of a NAS volume for the backups:
+
+   ```bash
+   ./install.sh nas.example.ts.net /volume1/backups/betterhome
+   ```
+
+   It generates every password and secret (nothing to invent), writes them into `compose.yml` (readable by you only), makes the backup folder writable, creates the `edge` network if it is missing, starts the stack and prints the Keycloak and Gotify admin passwords. Postgres starts, the databases are created, the migrations run, then Keycloak and the services start. `--no-start` fills the file in without starting. It refuses to run a second time, since nothing is left to fill in.
+3. In your Caddyfile, add the import inside the site block of your tailnet host, **before** any catch-all `handle` of yours, then reload Caddy (the installer prints the exact line):
 
    ```
    nas.example.ts.net {
@@ -35,9 +37,23 @@ the server ([ADR 0029](../../documentation/decisions/0029-caddy-reverse-proxy-on
    ```
 
    The snippet only claims `/auth`, `/api/households|tasks|scoring|lists|notifications` and `/gotify`. Check none of them is a route of another app on that host.
-4. Start it, from SSH: `docker compose -f compose.yml up -d`. Postgres starts, the databases are created, the migrations run, then Keycloak and the services start. (Loading the file as a project in the UGOS Docker app should work the same way; that route has not been tried yet.)
 
 The Compose file uses `depends_on: condition: service_completed_successfully`, which needs Docker Compose v2.
+
+<details>
+<summary>Without the script (UGOS Docker app, or by hand)</summary>
+
+Replace every `CHANGE_ME_...` in the copy of `compose.yml`, then `docker compose -f compose.yml up -d` (loading the file as a project in the UGOS Docker app should work the same way; that route has not been tried yet):
+
+- `CHANGE_ME_NAS_HOST`: the NAS's name on your tailnet (for example `nas.example.ts.net`). Three places.
+- `CHANGE_ME_POSTGRES_PASSWORD`: one strong password, the same value everywhere it appears.
+- `CHANGE_ME_KEYCLOAK_ADMIN_PASSWORD` and `CHANGE_ME_GOTIFY_ADMIN_PASSWORD`.
+- `CHANGE_ME_BACKUP_DIR`: a folder of a NAS volume for the backups (see Backups). Two places.
+- `CHANGE_ME_SERVICE_CLIENT_SECRET` (the same value in the five services and in Keycloak) and `CHANGE_ME_API_CLIENT_SECRET`: long random strings, for example `openssl rand -hex 32`.
+
+Create the network once if needed: `docker network create edge`.
+
+</details>
 
 ## Check it
 
@@ -52,7 +68,7 @@ It checks the HTTPS certificate, that Keycloak's issuer is the public URL, that 
 
 ## The app
 
-Install the APK from `make apk` ([README](../../README.md)), open it and enter the address `https://<host>` (the same host as above). The phone must be on the tailnet.
+Install the APK (the GitHub Release, or `make apk`, see [README](../../README.md#try-the-app-on-a-phone)), open it and enter the address `https://<host>` (the same host as above). The phone must be on the tailnet. On the sign-in page tap "Sign up" to create your account.
 
 ## Push notifications (Gotify)
 
@@ -60,21 +76,11 @@ Gotify runs in the stack and the phone reaches it at `https://<host>/gotify/` (t
 
 1. **Create the application.** Open `https://<host>/gotify/`, sign in as `admin` with `CHANGE_ME_GOTIFY_ADMIN_PASSWORD`, go to Apps, Create Application (name it `BetterHome`) and copy its token. For other people, create a Gotify user for each under Users and let them do this with their own login.
 2. **Install the Gotify app** on the phone (F-Droid or Play Store), enter the server address `https://<host>/gotify`, and sign in with the Gotify user. In Android's settings for the app, allow it to run in the background without battery restrictions, or messages are delayed. The Tailscale app must be connected for the phone to reach the server (Tailscale's always-on VPN setting keeps it so).
-3. **Register the token in BetterHome.** The app has no screen for it yet (T-0086), so call the API once as the BetterHome user (the same `jq` and `curl` work from any machine on the tailnet; `API_CLIENT_SECRET` is the value from your Compose file):
-
-   ```bash
-   H=https://nas.example.ts.net
-   UT=$(curl -s -X POST $H/auth/realms/betterhome/protocol/openid-connect/token \
-     -d grant_type=password -d client_id=betterhome-api -d client_secret=<API_CLIENT_SECRET> \
-     -d username=<user> -d password=<password> | jq -r .access_token)
-   curl -s -X PUT $H/api/notifications/v1/push-target -H "Authorization: Bearer $UT" \
-     -H 'Content-Type: application/json' -d '{"token":"<application token>"}'
-   ```
-
-   `DELETE` on the same URL removes it. The token is never returned by the API.
+3. **Register the token in BetterHome.** In the BetterHome app, open the bell, then the notification settings, and paste the application token in the "Push notifications" card (T-0086). "Stop push notifications" there removes it. (Without the app, `PUT $H/api/notifications/v1/push-target` with `{"token":"<application token>"}` and the user's bearer token does the same.)
 4. **Try it.** In the app, mark a housemate away (needs a second member), or send a test event with the service client (`OIDC_SERVICE_CLIENT_SECRET` from your Compose file). The user's `id` is in `GET $H/api/households/v1/me` and a household id in `GET $H/api/households/v1/households`:
 
    ```bash
+   H=https://nas.example.ts.net
    SVC=$(curl -s -X POST $H/auth/realms/betterhome/protocol/openid-connect/token \
      -d grant_type=client_credentials -d client_id=betterhome-tasks-service \
      -d client_secret=<OIDC_SERVICE_CLIENT_SECRET> | jq -r .access_token)
@@ -126,4 +132,3 @@ Database names: `betterhome_households`, `_tasks`, `_scoring`, `_lists`, `_notif
 - **The realm is imported once**, on the first start with an empty Keycloak database, with the client secrets from the Compose file. Changing them later in the file does not change Keycloak: set the new value in the admin console (realm `betterhome`, Clients, each `betterhome-*-service` client, Credentials) and in the Compose file, then `docker compose up -d`. To start over, remove the `postgres-data` volume (this deletes every household too).
 - **One secret for the five service clients**, as in the local stack; a leak of it means regenerating it everywhere.
 - **No health checks on the services** (their image has no shell or curl): use the `/q/health/ready` URLs above.
-- **Registering the Gotify token** is an API call until the app has a screen for it (T-0086).

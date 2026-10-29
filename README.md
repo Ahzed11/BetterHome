@@ -10,6 +10,14 @@ See [documentation/project-specification.md](documentation/project-specification
 - **Phase 1** done (T-0002): households API + Flutter FR/EN household flows (demo repository by default).
 - **Phase 2** done (T-0007): tasks-service templates / quick-log / complete / dismiss / reassign + Flutter chores screen.
 
+## Run it on your own server (NAS)
+
+For using the app rather than developing it. You need a server with Docker Compose v2, a Caddy and Tailscale already running on it (see [deploy/nas](deploy/nas/README.md)), and an Android phone on the same tailnet.
+
+1. On the server: `./install.sh <your-nas>.ts.net /path/to/backups` in `deploy/nas` generates every secret, fills in `compose.yml` and starts the stack. Then add the one `import` line it prints to your Caddyfile and reload Caddy.
+2. On the phone: install the APK (from the GitHub Release, or `make apk`; see [Try the app on a phone](#try-the-app-on-a-phone)), open it and enter `https://<your-nas>.ts.net`.
+3. Tap "Sign up" in the app, create your household, and optionally set up push ([deploy/nas](deploy/nas/README.md#push-notifications-gotify)).
+
 ## Prerequisites
 
 - JDK 21 (`jbang jdk install 21` works)
@@ -74,4 +82,4 @@ End-to-end journeys: `make e2e` runs them on the web build in headless Chrome. C
 
 ## Container images
 
-Every merge into `master` builds the five service images and pushes them to GitHub's container registry as `ghcr.io/<owner>/betterhome-<service>`, tagged with the commit SHA and `latest` ([publish-images.yml](.github/workflows/publish-images.yml), [ADR 0026](documentation/decisions/0026-publish-images-to-ghcr.md)). The packages are private, like the repository; pulling needs `podman login ghcr.io` with a token that has `read:packages`. To build them locally: `cd backend && ./mvnw -DskipTests package`, then `tooling/build-images.sh localhost/betterhome dev`.
+Every merge into `master` builds the five service images and pushes them to GitHub's container registry as `ghcr.io/<owner>/betterhome-<service>`, tagged with the commit SHA and `latest` ([publish-images.yml](.github/workflows/publish-images.yml), [ADR 0026](documentation/decisions/0026-publish-images-to-ghcr.md)). The packages are public, so pulling needs no login. To build them locally: `cd backend && ./mvnw -DskipTests package`, then `tooling/build-images.sh localhost/betterhome dev`.
