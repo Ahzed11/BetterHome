@@ -1,7 +1,7 @@
-import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/state/read_cache.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/screens/notification_preferences_screen.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
@@ -12,8 +12,6 @@ import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/screen_skeletons.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-enum _Status { loading, ready, error }
 
 /// The caller's inbox, newest first. Opening an unread notification marks it read; the settings
 /// icon leads to the per-type switches.
@@ -29,9 +27,15 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   static const _pageSize = 20;
 
-  List<AppNotification> _items = const [];
-  _Status _status = _Status.loading;
-  bool _hasMore = false;
+  /// The newest page, which is what is cached.
+  late final CachedRead<List<AppNotification>> _first;
+
+  /// The older pages asked for during this visit, and whether there are more after them.
+  List<AppNotification> _more = const [];
+  bool? _moreHasMore;
+
+  /// What was opened during this visit, as the server now has it.
+  final Map<String, AppNotification> _opened = {};
 
   NotificationsRepository get _repository =>
       widget.session.notificationsRepository;
@@ -39,26 +43,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
-    _load();
+    _first = CachedRead(
+      cache: widget.session.readCache,
+      key: widget.session.readKey('inbox'),
+      fetch: () => _repository.list(limit: _pageSize),
+      onChange: () {
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    );
   }
 
-  Future<void> _load() async {
-    setState(() => _status = _Status.loading);
-    try {
-      final page = await _repository.list(limit: _pageSize);
-      if (mounted) {
-        setState(() {
-          _items = page;
-          _hasMore = page.length == _pageSize;
-          _status = _Status.ready;
-        });
-      }
-    } on ApiException catch (_) {
-      if (mounted) {
-        setState(() => _status = _Status.error);
-      }
-    }
+  @override
+  void dispose() {
+    _first.dispose();
+    super.dispose();
   }
+
+  List<AppNotification> get _firstPage => switch (_first.state) {
+    ReadLoaded<List<AppNotification>>(:final data) => data,
+    _ => const [],
+  };
+
+  List<AppNotification> get _items => [
+    for (final n in [..._firstPage, ..._more]) _opened[n.id] ?? n,
+  ];
+
+  bool get _hasMore => _moreHasMore ?? _firstPage.length == _pageSize;
 
   Future<void> _loadMore() async {
     await runGuarded(context, () async {
@@ -68,8 +80,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       );
       if (mounted) {
         setState(() {
-          _items = [..._items, ...page];
-          _hasMore = page.length == _pageSize;
+          _more = [..._more, ...page];
+          _moreHasMore = page.length == _pageSize;
         });
       }
     });
@@ -79,9 +91,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     await runGuarded(context, () async {
       final read = await _repository.markRead(notification.id);
       if (mounted) {
-        setState(() {
-          _items = [for (final n in _items) n.id == read.id ? read : n];
-        });
+        setState(() => _opened[read.id] = read);
       }
     });
   }
@@ -89,7 +99,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _markAllRead() async {
     final ok = await runGuarded(context, _repository.markAllRead);
     if (ok && mounted) {
-      await _load();
+      setState(() {
+        _more = const [];
+        _moreHasMore = null;
+        _opened.clear();
+      });
+      await _first.refreshAfterChange();
     }
   }
 
@@ -136,21 +151,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   List<Widget> _body(AppLocalizations l10n) {
-    switch (_status) {
-      case _Status.loading:
+    switch (_first.state) {
+      case ReadLoading<List<AppNotification>>():
         return [const NotificationsSkeleton()];
-      case _Status.error:
+      case ReadFailed<List<AppNotification>>():
         return [
           Center(
             child: Column(
               children: [
                 Text(l10n.errorGeneric),
-                TextButton(onPressed: _load, child: Text(l10n.retry)),
+                TextButton(onPressed: _first.refresh, child: Text(l10n.retry)),
               ],
             ),
           ),
         ];
-      case _Status.ready:
+      case ReadLoaded<List<AppNotification>>():
         if (_items.isEmpty) {
           return [
             Padding(

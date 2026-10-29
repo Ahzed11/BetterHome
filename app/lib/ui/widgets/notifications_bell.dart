@@ -1,6 +1,6 @@
-import 'package:betterhome/data/models.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/state/read_cache.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:flutter/material.dart';
@@ -16,30 +16,39 @@ class NotificationsBell extends StatefulWidget {
 }
 
 class _NotificationsBellState extends State<NotificationsBell> {
-  bool _unread = false;
+  late final CachedRead<bool> _unread;
 
   @override
   void initState() {
     super.initState();
-    _refresh();
-  }
-
-  Future<void> _refresh() async {
-    try {
-      final unread = await widget.session.notificationsRepository.list(
+    final session = widget.session;
+    _unread = CachedRead(
+      cache: session.readCache,
+      key: session.readKey('unread'),
+      fetch: () async => (await session.notificationsRepository.list(
         limit: 1,
         unreadOnly: true,
-      );
-      if (mounted) {
-        setState(() => _unread = unread.isNotEmpty);
-      }
-    } on ApiException catch (_) {
-      // Without an answer there is nothing to point at: no dot.
-      if (mounted) {
-        setState(() => _unread = false);
-      }
-    }
+      )).isNotEmpty,
+      onChange: () {
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    );
   }
+
+  @override
+  void dispose() {
+    _unread.dispose();
+    super.dispose();
+  }
+
+  /// The dot stays while a newer answer is on its way, and when it does not come; without any
+  /// answer yet there is nothing to point at.
+  bool get _hasUnread => switch (_unread.state) {
+    ReadLoaded<bool>(:final data) => data,
+    _ => false,
+  };
 
   Future<void> _open() async {
     await Navigator.of(context).push(
@@ -47,20 +56,22 @@ class _NotificationsBellState extends State<NotificationsBell> {
         builder: (_) => NotificationsScreen(session: widget.session),
       ),
     );
-    await _refresh();
+    await _unread.refreshAfterChange();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return IconButton(
-      tooltip: _unread ? l10n.notificationsBellUnread : l10n.notificationsTitle,
+      tooltip: _hasUnread
+          ? l10n.notificationsBellUnread
+          : l10n.notificationsTitle,
       onPressed: _open,
       icon: Stack(
         clipBehavior: Clip.none,
         children: [
           const Icon(Icons.notifications_outlined),
-          if (_unread)
+          if (_hasUnread)
             const Positioned(
               top: 0,
               right: 0,

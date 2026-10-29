@@ -97,8 +97,8 @@ class _ChoresScreenState extends State<ChoresScreen> {
 
   /// Asks for fresh data after the user's own action. What is on screen stays until it arrives.
   void _refresh() {
-    _tasks.refresh();
-    _week?.refresh();
+    _tasks.refreshAfterChange();
+    _week?.refreshAfterChange();
   }
 
   bool get _isAdmin {

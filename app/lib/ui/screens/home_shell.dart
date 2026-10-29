@@ -1,6 +1,7 @@
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/state/read_cache.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/screens/chores_screen.dart';
 import 'package:betterhome/ui/screens/create_household_screen.dart';
@@ -43,20 +44,42 @@ class HomeShell extends StatefulWidget {
 }
 
 class _HomeShellState extends State<HomeShell> {
-  late Future<List<Household>> _future;
+  late final CachedRead<List<Household>> _households;
   _Tab _tab = _Tab.allChores;
 
   @override
   void initState() {
     super.initState();
-    _reload();
+    _households = CachedRead(
+      cache: widget.session.readCache,
+      key: widget.session.readKey('households'),
+      fetch: widget.session.repository.listHouseholds,
+      onChange: _householdsChanged,
+    );
+    // Households seen on an earlier visit are there, with their selection, before the first frame.
+    if (_households.state case ReadLoaded<List<Household>>(:final data)) {
+      widget.session.ensureSelection(data);
+    }
   }
 
-  void _reload() {
-    _future = widget.session.repository.listHouseholds().then((households) {
-      widget.session.ensureSelection(households);
-      return households;
-    });
+  @override
+  void dispose() {
+    _households.dispose();
+    super.dispose();
+  }
+
+  void _householdsChanged() {
+    // Only a fresh answer settles the selection: while it is on its way, the household the user
+    // just made or chose may not be in the old one yet.
+    if (_households.state case ReadLoaded<List<Household>>(
+      :final data,
+      refreshing: false,
+    )) {
+      widget.session.ensureSelection(data);
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _create() async {
@@ -70,7 +93,7 @@ class _HomeShellState extends State<HomeShell> {
     }
     await widget.session.selectHousehold(created.id);
     if (mounted) {
-      setState(_reload);
+      _households.refreshAfterChange();
     }
   }
 
@@ -84,7 +107,7 @@ class _HomeShellState extends State<HomeShell> {
       ),
     );
     if (mounted) {
-      setState(_reload);
+      _households.refreshAfterChange();
     }
   }
 
@@ -156,22 +179,24 @@ class _HomeShellState extends State<HomeShell> {
     };
   }
 
+  Widget _loadingScaffold(AppLocalizations l10n) => Scaffold(
+    appBar: AppBar(actions: _actions(l10n)),
+    body: ListView(
+      padding: const EdgeInsets.all(AppTokens.spaceMd),
+      children: const [ChoreListSkeleton()],
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return FutureBuilder<List<Household>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return Scaffold(
-            appBar: AppBar(actions: _actions(l10n)),
-            body: ListView(
-              padding: const EdgeInsets.all(AppTokens.spaceMd),
-              children: const [ChoreListSkeleton()],
-            ),
-          );
+    return Builder(
+      builder: (context) {
+        final state = _households.state;
+        if (state is ReadLoading<List<Household>>) {
+          return _loadingScaffold(l10n);
         }
-        if (snapshot.hasError) {
+        if (state is ReadFailed<List<Household>>) {
           return Scaffold(
             appBar: AppBar(actions: _actions(l10n)),
             body: Center(
@@ -180,7 +205,7 @@ class _HomeShellState extends State<HomeShell> {
                 children: [
                   Text(l10n.errorGeneric),
                   TextButton(
-                    onPressed: () => setState(_reload),
+                    onPressed: _households.refresh,
                     child: Text(l10n.retry),
                   ),
                 ],
@@ -188,11 +213,18 @@ class _HomeShellState extends State<HomeShell> {
             ),
           );
         }
-        final households = snapshot.data ?? const <Household>[];
+        final households = switch (state) {
+          ReadLoaded<List<Household>>(:final data) => data,
+          _ => const <Household>[],
+        };
         final current = households
             .where((h) => h.id == widget.session.selectedHouseholdId)
             .firstOrNull;
         if (current == null) {
+          // The household the user just made or chose may not be in the old answer yet.
+          if (state is ReadLoaded<List<Household>> && state.refreshing) {
+            return _loadingScaffold(l10n);
+          }
           return Scaffold(
             appBar: AppBar(actions: _actions(l10n)),
             body: Center(

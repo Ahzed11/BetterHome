@@ -2,6 +2,7 @@ import 'package:betterhome/data/lists_repository.dart';
 import 'package:betterhome/data/models.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/state/read_cache.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/add_bar.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
@@ -36,11 +37,14 @@ class ListsScreen extends StatefulWidget {
 }
 
 class _ListsScreenState extends State<ListsScreen> {
-  late Future<List<Checklist>> _lists;
-  Future<List<ChecklistItem>>? _items;
+  late final CachedRead<List<Checklist>> _lists;
+  late final CachedRead<List<Membership>> _members;
+  late final CachedRead<Household> _household;
+
+  /// The items of the selected list: one read per list, which has an entry of its own in the cache.
+  CachedRead<List<ChecklistItem>>? _items;
+  String? _itemsFor;
   String? _selectedId;
-  String? _householdName;
-  bool _isAdmin = false;
 
   /// Items swiped away: hidden at once, as a swiped row must leave the tree in the same frame,
   /// until the reloaded list no longer has them.
@@ -51,49 +55,105 @@ class _ListsScreenState extends State<ListsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadHousehold();
-    _reloadLists();
+    final session = widget.session;
+    final householdId = widget.householdId;
+    _lists = CachedRead(
+      cache: session.readCache,
+      key: session.readKey('lists', householdId: householdId),
+      fetch: () => _repository.listLists(householdId),
+      onChange: _listsChanged,
+    );
+    _members = CachedRead(
+      cache: session.readCache,
+      key: session.readKey('members', householdId: householdId),
+      fetch: () => session.repository.listMembers(householdId),
+      onChange: _changed,
+    );
+    _household = CachedRead(
+      cache: session.readCache,
+      key: session.readKey('household', householdId: householdId),
+      fetch: () => session.repository.getHousehold(householdId),
+      onChange: _changed,
+    );
+    // Lists seen on an earlier visit are there before the first frame.
+    _syncSelection();
   }
 
-  Future<void> _loadHousehold() async {
-    final members = await widget.session.repository.listMembers(
-      widget.householdId,
-    );
-    final household = await widget.session.repository.getHousehold(
-      widget.householdId,
-    );
+  @override
+  void dispose() {
+    _lists.dispose();
+    _members.dispose();
+    _household.dispose();
+    _items?.dispose();
+    super.dispose();
+  }
+
+  void _changed() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _listsChanged() {
+    _syncSelection();
+    _changed();
+  }
+
+  String? get _householdName => switch (_household.state) {
+    ReadLoaded<Household>(:final data) => data.name,
+    _ => null,
+  };
+
+  bool get _isAdmin {
     final me = widget.session.profile?.id;
-    if (!mounted) {
+    return switch (_members.state) {
+      ReadLoaded<List<Membership>>(:final data) => data.any(
+        (m) => m.userId == me && m.role == MembershipRole.admin,
+      ),
+      _ => false,
+    };
+  }
+
+  /// Keeps the selection on a list that exists (the first one otherwise), and the items read on
+  /// the selected list.
+  void _syncSelection() {
+    final lists = switch (_lists.state) {
+      ReadLoaded<List<Checklist>>(:final data) => data,
+      _ => null,
+    };
+    if (lists == null) {
       return;
     }
-    setState(() {
-      _householdName = household.name;
-      _isAdmin = members.any(
-        (m) => m.userId == me && m.role == MembershipRole.admin,
-      );
-    });
+    final wanted = _selectedId;
+    final id = lists.any((l) => l.id == wanted)
+        ? wanted
+        : lists.firstOrNull?.id;
+    _selectedId = id;
+    if (id != _itemsFor) {
+      _items?.dispose();
+      _itemsFor = id;
+      _items = id == null ? null : _openItems(id);
+    }
   }
 
-  void _reloadLists({String? select}) {
-    _lists = _repository.listLists(widget.householdId).then((lists) {
-      final wanted = select ?? _selectedId;
-      _selectedId = lists.any((l) => l.id == wanted)
-          ? wanted
-          : (lists.isEmpty ? null : lists.first.id);
-      _reloadItems();
-      return lists;
-    });
-  }
-
-  void _reloadItems() {
-    final id = _selectedId;
-    _items = id == null ? null : _repository.listItems(widget.householdId, id);
+  CachedRead<List<ChecklistItem>> _openItems(String listId) {
+    final session = widget.session;
+    return CachedRead(
+      cache: session.readCache,
+      key: session.readKey(
+        'items',
+        householdId: widget.householdId,
+        params: listId,
+      ),
+      fetch: () => _repository.listItems(widget.householdId, listId),
+      onChange: _changed,
+    );
   }
 
   void _select(String id) {
     setState(() {
       _selectedId = id;
-      _reloadItems();
+      _syncSelection();
     });
   }
 
@@ -102,7 +162,7 @@ class _ListsScreenState extends State<ListsScreen> {
   Future<bool> _guard(Future<void> Function() action) async {
     final ok = await runGuarded(context, action);
     if (!ok && mounted) {
-      setState(_reloadItems);
+      _items?.refreshAfterChange();
     }
     return ok;
   }
@@ -120,7 +180,8 @@ class _ListsScreenState extends State<ListsScreen> {
     await _guard(() async {
       final created = await _repository.createList(widget.householdId, title);
       if (mounted) {
-        setState(() => _reloadLists(select: created.id));
+        _selectedId = created.id;
+        _lists.refreshAfterChange();
       }
     });
   }
@@ -139,7 +200,7 @@ class _ListsScreenState extends State<ListsScreen> {
     await _guard(() async {
       await _repository.renameList(widget.householdId, list.id, title);
       if (mounted) {
-        setState(_reloadLists);
+        _lists.refreshAfterChange();
       }
     });
   }
@@ -156,7 +217,7 @@ class _ListsScreenState extends State<ListsScreen> {
     await _guard(() async {
       await _repository.archiveList(widget.householdId, list.id);
       if (mounted) {
-        setState(_reloadLists);
+        _lists.refreshAfterChange();
       }
     });
   }
@@ -173,7 +234,7 @@ class _ListsScreenState extends State<ListsScreen> {
     await _guard(() async {
       await _repository.resetList(widget.householdId, list.id);
       if (mounted) {
-        setState(_reloadItems);
+        _items?.refreshAfterChange();
       }
     });
   }
@@ -209,7 +270,7 @@ class _ListsScreenState extends State<ListsScreen> {
     await _guard(() async {
       await _repository.addItem(widget.householdId, list.id, title);
       if (mounted) {
-        setState(_reloadItems);
+        _items?.refreshAfterChange();
       }
     });
   }
@@ -222,7 +283,7 @@ class _ListsScreenState extends State<ListsScreen> {
         await _repository.checkItem(widget.householdId, list.id, item.id);
       }
       if (mounted) {
-        setState(_reloadItems);
+        _items?.refreshAfterChange();
       }
     });
   }
@@ -232,11 +293,17 @@ class _ListsScreenState extends State<ListsScreen> {
     final ok = await _guard(() async {
       await _repository.deleteItem(widget.householdId, list.id, item.id);
       if (mounted) {
-        setState(_reloadItems);
+        _items?.refreshAfterChange();
       }
     });
     if (!ok && mounted) {
-      setState(() => _removed.remove(item.id));
+      // A swiped row has to leave the tree for one frame, even when the request failed at once:
+      // a dismissed Dismissible cannot stay in it. The row comes back after that frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() => _removed.remove(item.id));
+        }
+      });
     }
   }
 
@@ -255,7 +322,7 @@ class _ListsScreenState extends State<ListsScreen> {
         await _repository.deleteItem(widget.householdId, list.id, item.id);
       }
       if (mounted) {
-        setState(_reloadItems);
+        _items?.refreshAfterChange();
       }
     });
   }
@@ -284,22 +351,25 @@ class _ListsScreenState extends State<ListsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return FutureBuilder<List<Checklist>>(
-      future: _lists,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
+    return Builder(
+      builder: (context) {
+        final state = _lists.state;
+        if (state is ReadLoading<List<Checklist>>) {
           return const Scaffold(body: ListsScreenSkeleton());
         }
-        if (snapshot.hasError) {
+        if (state is ReadFailed<List<Checklist>>) {
           return Scaffold(
             body: _Message(
               text: l10n.errorGeneric,
               actionLabel: l10n.retry,
-              onAction: () => setState(_reloadLists),
+              onAction: _lists.refresh,
             ),
           );
         }
-        final lists = snapshot.data ?? const <Checklist>[];
+        final lists = switch (state) {
+          ReadLoaded<List<Checklist>>(:final data) => data,
+          _ => const <Checklist>[],
+        };
         final selected = lists.where((l) => l.id == _selectedId).firstOrNull;
         return Scaffold(
           body: Column(
@@ -325,7 +395,7 @@ class _ListsScreenState extends State<ListsScreen> {
                           child: _Pills(
                             lists: lists,
                             selectedId: _selectedId,
-                            items: _items,
+                            items: _items?.state,
                             canCreate: _isAdmin,
                             onSelect: _select,
                             onCreate: _create,
@@ -355,13 +425,13 @@ class _ListsScreenState extends State<ListsScreen> {
                         ),
                       )
                     : _Items(
-                        future: _items,
+                        state: _items?.state,
                         removed: _removed,
                         householdName: _householdName,
                         onToggle: (item) => _toggle(selected, item),
                         onDelete: (item) => _delete(selected, item),
                         onReset: () => _reset(selected),
-                        onRetry: () => setState(_reloadItems),
+                        onRetry: () => _items?.refresh(),
                       ),
               ),
             ],
@@ -394,7 +464,7 @@ class _Pills extends StatelessWidget {
 
   final List<Checklist> lists;
   final String? selectedId;
-  final Future<List<ChecklistItem>>? items;
+  final ReadState<List<ChecklistItem>>? items;
   final bool canCreate;
   final ValueChanged<String> onSelect;
   final VoidCallback onCreate;
@@ -407,11 +477,14 @@ class _Pills extends StatelessWidget {
       child: Row(
         children: [
           for (final list in lists) ...[
-            FutureBuilder<List<ChecklistItem>>(
-              future: list.id == selectedId ? items : null,
-              builder: (context, snapshot) {
-                final open =
-                    snapshot.data?.where((i) => !i.isChecked).length ?? 0;
+            Builder(
+              builder: (context) {
+                final read = list.id == selectedId ? items : null;
+                final open = switch (read) {
+                  ReadLoaded<List<ChecklistItem>>(:final data) =>
+                    data.where((i) => !i.isChecked).length,
+                  _ => 0,
+                };
                 return AppPill(
                   selected: list.id == selectedId,
                   label: open == 0 ? list.title : '${list.title} · $open',
@@ -432,7 +505,7 @@ class _Pills extends StatelessWidget {
 /// the list has no item at all. A row is deleted by swiping it away.
 class _Items extends StatelessWidget {
   const _Items({
-    required this.future,
+    required this.state,
     required this.removed,
     required this.householdName,
     required this.onToggle,
@@ -441,7 +514,7 @@ class _Items extends StatelessWidget {
     required this.onRetry,
   });
 
-  final Future<List<ChecklistItem>>? future;
+  final ReadState<List<ChecklistItem>>? state;
   final Set<String> removed;
   final String? householdName;
   final ValueChanged<ChecklistItem> onToggle;
@@ -452,24 +525,26 @@ class _Items extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return FutureBuilder<List<ChecklistItem>>(
-      future: future,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Padding(
-            padding: EdgeInsets.all(AppTokens.spaceMd),
-            child: ChecklistSkeleton(),
-          );
-        }
-        if (snapshot.hasError) {
-          return _Message(
-            text: l10n.errorGeneric,
-            actionLabel: l10n.retry,
-            onAction: onRetry,
-          );
+    return Builder(
+      builder: (context) {
+        final data = switch (state) {
+          ReadLoaded<List<ChecklistItem>>(:final data) => data,
+          _ => null,
+        };
+        if (data == null) {
+          return state is ReadFailed<List<ChecklistItem>>
+              ? _Message(
+                  text: l10n.errorGeneric,
+                  actionLabel: l10n.retry,
+                  onAction: onRetry,
+                )
+              : const Padding(
+                  padding: EdgeInsets.all(AppTokens.spaceMd),
+                  child: ChecklistSkeleton(),
+                );
         }
         final items = [
-          for (final item in snapshot.data ?? const <ChecklistItem>[])
+          for (final item in data)
             if (!removed.contains(item.id)) item,
         ];
         if (items.isEmpty) {

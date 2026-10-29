@@ -2,6 +2,7 @@ import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/state/read_cache.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/member_labels.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
@@ -31,23 +32,57 @@ class LeaderboardScreen extends StatefulWidget {
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   ScorePeriod _period = ScorePeriod.month;
-  late Future<_BoardData> _future;
+  late CachedRead<_BoardData> _board;
 
   @override
   void initState() {
     super.initState();
-    _reload();
+    _board = _open();
     _showUnseenRecap();
   }
 
+  @override
+  void dispose() {
+    _board.dispose();
+    super.dispose();
+  }
+
+  void _changed() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// The read of the board of the current period, which has an entry of its own in the cache.
+  CachedRead<_BoardData> _open() {
+    final session = widget.session;
+    final period = _period;
+    return CachedRead(
+      cache: session.readCache,
+      key: session.readKey(
+        'leaderboard',
+        householdId: widget.householdId,
+        params: period,
+      ),
+      fetch: () => _load(period),
+      onChange: _changed,
+    );
+  }
+
   /// Shows the recap of the newest month the user has not seen yet, once: it is recorded as seen
-  /// before it is shown, so it never comes back.
+  /// before it is shown, so it never comes back. It is decided on a fresh answer only: an old
+  /// one may still list as unseen a month whose recap was shown since.
   Future<void> _showUnseenRecap() async {
-    final _BoardData data;
-    try {
-      data = await _future;
-    } on Exception catch (_) {
-      return; // The screen already shows the error.
+    final board = _board;
+    if (!await board.refresh()) {
+      return; // The screen already shows the error, or the old answer.
+    }
+    final data = switch (board.state) {
+      ReadLoaded<_BoardData>(:final data) => data,
+      _ => null,
+    };
+    if (data == null) {
+      return;
     }
     final unseen = data.winners.where((w) => !w.celebrated).firstOrNull;
     if (unseen == null || !mounted) {
@@ -100,36 +135,34 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     ).format(date);
   }
 
-  void _reload() {
-    _future = () async {
-      final scoring = widget.session.scoringRepository;
-      if (scoring is FakeScoringRepository) {
-        final members = await widget.session.repository.listMembers(
-          widget.householdId,
-        );
-        scoring.setMembers(members.map((m) => m.userId).toList());
-        scoring.seedDemoIfEmpty(widget.householdId);
-      }
-      final board = await widget.session.scoringRepository.getScoreboard(
-        widget.householdId,
-        period: _period,
-      );
-      final winners = await widget.session.scoringRepository.listWinners(
-        widget.householdId,
-      );
+  Future<_BoardData> _load(ScorePeriod period) async {
+    final scoring = widget.session.scoringRepository;
+    if (scoring is FakeScoringRepository) {
       final members = await widget.session.repository.listMembers(
         widget.householdId,
       );
-      final household = await widget.session.repository.getHousehold(
-        widget.householdId,
-      );
-      return _BoardData(
-        board: board,
-        winners: winners,
-        members: members,
-        household: household.name,
-      );
-    }();
+      scoring.setMembers(members.map((m) => m.userId).toList());
+      scoring.seedDemoIfEmpty(widget.householdId);
+    }
+    final board = await widget.session.scoringRepository.getScoreboard(
+      widget.householdId,
+      period: period,
+    );
+    final winners = await widget.session.scoringRepository.listWinners(
+      widget.householdId,
+    );
+    final members = await widget.session.repository.listMembers(
+      widget.householdId,
+    );
+    final household = await widget.session.repository.getHousehold(
+      widget.householdId,
+    );
+    return _BoardData(
+      board: board,
+      winners: winners,
+      members: members,
+      household: household.name,
+    );
   }
 
   String _labelFor(
@@ -167,12 +200,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       body: ListView(
         padding: const EdgeInsets.all(AppTokens.spaceMd),
         children: [
-          FutureBuilder<_BoardData>(
-            future: _future,
-            builder: (context, snapshot) => ScreenHeader(
-              eyebrow: snapshot.data?.household,
-              title: l10n.leaderboardTitle,
-            ),
+          ScreenHeader(
+            eyebrow: switch (_board.state) {
+              ReadLoaded<_BoardData>(:final data) => data.household,
+              _ => null,
+            },
+            title: l10n.leaderboardTitle,
           ),
           const SizedBox(height: AppTokens.spaceMd),
           SegmentedTabs<ScorePeriod>(
@@ -186,20 +219,22 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             onSelected: (value) {
               setState(() {
                 _period = value;
-                _reload();
+                _board.dispose();
+                _board = _open();
               });
             },
           ),
           const SizedBox(height: AppTokens.spaceMd),
-          FutureBuilder<_BoardData>(
-            future: _future,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const LeaderboardSkeleton();
-              }
-              final data = snapshot.data;
-              if (snapshot.hasError || data == null) {
-                return Center(child: Text(l10n.errorGeneric));
+          Builder(
+            builder: (context) {
+              final data = switch (_board.state) {
+                ReadLoaded<_BoardData>(:final data) => data,
+                _ => null,
+              };
+              if (data == null) {
+                return _board.state is ReadFailed<_BoardData>
+                    ? Center(child: Text(l10n.errorGeneric))
+                    : const LeaderboardSkeleton();
               }
               final board = data.board;
               return Column(
