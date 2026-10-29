@@ -3,6 +3,7 @@ import 'package:betterhome/data/models.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/state/read_cache.dart';
+import 'package:betterhome/state/reads.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/widgets/add_bar.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
@@ -57,22 +58,19 @@ class _ListsScreenState extends State<ListsScreen> {
     super.initState();
     final session = widget.session;
     final householdId = widget.householdId;
-    _lists = CachedRead(
-      cache: session.readCache,
-      key: session.readKey('lists', householdId: householdId),
-      fetch: () => _repository.listLists(householdId),
+    _lists = CachedRead.of(
+      session.readCache,
+      session.listsRead(householdId),
       onChange: _listsChanged,
     );
-    _members = CachedRead(
-      cache: session.readCache,
-      key: session.readKey('members', householdId: householdId),
-      fetch: () => session.repository.listMembers(householdId),
+    _members = CachedRead.of(
+      session.readCache,
+      session.membersRead(householdId),
       onChange: _changed,
     );
-    _household = CachedRead(
-      cache: session.readCache,
-      key: session.readKey('household', householdId: householdId),
-      fetch: () => session.repository.getHousehold(householdId),
+    _household = CachedRead.of(
+      session.readCache,
+      session.householdRead(householdId),
       onChange: _changed,
     );
     // Lists seen on an earlier visit are there before the first frame.
@@ -136,19 +134,11 @@ class _ListsScreenState extends State<ListsScreen> {
     }
   }
 
-  CachedRead<List<ChecklistItem>> _openItems(String listId) {
-    final session = widget.session;
-    return CachedRead(
-      cache: session.readCache,
-      key: session.readKey(
-        'items',
-        householdId: widget.householdId,
-        params: listId,
-      ),
-      fetch: () => _repository.listItems(widget.householdId, listId),
-      onChange: _changed,
-    );
-  }
+  CachedRead<List<ChecklistItem>> _openItems(String listId) => CachedRead.of(
+    widget.session.readCache,
+    widget.session.itemsRead(widget.householdId, listId),
+    onChange: _changed,
+  );
 
   void _select(String id) {
     setState(() {

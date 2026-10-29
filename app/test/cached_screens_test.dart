@@ -113,14 +113,16 @@ class _HeldHouseholds extends FakeHouseholdsRepository {
 class _HeldTasks extends FakeTasksRepository {
   _HeldTasks() : super(now: _now);
 
+  /// The All chores tab's questions; the prefetch of My chores asks apart.
   final tasks = _Held<List<ChoreTask>>();
+  final mine = _Held<List<ChoreTask>>();
 
   @override
   Future<List<ChoreTask>> listTasks(
     String householdId, {
     TaskStatus? status,
     bool mine = false,
-  }) => tasks.hold();
+  }) => mine ? this.mine.hold() : tasks.hold();
 
   Future<void> answer(int index, String householdId) async =>
       tasks.asked[index].complete(await super.listTasks(householdId));

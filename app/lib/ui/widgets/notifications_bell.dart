@@ -1,6 +1,7 @@
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/state/read_cache.dart';
+import 'package:betterhome/state/reads.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/screens/notifications_screen.dart';
 import 'package:flutter/material.dart';
@@ -21,14 +22,9 @@ class _NotificationsBellState extends State<NotificationsBell> {
   @override
   void initState() {
     super.initState();
-    final session = widget.session;
-    _unread = CachedRead(
-      cache: session.readCache,
-      key: session.readKey('unread'),
-      fetch: () async => (await session.notificationsRepository.list(
-        limit: 1,
-        unreadOnly: true,
-      )).isNotEmpty,
+    _unread = CachedRead.of(
+      widget.session.readCache,
+      widget.session.unreadRead(),
       onChange: () {
         if (mounted) {
           setState(() {});
