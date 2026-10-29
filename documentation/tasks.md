@@ -1380,3 +1380,15 @@ Order: T-0124 and T-0125 are independent; T-0126 needs both; T-0127 and T-0128 n
 * Decisions and deviations: the notes of the published `v0.1.0` release were not edited (a release already published is the product owner's to change); the next release carries the fingerprint.
 * Verification: the extraction was run on the two wordings of `apksigner` (both give the fingerprint) and on output without one (empty, so the guard stops the job); the workflow parses as YAML and the step passes `bash -n`. The workflow itself runs only when a tag is pushed, so the first real run is the release of `v0.1.1` (T-0134). Not run: a release.
 * Follow-ups: T-0134 (release `v0.1.1`); T-0117 can pin the fingerprint above.
+
+### T-0134 · Release v0.1.1
+
+* Status: in-review
+* Issue / PR: — (suggested: "Release 0.1.1") / (this PR)
+* Depends on: T-0116, T-0133
+* Spec: —
+* Acceptance criteria: `app/pubspec.yaml` is at `0.1.1+2` and the tag `v0.1.1` on that commit makes the `release` workflow publish `betterhome-0.1.1.apk`, signed by the release key, with the certificate's fingerprint in the notes. The build number goes up (`+2`) so the phone installs it over `0.1.0+1`.
+* Summary: the version moves from `0.1.0+1` to `0.1.1+2`. The `v0.1.0` build predates the timezone picker (T-0123), Lists v2 (T-0131), the cache and skeletons (T-0124 to T-0128), the prefetch and pull to refresh (T-0127, T-0129); `v0.1.1` carries all of them. The tag is pushed once this change is on `master`.
+* Decisions and deviations: the tag is pushed after the merge, on the merge commit, as the workflow requires the tag to match `pubspec.yaml`. The APK is signed by the same release key, so it installs over `v0.1.0`; a debug-signed `make apk` build would not.
+* Verification: `flutter pub get --enforce-lockfile` (the release's own step) passes with the new version; `make test-docs`; CI `check` on this pull request. The release run, the APK and the notes: see the follow-up below. Not run: installing it on a phone.
+* Follow-ups: the result of the release run (the asset, the signer, the fingerprint in the notes) is to be checked after the tag, and the status of this entry moved to `done` with it.
