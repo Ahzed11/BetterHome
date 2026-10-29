@@ -9,7 +9,8 @@ import 'package:betterhome/data/notifications_repository.dart';
 import 'package:betterhome/data/scoring_repository.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
-import 'package:betterhome/ui/widgets/add_field.dart';
+import 'package:betterhome/ui/widgets/add_bar.dart';
+import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
 import 'package:betterhome/ui/widgets/household_switcher.dart';
 import 'package:betterhome/ui/widgets/quick_log_sheet.dart';
@@ -500,12 +501,20 @@ void main() {
       'Weekly shop',
     );
     await _tap(tester, find.widgetWithText(FilledButton, 'Save'));
-    await _see(tester, find.text('Weekly shop · 0'));
+    // The pill, not just the text: the field of the closing dialog holds the same text.
+    await _see(
+      tester,
+      find.descendant(
+        of: find.byType(AppPill),
+        matching: find.text('Weekly shop'),
+      ),
+    );
+    await _see(tester, find.byType(AddBar));
 
     // Any member adds items.
     // A new finder per use: a finder keeps the elements it found first.
     Finder field() => find.descendant(
-      of: find.byType(AddField),
+      of: find.byType(AddBar),
       matching: find.byType(TextField),
     );
     for (final item in ['Milk', 'Bread']) {
@@ -527,16 +536,11 @@ void main() {
     await _see(tester, find.text('IN THE BASKET · 1'));
     await _see(tester, find.text('Weekly shop · 1'));
 
-    // Deleting removes it for good.
-    await tester.tap(
-      find.descendant(
-        of: find.ancestor(
-          of: find.text('Bread'),
-          matching: find.byType(CheckRow),
-        ),
-        matching: find.byTooltip('Delete item'),
-      ),
-    );
+    // Swiping an item away deletes it for good. The browser window is far wider than a phone, so
+    // the swipe is as long as the row, whatever its width.
+    final rowWidth = tester.getSize(find.byType(Dismissible).first).width;
+    await tester.drag(find.text('Bread'), Offset(-rowWidth, 0));
+    await tester.pumpAndSettle();
     await _seeCount(tester, find.text('Bread'), 0);
 
     // Resetting asks first, then unchecks everything.
@@ -553,6 +557,22 @@ void main() {
     );
     expect(items.map((i) => i.title), ['Milk']);
     expect(items.single.isChecked, isFalse);
+
+    // Removing the checked items, from the options of the list, asks first and clears the basket.
+    await _tap(tester, boxOf('Milk'));
+    await _see(tester, find.text('IN THE BASKET · 1'));
+    await _tap(tester, find.byTooltip('List options'));
+    await _tap(tester, find.text('Remove checked items'));
+    await _see(tester, find.text('Remove the checked items?'));
+    await _tap(
+      tester,
+      find.widgetWithText(FilledButton, 'Remove checked items'),
+    );
+    await _see(tester, find.text('All stocked up'));
+    expect(
+      await session.listsRepository.listItems(householdId, lists.single.id),
+      isEmpty,
+    );
   });
 
   testWidgets('invite a member and join with the token', (tester) async {

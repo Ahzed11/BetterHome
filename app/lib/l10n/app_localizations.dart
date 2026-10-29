@@ -623,13 +623,13 @@ abstract class AppLocalizations {
   /// No description provided for @renameList.
   ///
   /// In en, this message translates to:
-  /// **'Rename'**
+  /// **'Rename list'**
   String get renameList;
 
   /// No description provided for @archiveList.
   ///
   /// In en, this message translates to:
-  /// **'Archive'**
+  /// **'Archive list'**
   String get archiveList;
 
   /// No description provided for @archiveListConfirmTitle.
@@ -643,12 +643,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Archived lists disappear from this screen and can no longer be changed.'**
   String get archiveListConfirmBody;
-
-  /// No description provided for @itemsEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing here yet. Add the first item.'**
-  String get itemsEmpty;
 
   /// No description provided for @deleteItem.
   ///
@@ -674,6 +668,78 @@ abstract class AppLocalizations {
   /// **'Use this to start the list over, for example a packing list.'**
   String get resetListConfirmBody;
 
+  /// No description provided for @listOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'List options'**
+  String get listOptions;
+
+  /// No description provided for @resetListHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Start the list over — handy for packing lists'**
+  String get resetListHint;
+
+  /// No description provided for @removeChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove checked items'**
+  String get removeChecked;
+
+  /// No description provided for @removeCheckedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the basket after shopping'**
+  String get removeCheckedHint;
+
+  /// No description provided for @removeCheckedConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the checked items?'**
+  String get removeCheckedConfirmTitle;
+
+  /// No description provided for @removeCheckedConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'They are deleted for everyone in the household.'**
+  String get removeCheckedConfirmBody;
+
+  /// No description provided for @renameListHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone sees the new name'**
+  String get renameListHint;
+
+  /// No description provided for @archiveListHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide it for the whole household'**
+  String get archiveListHint;
+
+  /// No description provided for @addToListHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to {title}…'**
+  String addToListHint(String title);
+
+  /// No description provided for @itemsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'All stocked up'**
+  String get itemsEmptyTitle;
+
+  /// No description provided for @itemsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add what you need below — everyone in {household} sees it.'**
+  String itemsEmptyBody(String household);
+
+  /// No description provided for @itemsEmptyBodyHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Add what you need below — everyone in your home sees it.'**
+  String get itemsEmptyBodyHome;
+
   /// No description provided for @listsTitle.
   ///
   /// In en, this message translates to:
@@ -697,12 +763,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add an item'**
   String get addItem;
-
-  /// No description provided for @addItemHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Add an item…'**
-  String get addItemHint;
 
   /// No description provided for @addItemButton.
   ///
