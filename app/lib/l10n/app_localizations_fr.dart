@@ -103,6 +103,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get retry => 'Réessayer';
 
   @override
+  String get refresh => 'Actualiser';
+
+  @override
+  String get refreshFailed => 'Actualisation impossible. Réessayez.';
+
+  @override
   String get useDemoData => 'Continuer avec des données de démo';
 
   @override

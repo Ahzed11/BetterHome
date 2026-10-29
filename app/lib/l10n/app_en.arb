@@ -35,6 +35,8 @@
   "continueLabel": "Continue",
   "errorGeneric": "Something went wrong",
   "retry": "Retry",
+  "refresh": "Refresh",
+  "refreshFailed": "Couldn’t refresh. Try again.",
   "useDemoData": "Continue with demo data",
   "loading": "Loading…",
   "choresTitle": "Chores",

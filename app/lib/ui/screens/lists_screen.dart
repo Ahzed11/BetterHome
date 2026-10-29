@@ -11,6 +11,7 @@ import 'package:betterhome/ui/widgets/app_pill.dart';
 import 'package:betterhome/ui/widgets/check_row.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/list_options_sheet.dart';
+import 'package:betterhome/ui/widgets/pull_to_refresh.dart';
 import 'package:betterhome/ui/widgets/round_icon_button.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
@@ -139,6 +140,17 @@ class _ListsScreenState extends State<ListsScreen> {
     widget.session.itemsRead(widget.householdId, listId),
     onChange: _changed,
   );
+
+  /// Pull to refresh: every read this screen shows. A request already running is joined.
+  Future<bool> _pull() async {
+    final answers = await Future.wait([
+      _lists.refresh(),
+      _members.refresh(),
+      _household.refresh(),
+      ?_items?.refresh(),
+    ]);
+    return answers.every((arrived) => arrived);
+  }
 
   void _select(String id) {
     setState(() {
@@ -349,10 +361,13 @@ class _ListsScreenState extends State<ListsScreen> {
         }
         if (state is ReadFailed<List<Checklist>>) {
           return Scaffold(
-            body: _Message(
-              text: l10n.errorGeneric,
-              actionLabel: l10n.retry,
-              onAction: _lists.refresh,
+            body: PullToRefresh(
+              onRefresh: _pull,
+              child: _Message(
+                text: l10n.errorGeneric,
+                actionLabel: l10n.retry,
+                onAction: _lists.refresh,
+              ),
             ),
           );
         }
@@ -403,26 +418,29 @@ class _ListsScreenState extends State<ListsScreen> {
                 ),
               ),
               Expanded(
-                child: selected == null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppTokens.spaceLg),
-                          child: Text(
-                            l10n.listsEmpty,
-                            textAlign: TextAlign.center,
-                            style: AppTypography.bodyMuted,
+                child: PullToRefresh(
+                  onRefresh: _pull,
+                  child: selected == null
+                      ? PullableCenter(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppTokens.spaceLg),
+                            child: Text(
+                              l10n.listsEmpty,
+                              textAlign: TextAlign.center,
+                              style: AppTypography.bodyMuted,
+                            ),
                           ),
+                        )
+                      : _Items(
+                          state: _items?.state,
+                          removed: _removed,
+                          householdName: _householdName,
+                          onToggle: (item) => _toggle(selected, item),
+                          onDelete: (item) => _delete(selected, item),
+                          onReset: () => _reset(selected),
+                          onRetry: () => _items?.refresh(),
                         ),
-                      )
-                    : _Items(
-                        state: _items?.state,
-                        removed: _removed,
-                        householdName: _householdName,
-                        onToggle: (item) => _toggle(selected, item),
-                        onDelete: (item) => _delete(selected, item),
-                        onReset: () => _reset(selected),
-                        onRetry: () => _items?.refresh(),
-                      ),
+                ),
               ),
             ],
           ),
@@ -543,6 +561,7 @@ class _Items extends StatelessWidget {
         final open = items.where((i) => !i.isChecked).toList();
         final done = items.where((i) => i.isChecked).toList();
         return ListView(
+          physics: pullablePhysics,
           padding: const EdgeInsets.all(AppTokens.spaceMd),
           children: [
             if (open.isNotEmpty)
@@ -687,6 +706,7 @@ class _EmptyList extends StatelessWidget {
     final name = householdName;
     return LayoutBuilder(
       builder: (context, constraints) => SingleChildScrollView(
+        physics: pullablePhysics,
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: constraints.maxHeight),
           child: Center(
@@ -757,7 +777,7 @@ class _Message extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return PullableCenter(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

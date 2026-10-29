@@ -10,6 +10,7 @@ import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/notification_row.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/screen_skeletons.dart';
+import 'package:betterhome/ui/widgets/pull_to_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -96,6 +97,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
   }
 
+  /// Pull to refresh: the newest page again; the older pages asked for are dropped with it.
+  Future<bool> _pull() async {
+    final arrived = await _first.refresh();
+    if (arrived && mounted) {
+      setState(() {
+        _more = const [];
+        _moreHasMore = null;
+        _opened.clear();
+      });
+    }
+    return arrived;
+  }
+
   Future<void> _markAllRead() async {
     final ok = await runGuarded(context, _repository.markAllRead);
     if (ok && mounted) {
@@ -114,38 +128,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final hasUnread = _items.any((n) => !n.isRead);
     return Scaffold(
       appBar: AppBar(),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          AppTokens.spaceLg - AppTokens.spaceXs,
-          0,
-          AppTokens.spaceLg - AppTokens.spaceXs,
-          AppTokens.spaceLg,
-        ),
-        children: [
-          ScreenHeader(
-            title: l10n.notificationsTitle,
-            actions: [
-              if (hasUnread)
-                AppPill(
-                  icon: Icons.done_all,
-                  label: l10n.markAllRead,
-                  onPressed: _markAllRead,
-                ),
-              IconButton(
-                tooltip: l10n.notificationSettings,
-                icon: const Icon(Icons.tune),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        NotificationPreferencesScreen(session: widget.session),
+      body: PullToRefresh(
+        onRefresh: _pull,
+        child: ListView(
+          physics: pullablePhysics,
+          padding: const EdgeInsets.fromLTRB(
+            AppTokens.spaceLg - AppTokens.spaceXs,
+            0,
+            AppTokens.spaceLg - AppTokens.spaceXs,
+            AppTokens.spaceLg,
+          ),
+          children: [
+            ScreenHeader(
+              title: l10n.notificationsTitle,
+              actions: [
+                if (hasUnread)
+                  AppPill(
+                    icon: Icons.done_all,
+                    label: l10n.markAllRead,
+                    onPressed: _markAllRead,
+                  ),
+                IconButton(
+                  tooltip: l10n.notificationSettings,
+                  icon: const Icon(Icons.tune),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => NotificationPreferencesScreen(
+                        session: widget.session,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppTokens.spaceMd),
-          ..._body(l10n),
-        ],
+              ],
+            ),
+            const SizedBox(height: AppTokens.spaceMd),
+            ..._body(l10n),
+          ],
+        ),
       ),
     );
   }
