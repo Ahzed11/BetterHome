@@ -1241,3 +1241,71 @@ Out of scope of T-0107 to T-0117, to be filed when wanted: Caddy in the dev comp
 * Spec: §1 (recurrence is computed in the household timezone), §9 (data model: `HOUSEHOLD.timezone`)
 * Acceptance criteria: In the create-household screen, the timezone is chosen from a searchable list of IANA zone names (for example `Europe/Paris`) instead of a free text field, so a typo can no longer reach the API. The list is the set of zones the backend accepts; the default is the device's own zone when it is in the list, else `Europe/Paris`. Built from the shared widgets and design tokens (ADR 0021), FR/EN strings in the ARB files, no hard-coded user-facing text. Widget tests for the list (default, search, selection, no match) in French and English, golden and accessibility checks (44 px targets, 200% text scale) for the new screen state, and the `integration_test` journey that creates a household still passes. Editing the timezone of an existing household, if the app offers it, uses the same picker.
 * Notes for the implementer: `create_household_screen.dart` has a `TextField` with a `'Europe/Paris'` initial value (`_timezone`). `profile_sync_screen.dart` sends a fixed `'Europe/Paris'` as the user's own timezone; decide with the product owner whether the profile timezone gets the picker too (report it, do not guess). Check which zone names the households API validates before choosing the source of the list, and keep a single source of truth for it. The Dart client is generated from `documentation/api/openapi.yaml`; if the list is served by the API, that is a contract change and needs the OpenAPI file, the tests and the spec updated in the same change.
+
+## Loading experience (T-0124 to T-0129)
+
+Planned with the product owner on 2026-10-29. Problem: every tab switch rebuilds the tab (`HomeShell._tabBody` returns a new screen, so a new `State` and a new `Future`), the data is fetched again and the screen shows the text "Loading…"; returning from the household screen blanks the whole shell the same way; after an action the screens call `setState(_reload)`, and `FutureBuilder` then shows "Loading…" over data it already has. Nothing is cached, there are no skeleton widgets, and some screens wait for four requests one after the other (leaderboard).
+
+Decisions of the product owner (2026-10-29): (1) on a revisit the screen shows the last data at once and refreshes it quietly in the background (no spinner, no text swap); (2) once the first tab has loaded, the other tabs are loaded in the background so their first visit is also instant; (3) the cache lives in memory only, nothing about the household is written to the phone (same spirit as T-0072). First loads show skeletons (placeholders with the shape of the real elements) instead of "Loading…".
+
+Order: T-0124 and T-0125 are independent; T-0126 needs both; T-0127 and T-0128 need T-0125; T-0129 (pull to refresh, planned for later) needs T-0126. Rules for every task here: the cache is a concrete class owned by `AppSession`, not a new interface or layer (AGENTS §3); no color, radius or size outside the design tokens (AGENTS §9); strings in the ARB files; tests with delayed fakes, never by sleeping (AGENTS §5.1); `make test-app` and the web e2e (`make e2e`) still pass.
+
+### T-0124 · App: skeleton placeholders instead of "Loading…"
+
+* Status: todo
+* Issue / PR: — (suggested: "Skeleton screens on first load") / —
+* Depends on: T-0080
+* Spec: §8 (design and UX)
+* Acceptance criteria: A small set of shared skeleton widgets (a block, a line of text, a circle, and a composition helper) built from the design tokens, in calm neutral tones; a new token only if no existing one fits, and then added to the spec's token table. The pulse is slow and subtle and is switched off when the system asks for reduced motion (`MediaQuery.disableAnimations`). The skeleton of a screen has the layout of the real one so nothing jumps when data arrives: chore cards and the week summary and week strip (Chores and My chores), podium and ranking rows (Leaderboard), list pills and item rows (Lists), notification rows (Inbox), the member and template sections (Household). They replace `Center(Text(l10n.loading))` in these screens and in the `HomeShell` while the households load. The skeleton is one semantics node labelled with the existing `loading` string, its shapes are excluded from semantics. Widget tests per screen (skeleton while the fake is pending, real content after, French and English, the animation off under reduced motion), goldens of each skeleton with the animation pinned to one frame (light mode, ADR 0012), accessibility checks (text scale 200% with no overflow, no touch target below 44 px on screens that show buttons while loading). The error and empty states are unchanged.
+* Notes for the implementer: a skeleton is shown only when the screen has no data yet. Once T-0125 exists a revisit shows data, not a skeleton; until then this task alone makes the first load and the current reloads look better but does not remove the flash on revisit. Do not add a package for shimmer unless the dependency is justified (AGENTS §8); a tinted block with an opacity animation is enough.
+
+### T-0125 · App: in-memory read cache that shows the last data and refreshes quietly (Chores tabs first)
+
+* Status: todo
+* Issue / PR: — (suggested: "Show cached data on revisit, refresh in the background") / —
+* Depends on: T-0072
+* Spec: §8 (design and UX)
+* Acceptance criteria:
+  * A concrete cache class owned by `AppSession` (no new interface), keyed by what was asked (kind, user, household and parameters such as the filter or the score period). Reading gives the cached value at once when there is one and starts a refresh in the background; two screens asking for the same key at the same time share one request. A refresh that fails keeps the cached data on screen and shows no blocking error (the next visit retries); with no data the screen shows its error state as today. Only `ApiException` is handled, by name.
+  * Nothing is written to disk. The cache is emptied at sign-out, at account deletion and whenever the signed-in profile changes, and every key contains the user id, so one user can never be served another user's data (AGENTS §8).
+  * A small helper widget (or state mixin) gives screens `data`, `isFirstLoad`, `isRefreshing` and `error` without a `FutureBuilder` that resets on a new `Future`. A screen that has data never shows a skeleton or "Loading…" again.
+  * The Chores and My chores tabs (task list, week summary, admin flag) use it. After the user's own action (complete, dismiss, reassign, revert, quick log, create) the list is updated or refreshed without going back to a loading state: today `setState(_reload)` makes the whole body flip to "Loading…". `HomeShell` keeps tab states alive or reads the cache, so switching tabs and back shows the data in the first frame.
+  * The behavior is written in the spec (§8: first load shows a skeleton, a revisit shows the last data then refreshes, nothing is stored on the phone) and an ADR records the decision, the alternatives the product owner discarded (keeping tabs alive only, a fixed time-to-live, saving to the phone) and why memory only.
+  * Unit tests of the cache (hit, miss, refresh replaces the value, concurrent reads share one request, failed refresh keeps the value, clear, keys of two users and two households never mix, nothing survives `clear`). Widget tests with a repository whose answers the test releases by hand: tab away and back shows the data in the first frame and the text "Loading…" never appears; a refresh that returns changed data updates the screen; a failing refresh keeps the data. `integration_test` journeys still pass.
+* Notes for the implementer: there is no pull-to-refresh anywhere today; adding one is T-0129, so the cache must expose a way to force a refresh of a key. Changes made by housemates appear when the tab is opened again (the refresh runs at every visit); there is no polling, and none is wanted by the product owner for now. Mutations go through the repositories as today; the cache must not become a second source of truth for rules (AGENTS §3, business rules stay in the services).
+
+### T-0126 · App: use the cache on the other screens and keep the shell on screen while it reloads
+
+* Status: todo
+* Issue / PR: — (suggested: "Cache for leaderboard, lists, inbox, household") / —
+* Depends on: T-0124, T-0125
+* Spec: §8
+* Acceptance criteria: Leaderboard (board, winners, members, household, per period), Lists (the lists and the items of the selected list), the Inbox and the bell, and the Household screen read through the cache of T-0125 and show a skeleton (T-0124) only on a first load. `HomeShell` keeps showing the current household while the household list reloads after creating a household or returning from the household screen: today it replaces the whole screen with the text "Loading…". Changing the period on the leaderboard, selecting another list, and switching household show cached data for that key at once, or a skeleton when there is none. The bell keeps its dot while it refreshes (no flicker to "no dot"). Widget tests per screen as in T-0125 (first frame after revisit holds the data, no "Loading…"), and the switcher test for two households.
+* Notes for the implementer: the leaderboard builds a `FakeScoringRepository` demo setup inside its loading function (`seedDemoIfEmpty`); keep that out of the cached path so the demo mode still works.
+
+### T-0127 · App: load the other tabs in the background after the first tab
+
+* Status: todo
+* Issue / PR: — (suggested: "Prefetch the tabs") / —
+* Depends on: T-0125
+* Spec: §8
+* Acceptance criteria: Once the first tab shown has finished loading, the app fills the cache for the other tabs of the selected household in the background, with the data each tab shows first (My chores, the leaderboard for its default period with the winners and members, the lists and the items of the first list, and the unread state of the bell), so the first visit to a tab has data in its first frame in the usual case. Only the selected household is prefetched. A prefetch that fails is dropped without a message (only `ApiException`, handled by name, with a comment saying why); nothing blocks the first tab, and prefetch requests run after the visible tab's own requests. Switching household or signing out cancels what is pending or discards its results, so a late answer never lands under the wrong key. Tests: with a delayed fake, opening Chores triggers the other reads after it has loaded and not before; a failing prefetch changes nothing on screen; a household switch during a prefetch fills the cache of the old household only. Request counts are asserted with a counting fake (no sleeping).
+* Notes for the implementer: more requests at startup are the accepted cost (decided on 2026-10-29). Measure it and write the number of requests before and after in the ledger entry.
+
+### T-0128 · App: run independent requests together and ask for each thing once
+
+* Status: todo
+* Issue / PR: — (suggested: "Parallel and de-duplicated screen requests") / —
+* Depends on: T-0125
+* Spec: —
+* Acceptance criteria: Requests that do not depend on each other are started together (`Future.wait`): the leaderboard waits for the board, the winners, the members and the household one after the other today, and the week summary of My chores reads the household and then the scoreboard. Members and the household are read once per screen through the cache instead of by each widget (`listMembers` is called by Chores, Leaderboard and Household). First-load time of the leaderboard drops to that of its slowest request; a test with a fake that records start times by ordering (not by sleeping) proves the requests start together. No change to what the screens show.
+* Notes for the implementer: keep the services' boundaries as they are (no new aggregate endpoint) unless measurements on the NAS show that the round trips still dominate; that would be a separate task and a contract change (OpenAPI, tests and spec updated together).
+
+### T-0129 · App: pull to refresh on the data screens
+
+* Status: todo
+* Issue / PR: — (suggested: "Pull to refresh") / —
+* Depends on: T-0126
+* Spec: §8
+* Acceptance criteria: Pulling down on Chores, My chores, Leaderboard, Lists, the Inbox and the Household screen forces a refresh of what the screen shows (the keys it reads in the cache of T-0125) with the platform's refresh indicator, which ends when the refresh ends. The data stays on screen during the pull and is replaced when the answer arrives: no skeleton, no "Loading…". Screens whose content does not fill the height still accept the pull (an always-scrollable scroll view), including their empty and error states. A failed pull keeps the data and shows the existing app toast (`app_toast.dart`) with a new FR/EN message saying the refresh failed; it is not silent, because the user asked for fresh data (product owner, 2026-10-29). A successful pull shows nothing more than the indicator. Only `ApiException` is handled, by name. Pulling again while a refresh runs does not start a second request (the cache shares it). Widget tests per screen with a hand-released fake (the indicator shows, the new data replaces the old one, a failure shows the toast and keeps the data, French and English), an accessibility check that the screens keep a screen-reader path to refresh (a semantics action or a tooltip-labelled control if the platform's does not expose one), and the goldens are unchanged. Spec §8 mentions the gesture.
+* Notes for the implementer: there is no polling and none is planned; this gesture is the way to see a housemate's change without leaving the screen. Tabs hold a scroll view already; check that the tab's `Scrollable` is the one the indicator listens to, since several screens build `Column`s of fixed height. Do not add a package.
