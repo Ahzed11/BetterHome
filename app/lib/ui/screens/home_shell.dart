@@ -10,6 +10,7 @@ import 'package:betterhome/ui/screens/leaderboard_screen.dart';
 import 'package:betterhome/ui/screens/lists_screen.dart';
 import 'package:betterhome/ui/widgets/household_switcher.dart';
 import 'package:betterhome/ui/widgets/notifications_bell.dart';
+import 'package:betterhome/ui/widgets/screen_skeletons.dart';
 import 'package:flutter/material.dart';
 
 enum _Tab { allChores, myChores, leaderboard, lists }
@@ -164,7 +165,10 @@ class _HomeShellState extends State<HomeShell> {
         if (snapshot.connectionState != ConnectionState.done) {
           return Scaffold(
             appBar: AppBar(actions: _actions(l10n)),
-            body: Center(child: Text(l10n.loading)),
+            body: ListView(
+              padding: const EdgeInsets.all(AppTokens.spaceMd),
+              children: const [ChoreListSkeleton()],
+            ),
           );
         }
         if (snapshot.hasError) {

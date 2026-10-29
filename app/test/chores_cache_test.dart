@@ -6,6 +6,7 @@ import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/chores_screen.dart';
 import 'package:betterhome/ui/screens/home_shell.dart';
+import 'package:betterhome/ui/widgets/screen_skeletons.dart';
 import 'package:betterhome/ui/widgets/week_summary_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -106,18 +107,18 @@ Future<_World> _visited(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('the first visit shows loading until the answer arrives', (
+  testWidgets('the first visit shows the skeleton until the answer arrives', (
     tester,
   ) async {
     final w = await _world();
 
     await _pumpShell(tester, w);
-    expect(find.text('Loading…'), findsOneWidget);
+    expect(find.byType(ChoreListSkeleton), findsOneWidget);
     expect(find.textContaining('Vacuum'), findsNothing);
 
     await w.tasks.answer(0, w.householdId);
     await tester.pumpAndSettle();
-    expect(find.text('Loading…'), findsNothing);
+    expect(find.byType(ChoreListSkeleton), findsNothing);
     expect(find.textContaining('Vacuum'), findsOneWidget);
   });
 
@@ -129,7 +130,7 @@ void main() {
     await _backToChores(tester);
 
     expect(find.textContaining('Vacuum'), findsOneWidget);
-    expect(find.text('Loading…'), findsNothing);
+    expect(find.byType(ChoreListSkeleton), findsNothing);
     // The refresh is on its way, held back: nothing is waiting for it on screen.
     expect(w.tasks.asked, hasLength(2));
   });
@@ -147,7 +148,7 @@ void main() {
     await w.tasks.answer(1, w.householdId);
     await tester.pump();
 
-    expect(find.text('Loading…'), findsNothing);
+    expect(find.byType(ChoreListSkeleton), findsNothing);
     expect(find.textContaining('Done · 5 pts'), findsOneWidget);
   });
 
@@ -162,7 +163,7 @@ void main() {
 
     expect(find.textContaining('Vacuum'), findsOneWidget);
     expect(find.text('Something went wrong'), findsNothing);
-    expect(find.text('Loading…'), findsNothing);
+    expect(find.byType(ChoreListSkeleton), findsNothing);
   });
 
   testWidgets('a first visit that fails shows the error', (tester) async {
@@ -188,9 +189,9 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    // The request for the new list is held: the old one is still drawn, not "Loading…".
+    // The request for the new list is held: the old one is still drawn, not a skeleton.
     expect(w.tasks.asked, hasLength(2));
-    expect(find.text('Loading…'), findsNothing);
+    expect(find.byType(ChoreListSkeleton), findsNothing);
     expect(find.textContaining('Vacuum'), findsOneWidget);
 
     await w.tasks.answer(1, w.householdId);
@@ -228,7 +229,7 @@ void main() {
     await _backToChores(tester);
 
     expect(find.textContaining('Vacuum'), findsNothing);
-    expect(find.text('Loading…'), findsOneWidget);
+    expect(find.byType(ChoreListSkeleton), findsOneWidget);
   });
 
   testWidgets('my chores keeps its week summary when it is opened again', (
@@ -246,7 +247,7 @@ void main() {
     await tester.pump();
 
     expect(find.byType(WeekSummaryCard), findsOneWidget);
-    expect(find.text('Loading…'), findsNothing);
+    expect(find.byType(ChoreListSkeleton), findsNothing);
   });
 
   testWidgets('a screen of another household starts from nothing', (
@@ -265,6 +266,6 @@ void main() {
     );
 
     expect(find.textContaining('Vacuum'), findsNothing);
-    expect(find.text('Loading…'), findsOneWidget);
+    expect(find.byType(ChoreListSkeleton), findsOneWidget);
   });
 }

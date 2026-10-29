@@ -10,6 +10,7 @@ import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/screen_header.dart';
 import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/toggle_row.dart';
+import 'package:betterhome/ui/widgets/screen_skeletons.dart';
 import 'package:flutter/material.dart';
 
 /// One switch per notification type and channel (spec section 5: users toggle each type).
@@ -101,7 +102,7 @@ class _NotificationPreferencesScreenState
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return Center(child: Text(l10n.loading));
+            return const SettingsSkeleton();
           }
           if (snapshot.hasError) {
             return Center(
