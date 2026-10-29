@@ -2,6 +2,7 @@ import 'package:betterhome/data/models.dart';
 import 'package:betterhome/data/tasks_repository.dart';
 import 'package:betterhome/l10n/app_localizations.dart';
 import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/state/read_cache.dart';
 import 'package:betterhome/theme/tokens.dart';
 import 'package:betterhome/ui/member_labels.dart';
 import 'package:betterhome/ui/widgets/app_card.dart';
@@ -31,42 +32,61 @@ class HouseholdDetailScreen extends StatefulWidget {
 }
 
 class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
-  late Future<_DetailData> _future;
+  late final CachedRead<_DetailData> _detail;
 
   @override
   void initState() {
     super.initState();
-    _reload();
+    _detail = CachedRead(
+      cache: widget.session.readCache,
+      key: widget.session.readKey(
+        'household-detail',
+        householdId: widget.householdId,
+      ),
+      fetch: _load,
+      onChange: () {
+        if (mounted) {
+          setState(() {});
+        }
+      },
+    );
   }
 
-  void _reload() {
-    _future = () async {
-      final household = await widget.session.repository.getHousehold(
+  @override
+  void dispose() {
+    _detail.dispose();
+    super.dispose();
+  }
+
+  /// Asks for fresh data after something was changed on this screen.
+  void _reload() => _detail.refreshAfterChange();
+
+  Future<_DetailData> _load() async {
+    final household = await widget.session.repository.getHousehold(
+      widget.householdId,
+    );
+    final members = await widget.session.repository.listMembers(
+      widget.householdId,
+    );
+    final templates = await widget.session.tasksRepository.listTemplates(
+      widget.householdId,
+    );
+    final recurrences = <String, TaskRecurrence>{};
+    for (final template in templates) {
+      final recurrence = await widget.session.tasksRepository.getRecurrence(
         widget.householdId,
+        template.id,
       );
-      final members = await widget.session.repository.listMembers(
-        widget.householdId,
-      );
-      final templates = await widget.session.tasksRepository.listTemplates(
-        widget.householdId,
-      );
-      final recurrences = <String, TaskRecurrence>{};
-      for (final template in templates) {
-        final recurrence = await widget.session.tasksRepository.getRecurrence(
-          widget.householdId,
-          template.id,
-        );
-        if (recurrence != null) {
-          recurrences[template.id] = recurrence;
-        }
+      if (recurrence != null) {
+        recurrences[template.id] = recurrence;
       }
-      return _DetailData(
-        household: household,
-        members: members,
-        templates: templates,
-        recurrences: recurrences,
-      );
-    }();
+    }
+    return _DetailData(
+      household: household,
+      members: members,
+      templates: templates,
+      recurrences: recurrences,
+    );
   }
 
   /// Opens the chore form (for a new chore, or to edit [template]) and saves what it returns.
@@ -103,7 +123,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
         message: AppLocalizations.of(context).recurrenceSet,
       );
     }
-    setState(_reload);
+    _reload();
   }
 
   Future<void> _runDueNow() async {
@@ -204,7 +224,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
     }
     await widget.session.repository.acceptInvitation(token);
     if (mounted) {
-      setState(_reload);
+      _reload();
     }
   }
 
@@ -222,19 +242,19 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<_DetailData>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
+      body: Builder(
+        builder: (context) {
+          final state = _detail.state;
+          if (state is ReadLoading<_DetailData>) {
             return ListView(
               padding: const EdgeInsets.all(AppTokens.spaceMd),
               children: const [HouseholdSkeleton()],
             );
           }
-          if (snapshot.hasError || !snapshot.hasData) {
+          if (state is! ReadLoaded<_DetailData>) {
             return Center(child: Text(l10n.errorGeneric));
           }
-          final data = snapshot.data!;
+          final data = state.data;
           final isAdmin = data.members.any(
             (m) => m.userId == me?.id && m.role == MembershipRole.admin,
           );
@@ -471,7 +491,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
                 );
               }
               if (mounted) {
-                setState(_reload);
+                _reload();
               }
             },
           );

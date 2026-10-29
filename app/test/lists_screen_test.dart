@@ -378,17 +378,18 @@ void main() {
     testWidgets('remove checked items asks first, then keeps the open ones', (
       tester,
     ) async {
-      final session = await _withList(tester);
+      final session = await _session(admin: true);
       final lists = session.listsRepository;
-      await lists.addItem(_household, 'list-1', 'Bread');
-      await lists.addItem(_household, 'list-1', 'Eggs');
-      for (final item in await lists.listItems(_household, 'list-1')) {
+      final list = await lists.createList(_household, 'Weekly shop');
+      for (final title in ['Milk', 'Bread', 'Eggs']) {
+        await lists.addItem(_household, list.id, title);
+      }
+      for (final item in await lists.listItems(_household, list.id)) {
         if (item.title != 'Bread') {
-          await lists.checkItem(_household, 'list-1', item.id);
+          await lists.checkItem(_household, list.id, item.id);
         }
       }
-      await tester.tap(find.text('Weekly shop · 1'));
-      await tester.pumpAndSettle();
+      await _open(tester, session);
       expect(find.text('IN THE BASKET · 2'), findsOneWidget);
 
       await _choose(tester, 'Remove checked items');

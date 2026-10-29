@@ -93,6 +93,60 @@ void main() {
       expect(_data(cache.entry<List<String>>('k').value), ['call 2']);
     });
 
+    test('a refresh says whether a fresh answer arrived', () async {
+      final cache = ReadCache();
+
+      final fresh = await cache.refresh<List<String>>('k', () async => ['a']);
+      final failed = await cache.refresh<List<String>>(
+        'k',
+        () async => throw ApiException('boom', statusCode: 500),
+      );
+
+      expect(fresh, isTrue);
+      expect(failed, isFalse);
+    });
+
+    test(
+      'a refresh after a change never joins a request that began before it',
+      () async {
+        final cache = ReadCache();
+        final firstRelease = Completer<List<String>>();
+        var calls = 0;
+        Future<List<String>> fetch() {
+          final call = ++calls;
+          return call == 1 ? firstRelease.future : Future.value(['call $call']);
+        }
+
+        final first = cache.refresh<List<String>>('k', fetch);
+        // The user changes something while that request, which began before, is still running.
+        final after = cache.refreshAfterChange<List<String>>('k', fetch);
+        final andAnother = cache.refreshAfterChange<List<String>>('k', fetch);
+        expect(calls, 1);
+
+        firstRelease.complete(['read before the change']);
+        await Future.wait([first, after, andAnother]);
+
+        expect(calls, 2); // one follow-up, shared by both who asked
+        expect(_data(cache.entry<List<String>>('k').value), ['call 2']);
+      },
+    );
+
+    test(
+      'a refresh after a change with nothing running is a plain refresh',
+      () async {
+        final cache = ReadCache();
+        var calls = 0;
+
+        await cache.refreshAfterChange<List<String>>(
+          'k',
+          () async => ['call ${++calls}'],
+        );
+
+        expect(calls, 1);
+        expect(_data(cache.entry<List<String>>('k').value), ['call 1']);
+      },
+    );
+
     test('a failed refresh keeps the old answer and shows no error', () async {
       final cache = ReadCache();
       await cache.refresh<List<String>>('k', () async => ['kept']);

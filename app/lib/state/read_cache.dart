@@ -31,7 +31,10 @@ class ReadEntry<T> extends ValueNotifier<ReadState<T>> {
   ReadEntry() : super(const ReadLoading());
 
   /// The request that is running for this entry, shared by everyone who asks meanwhile.
-  Future<void>? _inFlight;
+  Future<bool>? _inFlight;
+
+  /// The request that follows [_inFlight] after a change, shared by everyone who asked meanwhile.
+  Future<bool>? _followUp;
 }
 
 /// The last answer to each read, kept in memory only (ADR 0031), so a screen opened again shows
@@ -55,24 +58,42 @@ class ReadCache {
 
   /// Asks [fetch] for a fresh answer to [key]. Callers who ask while a request is running share
   /// it. The old answer stays in place while it runs, and when it fails; only a read that never
-  /// had an answer ends as [ReadFailed].
-  Future<void> refresh<T>(Object key, Future<T> Function() fetch) {
+  /// had an answer ends as [ReadFailed]. Completes with whether a fresh answer arrived, for the
+  /// caller who must not act on an old one.
+  Future<bool> refresh<T>(Object key, Future<T> Function() fetch) {
     final entry = this.entry<T>(key);
     return entry._inFlight ??= _run(entry, fetch);
   }
 
-  Future<void> _run<T>(ReadEntry<T> entry, Future<T> Function() fetch) async {
+  /// Like [refresh], for after a change the user made. A request that is already running may have
+  /// read the data before the change, so a new one follows it (one, shared by everyone who asks
+  /// meanwhile). With nothing running it is [refresh].
+  Future<bool> refreshAfterChange<T>(Object key, Future<T> Function() fetch) {
+    final entry = this.entry<T>(key);
+    final running = entry._inFlight;
+    if (running == null) {
+      return refresh<T>(key, fetch);
+    }
+    return entry._followUp ??= running.then((_) {
+      entry._followUp = null;
+      return refresh<T>(key, fetch);
+    });
+  }
+
+  Future<bool> _run<T>(ReadEntry<T> entry, Future<T> Function() fetch) async {
     entry.value = switch (entry.value) {
       ReadLoaded<T>(:final data) => ReadLoaded(data, refreshing: true),
       _ => const ReadLoading(),
     };
     try {
       entry.value = ReadLoaded(await fetch());
+      return true;
     } on ApiException catch (error) {
       entry.value = switch (entry.value) {
         ReadLoaded<T>(:final data) => ReadLoaded(data),
         _ => ReadFailed(error),
       };
+      return false;
     } finally {
       entry._inFlight = null;
     }
@@ -109,8 +130,14 @@ class CachedRead<T> {
 
   ReadState<T> get state => _entry.value;
 
-  /// Asks for a fresh answer; the old one stays on screen meanwhile.
-  Future<void> refresh() => _cache.refresh<T>(_key, _fetch);
+  /// Asks for a fresh answer; the old one stays on screen meanwhile. Completes with whether a
+  /// fresh answer arrived.
+  Future<bool> refresh() => _cache.refresh<T>(_key, _fetch);
+
+  /// Asks for a fresh answer after a change the user made: it reads after the change, even when
+  /// a request that started before it is running.
+  Future<bool> refreshAfterChange() =>
+      _cache.refreshAfterChange<T>(_key, _fetch);
 
   void dispose() => _entry.removeListener(_onChange);
 }
