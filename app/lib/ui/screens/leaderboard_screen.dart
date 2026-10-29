@@ -32,11 +32,29 @@ class LeaderboardScreen extends StatefulWidget {
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   ScorePeriod _period = ScorePeriod.month;
-  late CachedRead<_BoardData> _board;
+  late final CachedRead<List<Membership>> _members;
+  late final CachedRead<Household> _household;
+  late CachedRead<_Scores> _board;
 
   @override
   void initState() {
     super.initState();
+    final session = widget.session;
+    final householdId = widget.householdId;
+    // The members and the household are shared with the other screens: one request each,
+    // whoever asks first, started together with the board.
+    _members = CachedRead(
+      cache: session.readCache,
+      key: session.readKey('members', householdId: householdId),
+      fetch: () => session.repository.listMembers(householdId),
+      onChange: _changed,
+    );
+    _household = CachedRead(
+      cache: session.readCache,
+      key: session.readKey('household', householdId: householdId),
+      fetch: () => session.repository.getHousehold(householdId),
+      onChange: _changed,
+    );
     _board = _open();
     _showUnseenRecap();
   }
@@ -44,8 +62,28 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   void dispose() {
     _board.dispose();
+    _members.dispose();
+    _household.dispose();
     super.dispose();
   }
+
+  /// What the screen draws, once the board, the winners and the members are all known.
+  _BoardData? get _data => switch ((_board.state, _members.state)) {
+    (
+      ReadLoaded<_Scores>(data: final scores),
+      ReadLoaded<List<Membership>>(data: final members),
+    ) =>
+      _BoardData(
+        board: scores.board,
+        winners: scores.winners,
+        members: members,
+      ),
+    _ => null,
+  };
+
+  bool get _failed =>
+      _board.state is ReadFailed<_Scores> ||
+      _members.state is ReadFailed<List<Membership>>;
 
   void _changed() {
     if (mounted) {
@@ -54,7 +92,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 
   /// The read of the board of the current period, which has an entry of its own in the cache.
-  CachedRead<_BoardData> _open() {
+  CachedRead<_Scores> _open() {
     final session = widget.session;
     final period = _period;
     return CachedRead(
@@ -74,13 +112,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   /// one may still list as unseen a month whose recap was shown since.
   Future<void> _showUnseenRecap() async {
     final board = _board;
-    if (!await board.refresh()) {
+    final answers = await Future.wait([board.refresh(), _members.refresh()]);
+    if (!answers.first) {
       return; // The screen already shows the error, or the old answer.
     }
-    final data = switch (board.state) {
-      ReadLoaded<_BoardData>(:final data) => data,
-      _ => null,
-    };
+    final data = _data;
     if (data == null) {
       return;
     }
@@ -135,34 +171,23 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     ).format(date);
   }
 
-  Future<_BoardData> _load(ScorePeriod period) async {
+  Future<_Scores> _load(ScorePeriod period) async {
     final scoring = widget.session.scoringRepository;
     if (scoring is FakeScoringRepository) {
-      final members = await widget.session.repository.listMembers(
-        widget.householdId,
-      );
-      scoring.setMembers(members.map((m) => m.userId).toList());
+      // The demo ledger needs the members first; the screen's own read of them is joined.
+      await _members.refresh();
+      if (_members.state case ReadLoaded<List<Membership>>(:final data)) {
+        scoring.setMembers(data.map((m) => m.userId).toList());
+      }
       scoring.seedDemoIfEmpty(widget.householdId);
     }
-    final board = await widget.session.scoringRepository.getScoreboard(
-      widget.householdId,
-      period: period,
-    );
-    final winners = await widget.session.scoringRepository.listWinners(
-      widget.householdId,
-    );
-    final members = await widget.session.repository.listMembers(
-      widget.householdId,
-    );
-    final household = await widget.session.repository.getHousehold(
-      widget.householdId,
-    );
-    return _BoardData(
-      board: board,
-      winners: winners,
-      members: members,
-      household: household.name,
-    );
+    // The board and the winners do not depend on each other: asked together.
+    // Future.wait rethrows the failed request itself (a record's `.wait` wraps it), which is what
+    // the cache recognises as a failed read.
+    final board = scoring.getScoreboard(widget.householdId, period: period);
+    final winners = scoring.listWinners(widget.householdId);
+    await Future.wait<Object>([board, winners]);
+    return _Scores(board: await board, winners: await winners);
   }
 
   String _labelFor(
@@ -201,8 +226,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         padding: const EdgeInsets.all(AppTokens.spaceMd),
         children: [
           ScreenHeader(
-            eyebrow: switch (_board.state) {
-              ReadLoaded<_BoardData>(:final data) => data.household,
+            eyebrow: switch (_household.state) {
+              ReadLoaded<Household>(:final data) => data.name,
               _ => null,
             },
             title: l10n.leaderboardTitle,
@@ -227,12 +252,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           const SizedBox(height: AppTokens.spaceMd),
           Builder(
             builder: (context) {
-              final data = switch (_board.state) {
-                ReadLoaded<_BoardData>(:final data) => data,
-                _ => null,
-              };
+              final data = _data;
               if (data == null) {
-                return _board.state is ReadFailed<_BoardData>
+                return _failed
                     ? Center(child: Text(l10n.errorGeneric))
                     : const LeaderboardSkeleton();
               }
@@ -394,15 +416,22 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 }
 
+/// What is cached for a period: the board and the winners.
+class _Scores {
+  const _Scores({required this.board, required this.winners});
+
+  final Scoreboard board;
+  final List<MonthlyWinner> winners;
+}
+
+/// What the screen draws: the scores of a period with the members they are about.
 class _BoardData {
   const _BoardData({
     required this.board,
     required this.winners,
     required this.members,
-    required this.household,
   });
 
-  final String household;
   final Scoreboard board;
   final List<MonthlyWinner> winners;
   final List<Membership> members;
