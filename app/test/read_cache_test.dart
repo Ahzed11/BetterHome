@@ -1,0 +1,335 @@
+import 'dart:async';
+
+import 'package:betterhome/data/households_repository.dart';
+import 'package:betterhome/data/models.dart';
+import 'package:betterhome/state/app_session.dart';
+import 'package:betterhome/state/read_cache.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+/// The data of [state], or null when it holds none.
+List<String>? _data(ReadState<List<String>> state) =>
+    state is ReadLoaded<List<String>> ? state.data : null;
+
+bool _refreshing(ReadState<List<String>> state) =>
+    state is ReadLoaded<List<String>> && state.refreshing;
+
+UserProfile _profile(String id) => UserProfile(
+  id: id,
+  authSubject: 'sub-$id',
+  email: '$id@example.com',
+  givenName: id,
+  familyName: '',
+  language: 'en',
+  timezone: 'UTC',
+);
+
+void main() {
+  group('ReadCache', () {
+    test('an entry nobody has read yet is loading', () {
+      final cache = ReadCache();
+
+      expect(cache.entry<List<String>>('k').value, isA<ReadLoading>());
+    });
+
+    test(
+      'a refresh fills the entry, and the answer stays for the next read',
+      () async {
+        final cache = ReadCache();
+
+        await cache.refresh<List<String>>('k', () async => ['a']);
+
+        expect(_data(cache.entry<List<String>>('k').value), ['a']);
+        expect(_refreshing(cache.entry<List<String>>('k').value), isFalse);
+      },
+    );
+
+    test(
+      'the old answer stays while a newer one is on its way, then is replaced',
+      () async {
+        final cache = ReadCache();
+        await cache.refresh<List<String>>('k', () async => ['old']);
+        final release = Completer<List<String>>();
+
+        final running = cache.refresh<List<String>>('k', () => release.future);
+
+        final during = cache.entry<List<String>>('k').value;
+        expect(_data(during), ['old']);
+        expect(_refreshing(during), isTrue);
+
+        release.complete(['new']);
+        await running;
+        final after = cache.entry<List<String>>('k').value;
+        expect(_data(after), ['new']);
+        expect(_refreshing(after), isFalse);
+      },
+    );
+
+    test('readers who ask while a request runs share it', () async {
+      final cache = ReadCache();
+      var calls = 0;
+      final release = Completer<List<String>>();
+      Future<List<String>> fetch() {
+        calls++;
+        return release.future;
+      }
+
+      final first = cache.refresh<List<String>>('k', fetch);
+      final second = cache.refresh<List<String>>('k', fetch);
+      release.complete(['a']);
+      await Future.wait([first, second]);
+
+      expect(calls, 1);
+    });
+
+    test('a read after the first request ended asks again', () async {
+      final cache = ReadCache();
+      var calls = 0;
+      Future<List<String>> fetch() async => ['call ${++calls}'];
+
+      await cache.refresh<List<String>>('k', fetch);
+      await cache.refresh<List<String>>('k', fetch);
+
+      expect(calls, 2);
+      expect(_data(cache.entry<List<String>>('k').value), ['call 2']);
+    });
+
+    test('a failed refresh keeps the old answer and shows no error', () async {
+      final cache = ReadCache();
+      await cache.refresh<List<String>>('k', () async => ['kept']);
+
+      await cache.refresh<List<String>>(
+        'k',
+        () async => throw ApiException('boom', statusCode: 500),
+      );
+
+      final state = cache.entry<List<String>>('k').value;
+      expect(_data(state), ['kept']);
+      expect(_refreshing(state), isFalse);
+    });
+
+    test(
+      'a read that never had an answer ends as failed, and can recover',
+      () async {
+        final cache = ReadCache();
+
+        await cache.refresh<List<String>>(
+          'k',
+          () async => throw ApiException('boom', statusCode: 503),
+        );
+        final failed = cache.entry<List<String>>('k').value;
+        expect(failed, isA<ReadFailed<List<String>>>());
+        expect((failed as ReadFailed<List<String>>).error.statusCode, 503);
+
+        await cache.refresh<List<String>>('k', () async => ['back']);
+        expect(_data(cache.entry<List<String>>('k').value), ['back']);
+      },
+    );
+
+    test(
+      'only a failed request is handled: another error is not hidden',
+      () async {
+        final cache = ReadCache();
+
+        await expectLater(
+          cache.refresh<List<String>>('k', () async => throw StateError('bug')),
+          throwsStateError,
+        );
+      },
+    );
+
+    test('another key is another entry', () async {
+      final cache = ReadCache();
+
+      await cache.refresh<List<String>>('a', () async => ['a']);
+
+      expect(cache.entry<List<String>>('b').value, isA<ReadLoading>());
+      expect(_data(cache.entry<List<String>>('a').value), ['a']);
+    });
+
+    test('clear forgets every answer', () async {
+      final cache = ReadCache();
+      await cache.refresh<List<String>>('k', () async => ['a']);
+
+      cache.clear();
+
+      expect(cache.entry<List<String>>('k').value, isA<ReadLoading>());
+    });
+
+    test(
+      'a request still running at clear time does not fill the new entry',
+      () async {
+        final cache = ReadCache();
+        final release = Completer<List<String>>();
+        final running = cache.refresh<List<String>>('k', () => release.future);
+
+        cache.clear();
+        release.complete(['of the user who left']);
+        await running;
+
+        expect(cache.entry<List<String>>('k').value, isA<ReadLoading>());
+      },
+    );
+
+    test('listeners hear every change of an entry', () async {
+      final cache = ReadCache();
+      final seen = <String>[];
+      cache
+          .entry<List<String>>('k')
+          .addListener(
+            () => seen.add(switch (cache.entry<List<String>>('k').value) {
+              ReadLoading() => 'loading',
+              ReadLoaded<List<String>>(:final refreshing) =>
+                refreshing ? 'refreshing' : 'loaded',
+              ReadFailed() => 'failed',
+            }),
+          );
+
+      await cache.refresh<List<String>>('k', () async => ['a']);
+      await cache.refresh<List<String>>('k', () async => ['b']);
+
+      expect(seen, ['loaded', 'refreshing', 'loaded']);
+    });
+  });
+
+  group('CachedRead', () {
+    test(
+      'starts a refresh as soon as it is made, even when an answer is cached',
+      () async {
+        final cache = ReadCache();
+        await cache.refresh<List<String>>('k', () async => ['old']);
+        var calls = 0;
+
+        final read = CachedRead<List<String>>(
+          cache: cache,
+          key: 'k',
+          fetch: () async => ['new ${++calls}'],
+          onChange: () {},
+        );
+
+        // The cached answer is there on the first read, before the refresh has ended.
+        expect(_data(read.state), ['old']);
+        expect(_refreshing(read.state), isTrue);
+        await read.refresh();
+        expect(calls, 1);
+        expect(_data(read.state), ['new 1']);
+        read.dispose();
+      },
+    );
+
+    test('tells its screen about changes until it is disposed', () async {
+      final cache = ReadCache();
+      var changes = 0;
+      final read = CachedRead<List<String>>(
+        cache: cache,
+        key: 'k',
+        fetch: () async => ['a'],
+        onChange: () => changes++,
+      );
+      await read.refresh();
+      final before = changes;
+      expect(before, greaterThan(0));
+
+      read.dispose();
+      await cache.refresh<List<String>>('k', () async => ['b']);
+
+      expect(changes, before);
+    });
+
+    test(
+      'a screen opened again finds the answer of the one before it',
+      () async {
+        final cache = ReadCache();
+        final first = CachedRead<List<String>>(
+          cache: cache,
+          key: 'k',
+          fetch: () async => ['seen'],
+          onChange: () {},
+        );
+        await first.refresh();
+        first.dispose();
+
+        final second = CachedRead<List<String>>(
+          cache: cache,
+          key: 'k',
+          fetch: () async => ['seen'],
+          onChange: () {},
+        );
+
+        expect(_data(second.state), ['seen']);
+        second.dispose();
+      },
+    );
+  });
+
+  group('AppSession', () {
+    AppSession session() => AppSession(repository: FakeHouseholdsRepository());
+
+    test('a key says which user and household it is for', () {
+      final a = session()..profile = _profile('ada');
+      final b = session()..profile = _profile('bob');
+
+      expect(
+        a.readKey('tasks', householdId: 'h1', params: false),
+        a.readKey('tasks', householdId: 'h1', params: false),
+      );
+      expect(
+        a.readKey('tasks', householdId: 'h1'),
+        isNot(a.readKey('tasks', householdId: 'h2')),
+      );
+      expect(
+        a.readKey('tasks', householdId: 'h1', params: true),
+        isNot(a.readKey('tasks', householdId: 'h1', params: false)),
+      );
+      expect(
+        a.readKey('tasks', householdId: 'h1'),
+        isNot(b.readKey('tasks', householdId: 'h1')),
+      );
+    });
+
+    test('two users never share an answer, even through one cache', () async {
+      final s = session();
+      s.profile = _profile('ada');
+      await s.readCache.refresh<List<String>>(
+        s.readKey('tasks', householdId: 'h1'),
+        () async => ['ada only'],
+      );
+      final adaKey = s.readKey('tasks', householdId: 'h1');
+
+      s.profile = _profile('bob');
+
+      expect(
+        s.readCache.entry<List<String>>(adaKey).value,
+        isA<ReadLoading<List<String>>>(),
+      );
+      expect(
+        s.readCache
+            .entry<List<String>>(s.readKey('tasks', householdId: 'h1'))
+            .value,
+        isA<ReadLoading<List<String>>>(),
+      );
+    });
+
+    test('the same user keeping the profile keeps the cache', () async {
+      final s = session();
+      s.profile = _profile('ada');
+      await s.readCache.refresh<List<String>>('k', () async => ['a']);
+
+      s.profile = _profile('ada');
+
+      expect(_data(s.readCache.entry<List<String>>('k').value), ['a']);
+    });
+
+    test('signing out of the profile empties the cache', () async {
+      final s = session();
+      s.profile = _profile('ada');
+      await s.readCache.refresh<List<String>>('k', () async => ['a']);
+
+      s.profile = null;
+
+      expect(
+        s.readCache.entry<List<String>>('k').value,
+        isA<ReadLoading<List<String>>>(),
+      );
+    });
+  });
+}

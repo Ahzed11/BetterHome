@@ -174,6 +174,7 @@ A self-hosted test deployment (Docker Compose on a home server) sits behind the 
 - **0027** — Push notifications are delivered through Gotify
 - **0029** — The NAS's Caddy reverse proxy fronts the self-hosted stack, reached through Tailscale
 - **0030** — Two more images: Flyway migrations and Keycloak, so a server needs no checkout
+- **0031** — Screens show the last data they had and refresh it in the background, kept in memory only
 
 ### Repository layout (Monorepo)
 
@@ -214,6 +215,7 @@ AGENTS.md
 
 ### 8.2 Navigation & Screens
 - **Navigation:** Four bottom tabs (All Chores, My Chores, Leaderboard, Lists; the design names the fourth "Lists") and a Household Switcher at the top.
+- **Returning to a screen:** a screen whose data the app already has from an earlier visit shows it at once, and refreshes it in the background without a loading state: the old data stays until the new data arrives, and stays if the refresh fails. The first visit shows a loading state until the data arrives, or an error if the request fails. After the user's own action the screen refreshes the same way. Housemates' changes appear when the screen is opened again; nothing refreshes by itself while it stays open. Nothing of the household is stored on the phone: what the app remembers is emptied at sign-out, at account deletion and when another user signs in (ADR 0031). Chores and My chores work this way; the other screens follow.
 - **Creating a household:** the form asks for the household name and its timezone. The timezone is chosen from a searchable list of IANA zone names (for example `Europe/Paris`) and cannot be typed freely; a new household starts on `Europe/Paris`. The search ignores case and treats a space, an underscore, a hyphen and a slash alike ("new york" finds `America/New_York`).
 - **Lists screen (design "Lists v2"):** the household name above the title, then a pill per list (the selected one shows how many items are still open, when there are some), a dashed "new list" pill for admins and a round options button. The open items are in one card; the checked ones are in a quieter card under "In the basket · N", with an "Uncheck all" button. A bar docked at the bottom adds an item to the selected list ("Add to <list>…"). A list with no item at all shows "All stocked up" and says everyone in the household sees what is added. An item is deleted by swiping its row to the left (screen readers get a "Delete item" action on the row). The options sheet of the list offers "Uncheck all" and "Remove checked items" (deletes every checked item of the list, after a confirmation) to every member, and, to admins only and marked "Admin", "Rename list" and "Archive list".
 - **Household screen, templates:** a "Chore templates" section lists the household's active templates as cards (emoji, title, points on time and if late). Admins see an "Add a template" button and open a template's edit form by tapping its card; the form has title (required), emoji, description, points and late points (whole numbers, 0 or more). Members see the list without these actions. Editing a template never changes past tasks (§3.1).
