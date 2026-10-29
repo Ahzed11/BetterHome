@@ -84,7 +84,10 @@ jobs:
           if unzip -p "$built" 'lib/*/libapp.so' | strings | grep -Eq '\.ts\.net'; then echo "a .ts.net name is inside the build" >&2; exit 1; fi
           mkdir -p dist
           cp "$built" "dist/betterhome-${{ steps.version.outputs.version }}.apk"
-          fingerprint="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$certs")"
+          # apksigner words the line "V2 Signer: certificate SHA-256 digest: <hex>" (older versions:
+          # "Signer #1 certificate SHA-256 digest: <hex>"); an empty fingerprint is never published.
+          fingerprint="$(grep -m1 -oE 'certificate SHA-256 digest: [0-9a-f]{64}' <<<"$certs" | awk '{print $NF}')"
+          [ -n "$fingerprint" ] || { echo "no signing certificate fingerprint in the output of apksigner" >&2; exit 1; }
           echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
 
       - name: Publish the release
