@@ -102,6 +102,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retry => 'Retry';
 
   @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get refreshFailed => 'Couldn’t refresh. Try again.';
+
+  @override
   String get useDemoData => 'Continue with demo data';
 
   @override

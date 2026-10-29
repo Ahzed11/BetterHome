@@ -30,6 +30,8 @@
   "continueLabel": "Continuer",
   "errorGeneric": "Une erreur s’est produite",
   "retry": "Réessayer",
+  "refresh": "Actualiser",
+  "refreshFailed": "Actualisation impossible. Réessayez.",
   "useDemoData": "Continuer avec des données de démo",
   "loading": "Chargement…",
   "choresTitle": "Tâches",

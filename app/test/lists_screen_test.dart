@@ -341,7 +341,11 @@ void main() {
           of: find.text('Milk'),
           matching: find.byWidgetPredicate(
             (w) =>
-                w is Semantics && w.properties.customSemanticsActions != null,
+                w is Semantics &&
+                (w.properties.customSemanticsActions?.keys.any(
+                      (action) => action.label == 'Delete item',
+                    ) ??
+                    false),
           ),
         ),
       );

@@ -15,6 +15,7 @@ import 'package:betterhome/ui/widgets/undoable_action.dart';
 import 'package:betterhome/ui/widgets/week_strip.dart';
 import 'package:betterhome/ui/widgets/week_summary_card.dart';
 import 'package:betterhome/ui/widgets/screen_skeletons.dart';
+import 'package:betterhome/ui/widgets/pull_to_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -108,6 +109,17 @@ class _ChoresScreenState extends State<ChoresScreen> {
       _signalledLoaded = true;
       widget.onLoaded?.call();
     }
+  }
+
+  /// Pull to refresh: every read this screen shows. A request already running is joined.
+  Future<bool> _pull() async {
+    final answers = await Future.wait([
+      _tasks.refresh(),
+      _members.refresh(),
+      ?_week?.refresh(),
+      ?_household?.refresh(),
+    ]);
+    return answers.every((arrived) => arrived);
   }
 
   /// Asks for fresh data after the user's own action. What is on screen stays until it arrives.
@@ -579,89 +591,96 @@ class _ChoresScreenState extends State<ChoresScreen> {
           final shown = day == null || widget.mine
               ? byFilter
               : byFilter.where((t) => _stripDay(t) == day).toList();
-          return ListView(
-            padding: const EdgeInsets.only(bottom: 96),
-            children: [
-              if (widget.mine)
+          return PullToRefresh(
+            onRefresh: _pull,
+            child: ListView(
+              physics: pullablePhysics,
+              padding: const EdgeInsets.only(bottom: 96),
+              children: [
+                if (widget.mine)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppTokens.spaceMd,
+                      AppTokens.spaceSm,
+                      AppTokens.spaceMd,
+                      AppTokens.spaceSm,
+                    ),
+                    child: ScreenHeader(
+                      eyebrow: _eyebrow(l10n),
+                      title: l10n.yourChores,
+                    ),
+                  ),
+                if (widget.mine) _summary(tasks, l10n),
+                if (!widget.mine)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppTokens.spaceMd,
+                      0,
+                      AppTokens.spaceMd,
+                      AppTokens.spaceSm + 2,
+                    ),
+                    child: _strip(tasks, l10n),
+                  ),
+                if (!widget.mine)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppTokens.spaceMd,
+                    ),
+                    child: Wrap(
+                      spacing: AppTokens.spaceSm,
+                      children: [
+                        AppPill(
+                          label: l10n.filterAll(tasks.length),
+                          selected: _filter == _Filter.all,
+                          onPressed: () =>
+                              setState(() => _filter = _Filter.all),
+                        ),
+                        AppPill(
+                          label: l10n.filterMine(mineTasks.length),
+                          selected: _filter == _Filter.mine,
+                          onPressed: () =>
+                              setState(() => _filter = _Filter.mine),
+                        ),
+                        AppPill(
+                          label: l10n.filterDone,
+                          selected: _filter == _Filter.done,
+                          onPressed: () =>
+                              setState(() => _filter = _Filter.done),
+                        ),
+                      ],
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppTokens.spaceMd,
                     AppTokens.spaceSm,
-                    AppTokens.spaceMd,
-                    AppTokens.spaceSm,
-                  ),
-                  child: ScreenHeader(
-                    eyebrow: _eyebrow(l10n),
-                    title: l10n.yourChores,
-                  ),
-                ),
-              if (widget.mine) _summary(tasks, l10n),
-              if (!widget.mine)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
                     AppTokens.spaceMd,
                     0,
-                    AppTokens.spaceMd,
-                    AppTokens.spaceSm + 2,
                   ),
-                  child: _strip(tasks, l10n),
-                ),
-              if (!widget.mine)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTokens.spaceMd,
-                  ),
-                  child: Wrap(
-                    spacing: AppTokens.spaceSm,
-                    children: [
-                      AppPill(
-                        label: l10n.filterAll(tasks.length),
-                        selected: _filter == _Filter.all,
-                        onPressed: () => setState(() => _filter = _Filter.all),
-                      ),
-                      AppPill(
-                        label: l10n.filterMine(mineTasks.length),
-                        selected: _filter == _Filter.mine,
-                        onPressed: () => setState(() => _filter = _Filter.mine),
-                      ),
-                      AppPill(
-                        label: l10n.filterDone,
-                        selected: _filter == _Filter.done,
-                        onPressed: () => setState(() => _filter = _Filter.done),
-                      ),
-                    ],
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppTokens.spaceMd,
-                  AppTokens.spaceSm,
-                  AppTokens.spaceMd,
-                  0,
-                ),
-                child: state is ReadLoading<List<ChoreTask>>
-                    ? const ChoreListSkeleton()
-                    : state is ReadFailed<List<ChoreTask>>
-                    ? Center(child: Text(l10n.errorGeneric))
-                    : shown.isEmpty
-                    ? Center(
-                        child: Text(
-                          day == null || widget.mine
-                              ? l10n.choresEmpty
-                              : l10n.dayEmpty,
-                        ),
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (final w in _sections(shown, l10n)) ...[
-                            w,
-                            const SizedBox(height: AppTokens.spaceSm),
+                  child: state is ReadLoading<List<ChoreTask>>
+                      ? const ChoreListSkeleton()
+                      : state is ReadFailed<List<ChoreTask>>
+                      ? Center(child: Text(l10n.errorGeneric))
+                      : shown.isEmpty
+                      ? Center(
+                          child: Text(
+                            day == null || widget.mine
+                                ? l10n.choresEmpty
+                                : l10n.dayEmpty,
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (final w in _sections(shown, l10n)) ...[
+                              w,
+                              const SizedBox(height: AppTokens.spaceSm),
+                            ],
                           ],
-                        ],
-                      ),
-              ),
-            ],
+                        ),
+                ),
+              ],
+            ),
           );
         },
       ),

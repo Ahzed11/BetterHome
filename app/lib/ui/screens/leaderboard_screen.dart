@@ -14,6 +14,7 @@ import 'package:betterhome/ui/widgets/segmented_tabs.dart';
 import 'package:betterhome/ui/widgets/guarded.dart';
 import 'package:betterhome/ui/widgets/month_recap_dialog.dart';
 import 'package:betterhome/ui/widgets/screen_skeletons.dart';
+import 'package:betterhome/ui/widgets/pull_to_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -79,6 +80,16 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       ),
     _ => null,
   };
+
+  /// Pull to refresh: every read this screen shows. A request already running is joined.
+  Future<bool> _pull() async {
+    final answers = await Future.wait([
+      _board.refresh(),
+      _members.refresh(),
+      _household.refresh(),
+    ]);
+    return answers.every((arrived) => arrived);
+  }
 
   bool get _failed =>
       _board.state is ReadFailed<Scores> ||
@@ -193,195 +204,203 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
-      body: ListView(
-        padding: const EdgeInsets.all(AppTokens.spaceMd),
-        children: [
-          ScreenHeader(
-            eyebrow: switch (_household.state) {
-              ReadLoaded<Household>(:final data) => data.name,
-              _ => null,
-            },
-            title: l10n.leaderboardTitle,
-          ),
-          const SizedBox(height: AppTokens.spaceMd),
-          SegmentedTabs<ScorePeriod>(
-            labels: {
-              ScorePeriod.week: l10n.periodWeek,
-              ScorePeriod.month: l10n.periodMonth,
-              ScorePeriod.year: l10n.periodYear,
-              ScorePeriod.all: l10n.periodAll,
-            },
-            selected: _period,
-            onSelected: (value) {
-              setState(() {
-                _period = value;
-                _board.dispose();
-                _board = _open();
-              });
-            },
-          ),
-          const SizedBox(height: AppTokens.spaceMd),
-          Builder(
-            builder: (context) {
-              final data = _data;
-              if (data == null) {
-                return _failed
-                    ? Center(child: Text(l10n.errorGeneric))
-                    : const LeaderboardSkeleton();
-              }
-              final board = data.board;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (board.podium.isEmpty)
-                    Text(l10n.leaderboardEmpty)
-                  else
-                    Podium(
-                      emptyLabel: l10n.podiumRoom,
-                      places: [
-                        for (final entry in board.podium)
-                          PodiumPlace(
-                            rank: entry.rank,
-                            label: _labelFor(l10n, entry.userId, data.members),
-                            points: l10n.pointsLabel(entry.points),
-                            color: _colorFor(entry.userId, data.members),
-                          ),
-                      ],
-                    ),
-                  const SizedBox(height: AppTokens.spaceMd),
-                  AppCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppTokens.spaceMd),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Expanded(child: _heading(l10n.effortBarTitle)),
-                              Flexible(
-                                child: Text(
-                                  l10n.effortTogether(board.totalPoints),
-                                  style: AppTypography.eyebrow.copyWith(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
+      body: PullToRefresh(
+        onRefresh: _pull,
+        child: ListView(
+          physics: pullablePhysics,
+          padding: const EdgeInsets.all(AppTokens.spaceMd),
+          children: [
+            ScreenHeader(
+              eyebrow: switch (_household.state) {
+                ReadLoaded<Household>(:final data) => data.name,
+                _ => null,
+              },
+              title: l10n.leaderboardTitle,
+            ),
+            const SizedBox(height: AppTokens.spaceMd),
+            SegmentedTabs<ScorePeriod>(
+              labels: {
+                ScorePeriod.week: l10n.periodWeek,
+                ScorePeriod.month: l10n.periodMonth,
+                ScorePeriod.year: l10n.periodYear,
+                ScorePeriod.all: l10n.periodAll,
+              },
+              selected: _period,
+              onSelected: (value) {
+                setState(() {
+                  _period = value;
+                  _board.dispose();
+                  _board = _open();
+                });
+              },
+            ),
+            const SizedBox(height: AppTokens.spaceMd),
+            Builder(
+              builder: (context) {
+                final data = _data;
+                if (data == null) {
+                  return _failed
+                      ? Center(child: Text(l10n.errorGeneric))
+                      : const LeaderboardSkeleton();
+                }
+                final board = data.board;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (board.podium.isEmpty)
+                      Text(l10n.leaderboardEmpty)
+                    else
+                      Podium(
+                        emptyLabel: l10n.podiumRoom,
+                        places: [
+                          for (final entry in board.podium)
+                            PodiumPlace(
+                              rank: entry.rank,
+                              label: _labelFor(
+                                l10n,
+                                entry.userId,
+                                data.members,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: AppTokens.spaceSm + 4),
-                          if (board.totalPoints == 0)
-                            Text(l10n.leaderboardEmpty)
-                          else ...[
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                AppTokens.radiusPill,
-                              ),
-                              child: SizedBox(
-                                key: const ValueKey('effort-bar'),
-                                height: 14,
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  spacing: 3,
-                                  children: [
-                                    for (final e in board.entries.where(
-                                      (e) => e.points > 0,
-                                    ))
-                                      Expanded(
-                                        flex: (e.effortShare * 1000)
-                                            .round()
-                                            .clamp(1, 1000),
-                                        child: ColoredBox(
-                                          color: _colorFor(
-                                            e.userId,
-                                            data.members,
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
+                              points: l10n.pointsLabel(entry.points),
+                              color: _colorFor(entry.userId, data.members),
                             ),
-                            const SizedBox(height: AppTokens.spaceSm + 4),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              spacing: AppTokens.spaceXs,
-                              children: [
-                                for (final e in board.entries)
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      DecoratedBox(
-                                        decoration: BoxDecoration(
-                                          color: _colorFor(
-                                            e.userId,
-                                            data.members,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            3,
-                                          ),
-                                        ),
-                                        child: const SizedBox.square(
-                                          dimension: 10,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Flexible(
-                                        child: Text(
-                                          '${_labelFor(l10n, e.userId, data.members)} · '
-                                          '${(e.effortShare * 100).round()}%',
-                                          style: AppTypography.label,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                              ],
-                            ),
-                          ],
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: AppTokens.spaceMd),
-                  _heading(l10n.hallOfWinners),
-                  const SizedBox(height: AppTokens.spaceSm),
-                  if (data.winners.isEmpty)
-                    Text(l10n.noWinnersYet)
-                  else
-                    for (final w in data.winners) ...[
-                      AppCard(
-                        child: ListTile(
-                          title: Text(
-                            _monthName(context, w.yearMonth),
-                            style: AppTypography.body,
-                          ),
-                          subtitle: Text(
-                            w.winnerUserId == null
-                                ? l10n.leaderboardEmpty
-                                : _labelFor(
-                                    l10n,
-                                    w.winnerUserId!,
-                                    data.members,
+                    const SizedBox(height: AppTokens.spaceMd),
+                    AppCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppTokens.spaceMd),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                Expanded(child: _heading(l10n.effortBarTitle)),
+                                Flexible(
+                                  child: Text(
+                                    l10n.effortTogether(board.totalPoints),
+                                    style: AppTypography.eyebrow.copyWith(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                          ),
-                          trailing: Text(
-                            l10n.pointsLabel(w.winnerPoints),
-                            style: AppTypography.label.copyWith(
-                              color: AppTokens.brand,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppTokens.spaceSm + 4),
+                            if (board.totalPoints == 0)
+                              Text(l10n.leaderboardEmpty)
+                            else ...[
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  AppTokens.radiusPill,
+                                ),
+                                child: SizedBox(
+                                  key: const ValueKey('effort-bar'),
+                                  height: 14,
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    spacing: 3,
+                                    children: [
+                                      for (final e in board.entries.where(
+                                        (e) => e.points > 0,
+                                      ))
+                                        Expanded(
+                                          flex: (e.effortShare * 1000)
+                                              .round()
+                                              .clamp(1, 1000),
+                                          child: ColoredBox(
+                                            color: _colorFor(
+                                              e.userId,
+                                              data.members,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: AppTokens.spaceSm + 4),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                spacing: AppTokens.spaceXs,
+                                children: [
+                                  for (final e in board.entries)
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        DecoratedBox(
+                                          decoration: BoxDecoration(
+                                            color: _colorFor(
+                                              e.userId,
+                                              data.members,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              3,
+                                            ),
+                                          ),
+                                          child: const SizedBox.square(
+                                            dimension: 10,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            '${_labelFor(l10n, e.userId, data.members)} · '
+                                            '${(e.effortShare * 100).round()}%',
+                                            style: AppTypography.label,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppTokens.spaceMd),
+                    _heading(l10n.hallOfWinners),
+                    const SizedBox(height: AppTokens.spaceSm),
+                    if (data.winners.isEmpty)
+                      Text(l10n.noWinnersYet)
+                    else
+                      for (final w in data.winners) ...[
+                        AppCard(
+                          child: ListTile(
+                            title: Text(
+                              _monthName(context, w.yearMonth),
+                              style: AppTypography.body,
+                            ),
+                            subtitle: Text(
+                              w.winnerUserId == null
+                                  ? l10n.leaderboardEmpty
+                                  : _labelFor(
+                                      l10n,
+                                      w.winnerUserId!,
+                                      data.members,
+                                    ),
+                            ),
+                            trailing: Text(
+                              l10n.pointsLabel(w.winnerPoints),
+                              style: AppTypography.label.copyWith(
+                                color: AppTokens.brand,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: AppTokens.spaceSm),
-                    ],
-                ],
-              );
-            },
-          ),
-        ],
+                        const SizedBox(height: AppTokens.spaceSm),
+                      ],
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

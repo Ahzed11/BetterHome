@@ -15,6 +15,7 @@ import 'package:betterhome/ui/widgets/section_label.dart';
 import 'package:betterhome/ui/widgets/app_toast.dart';
 
 import 'package:betterhome/ui/widgets/screen_skeletons.dart';
+import 'package:betterhome/ui/widgets/pull_to_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -74,6 +75,16 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  /// Pull to refresh: every read this screen shows. A request already running is joined.
+  Future<bool> _pull() async {
+    final answers = await Future.wait([
+      _rules.refresh(),
+      _members.refresh(),
+      _household.refresh(),
+    ]);
+    return answers.every((arrived) => arrived);
   }
 
   /// Asks for fresh data after something was changed on this screen.
@@ -256,7 +267,10 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
         builder: (context) {
           final states = [_rules.state, _members.state, _household.state];
           if (states.any((state) => state is ReadFailed)) {
-            return Center(child: Text(l10n.errorGeneric));
+            return PullToRefresh(
+              onRefresh: _pull,
+              child: PullableCenter(child: Text(l10n.errorGeneric)),
+            );
           }
           final data = switch ((
             _rules.state,
@@ -287,132 +301,139 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
           );
           final ordered = [...data.members]
             ..sort((a, b) => a.joinedAt.compareTo(b.joinedAt));
-          return ListView(
-            padding: const EdgeInsets.all(AppTokens.spaceMd),
-            children: [
-              Semantics(
-                container: true,
-                header: true,
-                child: Text(
-                  data.household.name,
-                  style: AppTypography.display.copyWith(fontSize: 34),
+          return PullToRefresh(
+            onRefresh: _pull,
+            child: ListView(
+              physics: pullablePhysics,
+              padding: const EdgeInsets.all(AppTokens.spaceMd),
+              children: [
+                Semantics(
+                  container: true,
+                  header: true,
+                  child: Text(
+                    data.household.name,
+                    style: AppTypography.display.copyWith(fontSize: 34),
+                  ),
                 ),
-              ),
-              Text(
-                l10n.householdSummary(
-                  data.members.length,
-                  data.household.timezone,
+                Text(
+                  l10n.householdSummary(
+                    data.members.length,
+                    data.household.timezone,
+                  ),
+                  style: AppTypography.eyebrow.copyWith(
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
-                style: AppTypography.eyebrow.copyWith(
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              const SizedBox(height: AppTokens.spaceLg),
-              SectionLabel(l10n.members),
-              const SizedBox(height: AppTokens.spaceSm),
-              AppCard(
-                child: Column(
-                  children: [
-                    for (final member in data.members)
-                      _memberRow(member, ordered, isAdmin, me?.id, l10n),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppTokens.spaceSm),
-              _InviteRow(
-                label: l10n.inviteHousemate,
-                tooltip: l10n.invite,
-                onTap: _invite,
-              ),
-              if (isAdmin) ...[
                 const SizedBox(height: AppTokens.spaceLg),
-                SectionLabel(l10n.houseRules),
+                SectionLabel(l10n.members),
                 const SizedBox(height: AppTokens.spaceSm),
                 AppCard(
                   child: Column(
                     children: [
-                      _RuleRow(
-                        icon: Icons.sync,
-                        title: l10n.choresAndRotations,
-                        hint: l10n.choresAndRotationsHint,
-                        onTap: () => _saveTemplate(startRecurring: true),
-                      ),
-                      const Divider(height: 1, color: AppTokens.divider),
-                      _RuleRow(
-                        icon: Icons.play_circle_outline,
-                        title: l10n.runDueNow,
-                        onTap: _runDueNow,
-                      ),
+                      for (final member in data.members)
+                        _memberRow(member, ordered, isAdmin, me?.id, l10n),
                     ],
                   ),
                 ),
-              ],
-              const SizedBox(height: AppTokens.spaceLg),
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  SectionLabel(l10n.templatesSection),
-                  if (isAdmin)
-                    AppPill(
-                      label: l10n.addTemplate,
-                      icon: Icons.add,
-                      onPressed: _saveTemplate,
-                    ),
-                ],
-              ),
-              const SizedBox(height: AppTokens.spaceSm),
-              if (data.templates.isEmpty)
-                Text(l10n.templatesEmpty, style: AppTypography.bodyMuted)
-              else
-                for (final template in data.templates) ...[
+                const SizedBox(height: AppTokens.spaceSm),
+                _InviteRow(
+                  label: l10n.inviteHousemate,
+                  tooltip: l10n.invite,
+                  onTap: _invite,
+                ),
+                if (isAdmin) ...[
+                  const SizedBox(height: AppTokens.spaceLg),
+                  SectionLabel(l10n.houseRules),
+                  const SizedBox(height: AppTokens.spaceSm),
                   AppCard(
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: ListTile(
-                        leading: template.emoji == null
-                            ? null
-                            : Text(
-                                template.emoji ?? '',
-                                style: Theme.of(context).textTheme.titleLarge,
-                              ),
-                        title: Text(template.title, style: AppTypography.body),
-                        subtitle: _templateSubtitle(
-                          l10n,
-                          template,
-                          data.recurrences[template.id],
+                    child: Column(
+                      children: [
+                        _RuleRow(
+                          icon: Icons.sync,
+                          title: l10n.choresAndRotations,
+                          hint: l10n.choresAndRotationsHint,
+                          onTap: () => _saveTemplate(startRecurring: true),
                         ),
-                        trailing: _stackPill(context)
-                            ? null
-                            : _pillFor(l10n, data.recurrences[template.id]),
-                        onTap: isAdmin
-                            ? () => _saveTemplate(template: template)
-                            : null,
+                        const Divider(height: 1, color: AppTokens.divider),
+                        _RuleRow(
+                          icon: Icons.play_circle_outline,
+                          title: l10n.runDueNow,
+                          onTap: _runDueNow,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: AppTokens.spaceLg),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    SectionLabel(l10n.templatesSection),
+                    if (isAdmin)
+                      AppPill(
+                        label: l10n.addTemplate,
+                        icon: Icons.add,
+                        onPressed: _saveTemplate,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppTokens.spaceSm),
+                if (data.templates.isEmpty)
+                  Text(l10n.templatesEmpty, style: AppTypography.bodyMuted)
+                else
+                  for (final template in data.templates) ...[
+                    AppCard(
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: ListTile(
+                          leading: template.emoji == null
+                              ? null
+                              : Text(
+                                  template.emoji ?? '',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                          title: Text(
+                            template.title,
+                            style: AppTypography.body,
+                          ),
+                          subtitle: _templateSubtitle(
+                            l10n,
+                            template,
+                            data.recurrences[template.id],
+                          ),
+                          trailing: _stackPill(context)
+                              ? null
+                              : _pillFor(l10n, data.recurrences[template.id]),
+                          onTap: isAdmin
+                              ? () => _saveTemplate(template: template)
+                              : null,
+                        ),
                       ),
                     ),
+                    const SizedBox(height: AppTokens.spaceSm),
+                  ],
+                const SizedBox(height: AppTokens.spaceMd),
+                Center(
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppTokens.overdueText,
+                      minimumSize: const Size(0, AppTokens.minTapTarget),
+                    ),
+                    onPressed: () async {
+                      final navigator = Navigator.of(context);
+                      await widget.session.repository.leave(widget.householdId);
+                      if (!mounted) {
+                        return;
+                      }
+                      navigator.pop();
+                    },
+                    icon: const Icon(Icons.logout, size: 18),
+                    label: Text(l10n.leaveHousehold),
                   ),
-                  const SizedBox(height: AppTokens.spaceSm),
-                ],
-              const SizedBox(height: AppTokens.spaceMd),
-              Center(
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppTokens.overdueText,
-                    minimumSize: const Size(0, AppTokens.minTapTarget),
-                  ),
-                  onPressed: () async {
-                    final navigator = Navigator.of(context);
-                    await widget.session.repository.leave(widget.householdId);
-                    if (!mounted) {
-                      return;
-                    }
-                    navigator.pop();
-                  },
-                  icon: const Icon(Icons.logout, size: 18),
-                  label: Text(l10n.leaveHousehold),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),

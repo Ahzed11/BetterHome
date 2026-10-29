@@ -278,6 +278,18 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get retry;
 
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @refreshFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn’t refresh. Try again.'**
+  String get refreshFailed;
+
   /// No description provided for @useDemoData.
   ///
   /// In en, this message translates to:
