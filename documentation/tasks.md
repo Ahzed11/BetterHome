@@ -824,11 +824,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0083 · Drop the unused title and body columns of tasks' outbox
 
-* Status: todo
-* Issue / PR: — (suggested: "Contract step for the tasks outbox")
+* Status: in-review
+* Issue / PR: — / (pull request to follow)
 * Depends on: T-0026
 * Spec: AGENTS §4 (expand then contract)
 * Acceptance criteria: A new Flyway migration drops `notification_outbox.title` and `.body` once no running replica writes them (T-0026 stopped writing them).
+* Summary: migration `V9__outbox_drop_title_body.sql` in tasks-service drops both columns. `NotificationOutbox` never mapped them, so no code changed. `OutboxSchemaTest` asserts the columns are gone.
+* Decisions and deviations: V6 only made them nullable (expand step); this is the contract step. Run it after every replica runs a build from T-0026 or later, which is the case on master.
+* Verification: `./mvnw verify -pl services/tasks-service -am` (141 tests, Spotless, Checkstyle, coverage floor) against a local PostgreSQL 16 started without a container runtime (`-Dquarkus.datasource.devservices.enabled=false` plus the JDBC URL), because this machine has no Docker daemon. Not run: `make check`, `make e2e`, the dependency audit.
+* Follow-ups: none.
 
 ### T-0084 · Retry the tool downloads in CI and local setup
 
