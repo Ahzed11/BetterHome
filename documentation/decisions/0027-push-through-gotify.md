@@ -25,3 +25,12 @@ Gotify has no device registry we can address. A message goes to the owner of the
 - The token is stored in clear text in the notifications database, like any credential the service must replay. It can only send messages to that one user's Gotify application. Column encryption is a follow-up if the database is ever shared more widely.
 - T-0086 (app registration) becomes "let the user paste or scan the application token and register it", not an OS permission prompt.
 - The local Compose stack has an optional `gotify` profile for trying delivery by hand.
+
+## Addendum (T-0105): retries
+
+Push is no longer at most once. The `push` row of `notification` now carries the delivery state (`push_attempts`, `push_available_at`, `pushed_at`, `push_failed_at`). Ingest stores the row and makes a first attempt at once; a scheduled job (every 15 s, one row per transaction, `FOR UPDATE SKIP LOCKED`) tries the due rows again. `PushSender.send` now answers `SENT`, `UNDELIVERABLE` or `RETRY`:
+
+- **Retry:** a timeout, a connection error, `429` and `5xx` keep the row with `push_attempts + 1` and the next try after 5 s doubling to 15 min (`RelayBackoff`). After 10 failed attempts (about an hour) the row is parked with `push_failed_at`: a reminder that old is no use.
+- **Final:** no Gotify URL, no registered token, a refused token (`401`, `403`, `404`, the target is deleted as before) and any other `4xx` park the row at once. A user who registers a token later does not receive what they missed.
+- **Never twice:** a sent row has `pushed_at` and is never claimed again; a repeated event finds the existing rows and pushes nothing, so a lost answer between the services cannot cause a second push.
+- Rows made before this change have no `push_available_at` and are left alone. The state is not exposed by the API; showing it in the app is part of T-0124.

@@ -238,11 +238,15 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0105 · Push delivery state and retries
 
-* Status: todo
-* Issue / PR: — (suggested: "Retry pushes that Gotify could not take")
+* Status: in-review
+* Issue / PR: — / (pull request to follow)
 * Depends on: T-0027
 * Spec: §5
 * Acceptance criteria: ADR 0017 left push at most once "until delivery state and retries". A push that failed with a timeout, connection error or 5xx from Gotify is recorded and retried with backoff (like the relays), a refused token is never retried, and a duplicate event never pushes twice. Tests with `FakeGotifyServer` and a fixed clock.
+* Summary: migration V4 adds the delivery state to `push` rows of `notification` (attempts, next try, sent, failed; CHECK constraints keep it off `in_app` rows). `PushSender.send` now returns `SENT`, `UNDELIVERABLE` or `RETRY`; `GotifyPushSender` maps timeouts, connection errors, 429 and 5xx to `RETRY`, everything else that fails to `UNDELIVERABLE`. New `PushDelivery` claims rows with `FOR UPDATE SKIP LOCKED`, records the result and reschedules with `RelayBackoff`; ingest calls it once right after storing, and `PushScheduler` (every 15 s, new `quarkus-scheduler` dependency, already used by tasks-service) retries the due rows. Gives up after 10 attempts.
+* Decisions and deviations: ADR 0027 addendum (rules above); ADR 0017 sentence updated. 10 attempts (about an hour) is my choice, not in the spec: change `PushDelivery.MAX_ATTEMPTS` if the product owner wants otherwise. A user without a token still gets no push and nothing later. Not exposed in the API, so the contract is unchanged.
+* Verification: `./mvnw verify -pl services/notifications-service -am` (90 tests: retry with backoff on a fixed clock, final outcomes never retried, give-up, duplicate event, 4 concurrent callers send once, state CHECK, scheduler job; Spotless, Checkstyle, JaCoCo floor, OpenAPI drift) against a local PostgreSQL 16 without a container runtime (`-Dquarkus.datasource.devservices.enabled=false`, own database), because this machine has no Docker daemon. Not run: `make check`, `make e2e`, a real Gotify server. The e2e push check (T-0077) now relies on the first attempt being made in the ingest call, as before.
+* Follow-ups: T-0124 (show push state in the app, bell refresh).
 
 ### T-0028 · App: notification inbox and preferences
 

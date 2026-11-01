@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.betterhome.common.PushSender.Outcome;
 import com.betterhome.common.PushSender.PushMessage;
 import com.betterhome.notifications.FakeGotifyServer.Received;
 import com.betterhome.notifications.domain.PushTarget;
@@ -124,7 +125,7 @@ class GotifyPushSenderTest {
 
     @Test
     void aUserWithoutATargetGetsNoPush() {
-        sender.send(message());
+        assertEquals(Outcome.UNDELIVERABLE, sender.send(message()));
 
         assertTrue(gotify.received().isEmpty());
     }
@@ -133,8 +134,12 @@ class GotifyPushSenderTest {
     void withoutAGotifyUrlNothingIsSent() {
         targets.register(ALICE, TOKEN);
 
-        new GotifyPushSender(Optional.empty(), targets, json).send(message());
-        new GotifyPushSender(Optional.of(" "), targets, json).send(message());
+        assertEquals(
+                Outcome.UNDELIVERABLE,
+                new GotifyPushSender(Optional.empty(), targets, json).send(message()));
+        assertEquals(
+                Outcome.UNDELIVERABLE,
+                new GotifyPushSender(Optional.of(" "), targets, json).send(message()));
 
         assertTrue(gotify.received().isEmpty());
     }
@@ -145,7 +150,7 @@ class GotifyPushSenderTest {
             targets.register(ALICE, TOKEN);
             gotify.answer(status);
 
-            sender.send(message());
+            assertEquals(Outcome.UNDELIVERABLE, sender.send(message()), "status " + status);
 
             assertTrue(targets.tokenOf(ALICE).isEmpty(), "status " + status);
         }
@@ -153,26 +158,50 @@ class GotifyPushSenderTest {
     }
 
     @Test
-    void otherFailuresKeepTheTargetAndNeverReachTheCaller() {
+    void aFailureOfGotifyIsWorthRetryingAndKeepsTheTarget() {
         targets.register(ALICE, TOKEN);
-        for (int status : new int[] {400, 429, 500, 503, -1}) {
+        for (int status : new int[] {429, 500, 503, -1}) {
             gotify.answer(status);
 
-            sender.send(message());
+            assertEquals(Outcome.RETRY, sender.send(message()), "status " + status);
 
             assertEquals(Optional.of(TOKEN), targets.tokenOf(ALICE), "status " + status);
         }
     }
 
     @Test
-    void anUnreachableGotifyKeepsTheTargetAndNeverReachesTheCaller() {
+    void aRequestGotifyCallsWrongIsFinalAndKeepsTheTarget() {
+        targets.register(ALICE, TOKEN);
+        gotify.answer(400);
+
+        assertEquals(Outcome.UNDELIVERABLE, sender.send(message()));
+
+        assertEquals(Optional.of(TOKEN), targets.tokenOf(ALICE));
+    }
+
+    @Test
+    void anUnreachableGotifyIsWorthRetryingAndKeepsTheTarget() {
         targets.register(ALICE, TOKEN);
         String closed = gotify.url();
         gotify.close();
 
-        new GotifyPushSender(Optional.of(closed), targets, json).send(message());
+        assertEquals(
+                Outcome.RETRY,
+                new GotifyPushSender(Optional.of(closed), targets, json).send(message()));
 
         assertEquals(Optional.of(TOKEN), targets.tokenOf(ALICE));
+    }
+
+    @Test
+    void anInterruptedSendIsWorthRetryingAndKeepsTheInterruption() {
+        targets.register(ALICE, TOKEN);
+        Thread.currentThread().interrupt();
+        try {
+            assertEquals(Outcome.RETRY, sender.send(message()));
+            assertTrue(Thread.currentThread().isInterrupted());
+        } finally {
+            Thread.interrupted();
+        }
     }
 
     @Test

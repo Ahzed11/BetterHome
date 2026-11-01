@@ -57,6 +57,21 @@ public class Notification extends PanacheEntityBase {
     @Column(name = "read_at")
     public Instant readAt;
 
+    /** Push rows only: failed attempts so far. */
+    @Column(name = "push_attempts", nullable = false)
+    public int pushAttempts;
+
+    /** Push rows only: when the next attempt is due. Empty for rows made before T-0105. */
+    @Column(name = "push_available_at")
+    public Instant pushAvailableAt;
+
+    @Column(name = "pushed_at")
+    public Instant pushedAt;
+
+    /** Push rows only: set when the push can never be delivered or retries ran out. */
+    @Column(name = "push_failed_at")
+    public Instant pushFailedAt;
+
     /** A notification only if it belongs to this user; other users' rows look absent. */
     public static Optional<Notification> findOwned(UUID id, UUID userId) {
         return find("id = ?1 and userId = ?2", id, userId).firstResultOptional();
