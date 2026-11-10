@@ -239,8 +239,8 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0105 · Push delivery state and retries
 
-* Status: in-review
-* Issue / PR: — (suggested: "Retry pushes that Gotify could not take")
+* Status: done
+* Issue / PR: — (suggested: "Retry pushes that Gotify could not take") / #179
 * Depends on: T-0027
 * Spec: §5
 * Acceptance criteria: ADR 0017 left push at most once "until delivery state and retries". A push that failed with a timeout, connection error or 5xx from Gotify is recorded and retried with backoff (like the relays), a refused token is never retried, and a duplicate event never pushes twice. Tests with `FakeGotifyServer` and a fixed clock.
@@ -1349,8 +1349,8 @@ Order: T-0124 and T-0125 are independent; T-0126 needs both; T-0127 and T-0128 n
 
 ### T-0130 · households-service accepts any timezone text
 
-* Status: in-review
-* Issue / PR: — (suggested: "Validate the household timezone on create and update") / —
+* Status: done
+* Issue / PR: — (suggested: "Validate the household timezone on create and update") / #177
 * Depends on: T-0002
 * Spec: §8 (security: validate all input at the REST boundary), §1 (recurrence in the household timezone)
 * Acceptance criteria: Creating or updating a household with a name that `java.time.ZoneId.of` cannot parse is answered 400 (an `ErrorResponse` like the other validation failures), with tests for a valid zone, a typo, blank text and a legal but odd form (an offset such as `+02:00`; decide with the product owner whether offsets are accepted, the app only offers region names). The same for the user's `timezone` on profile sync. The OpenAPI documents say what is accepted.
