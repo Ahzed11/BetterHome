@@ -576,7 +576,8 @@ class _ChoresScreenState extends State<ChoresScreen> {
         builder: (context) {
           final state = _tasks.state;
           final tasks = switch (state) {
-            ReadLoaded<List<ChoreTask>>(:final data) => data,
+            ReadLoaded<List<ChoreTask>>(:final data) =>
+              data.where((t) => t.status != TaskStatus.dismissed).toList(),
             _ => const <ChoreTask>[],
           };
           final me = widget.session.profile?.id;

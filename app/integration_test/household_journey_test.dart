@@ -446,7 +446,13 @@ void main() {
       await tester.tap(find.byTooltip('Dismiss').first);
       await _see(tester, find.text('Dismiss this chore?'));
       await _tap(tester, find.widgetWithText(FilledButton, 'Dismiss'));
-      await _see(tester, find.textContaining('Dismissed · '));
+      // The dismissed chore leaves the board; the server keeps it, dismissed and with no points.
+      await _seeCount(tester, find.text('Overdue · still +2'), 0);
+      expect(find.textContaining('Dismissed · '), findsNothing);
+      final dismissed = (await session.tasksRepository.listTasks(
+        householdId,
+      )).where((t) => t.status == TaskStatus.dismissed);
+      expect(dismissed, hasLength(1));
 
       // The admin reverts a completion with a reason; its points are taken back.
       await _tap(tester, find.byTooltip('Revert'));
