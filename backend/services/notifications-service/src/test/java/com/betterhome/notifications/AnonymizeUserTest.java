@@ -9,6 +9,7 @@ import com.betterhome.notifications.domain.Channel;
 import com.betterhome.notifications.domain.Notification;
 import com.betterhome.notifications.domain.NotificationPreference;
 import com.betterhome.notifications.domain.NotificationType;
+import com.betterhome.notifications.domain.PushState;
 import com.betterhome.notifications.service.AnonymizationService;
 import com.betterhome.notifications.service.AnonymizationService.Result;
 import io.quarkus.narayana.jta.QuarkusTransaction;
@@ -59,6 +60,7 @@ class AnonymizeUserTest {
         n.payload = Map.of("taskTitle", "Dishes");
         n.idempotencyKey = UUID.randomUUID().toString();
         n.createdAt = T0;
+        n.pushState = channel == Channel.push ? PushState.sent : null;
         n.persist();
     }
 

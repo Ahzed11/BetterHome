@@ -15,9 +15,16 @@ public class RecordingPushSender implements PushSender {
 
     private final List<PushMessage> sent = new CopyOnWriteArrayList<>();
 
+    private volatile Outcome answer = Outcome.DELIVERED;
+
     @Override
-    public void send(PushMessage message) {
+    public Outcome send(PushMessage message) {
         sent.add(message);
+        return answer;
+    }
+
+    public void answer(Outcome outcome) {
+        answer = outcome;
     }
 
     public List<PushMessage> sent() {
@@ -26,5 +33,6 @@ public class RecordingPushSender implements PushSender {
 
     public void clear() {
         sent.clear();
+        answer = Outcome.DELIVERED;
     }
 }

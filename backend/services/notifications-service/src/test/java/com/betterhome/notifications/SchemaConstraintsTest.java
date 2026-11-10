@@ -21,12 +21,35 @@ class SchemaConstraintsTest {
     @Inject EntityManager entityManager;
 
     private int insert(String type, String channel, String key, String title, String payload) {
+        return insert(
+                type,
+                channel,
+                key,
+                title,
+                payload,
+                channel.equals("push") ? "'sent'" : "NULL",
+                "NULL");
+    }
+
+    private int insert(
+            String type,
+            String channel,
+            String key,
+            String title,
+            String payload,
+            String pushState,
+            String availableAt) {
         return entityManager
                 .createNativeQuery(
                         "INSERT INTO notification (id, household_id, user_id, type, channel, title,"
-                                + " body, payload, idempotency_key, created_at) VALUES (:id, :id, :id,"
+                                + " body, payload, idempotency_key, created_at, push_state,"
+                                + " push_available_at) VALUES (:id, :id, :id,"
                                 + " :type, :channel, :title, 'body', CAST(:payload AS jsonb), :key,"
-                                + " NOW())")
+                                + " NOW(), "
+                                + pushState
+                                + ", "
+                                + availableAt
+                                + ")")
                 .setParameter("id", UUID.randomUUID())
                 .setParameter("type", type)
                 .setParameter("channel", channel)
@@ -84,6 +107,32 @@ class SchemaConstraintsTest {
                                 .run(() -> insert("overdue", "push", "schema-dup", "t", "{}")));
         io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
                 .run(() -> insert("overdue", "in_app", "schema-dup", "t", "{}"));
+        io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+                .run(
+                        () ->
+                                entityManager
+                                        .createNativeQuery(
+                                                "DELETE FROM notification WHERE idempotency_key"
+                                                        + " LIKE 'schema-%'")
+                                        .executeUpdate());
+    }
+
+    @Test
+    void aPushHasAKnownStateAndAPendingOneHasADueTimeAndNothingElseDoes() {
+        List<Runnable> bad =
+                List.of(
+                        () -> insert("overdue", "push", "schema-5", "t", "{}", "NULL", "NULL"),
+                        () -> insert("overdue", "in_app", "schema-6", "t", "{}", "'sent'", "NULL"),
+                        () -> insert("overdue", "push", "schema-7", "t", "{}", "'lost'", "NULL"),
+                        () -> insert("overdue", "push", "schema-8", "t", "{}", "'pending'", "NULL"),
+                        () -> insert("overdue", "push", "schema-9", "t", "{}", "'sent'", "NOW()"));
+        for (Runnable statement : bad) {
+            assertThrows(
+                    PersistenceException.class,
+                    () -> io.quarkus.narayana.jta.QuarkusTransaction.requiringNew().run(statement));
+        }
+        io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
+                .run(() -> insert("overdue", "push", "schema-10", "t", "{}", "'pending'", "NOW()"));
         io.quarkus.narayana.jta.QuarkusTransaction.requiringNew()
                 .run(
                         () ->

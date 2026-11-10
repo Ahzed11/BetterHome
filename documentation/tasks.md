@@ -239,11 +239,14 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0105 · Push delivery state and retries
 
-* Status: todo
+* Status: in-review
 * Issue / PR: — (suggested: "Retry pushes that Gotify could not take")
 * Depends on: T-0027
 * Spec: §5
 * Acceptance criteria: ADR 0017 left push at most once "until delivery state and retries". A push that failed with a timeout, connection error or 5xx from Gotify is recorded and retried with backoff (like the relays), a refused token is never retried, and a duplicate event never pushes twice. Tests with `FakeGotifyServer` and a fixed clock.
+* Summary: migration V4 gives push rows `push_state`, `push_attempts` and `push_available_at` (checks: only push rows have a state, a pending one has a due time; existing push rows become `sent`). `PushSender.send` returns an outcome (`DELIVERED`, `SKIPPED`, `REFUSED`, `UNAVAILABLE`); `GotifyPushSender` maps a timeout, a connection error, an interruption and a 5xx to `UNAVAILABLE`, any other failure to `REFUSED` (a 401, 403 or 404 still deletes the target), no URL or no target to `SKIPPED`. `PushDelivery` claims a row with `SKIP LOCKED`, sends and records; `UNAVAILABLE` keeps it pending with `RelayBackoff` and gives up after 10 attempts. `IngestService` tries each new push row once after the commit; `PushRetryScheduler` (every 15 s, `quarkus-scheduler`, off in tests) retries the due ones. ADR 0017 addendum, ADR 0027 failures paragraph.
+* Decisions and deviations: giving up after 10 attempts (about 35 minutes) is my choice, a stale "your chore is due" is worse than none; the ticket did not say. 429 and 408 count as refused, as the ticket lists only 5xx, timeouts and connection errors. A user with no target is `skipped`, not retried (registering later does not resend). A crash between Gotify accepting and the commit pushes again: at least once for that window only.
+* Verification: `./mvnw verify` for `common-domain` and notifications-service (95 tests, Spotless, Checkstyle, JaCoCo floor, OpenAPI drift test; Podman). New: `PushDeliveryTest` (fake Gotify, movable clock, real PostgreSQL: delivered once, backoff times, not due yet, refused token and refused message never retried, skipped, give-up after 10, oldest first with a limit, 8 concurrent attempts push once), `PushRetrySchedulerTest`, sender outcomes and interruption, the schema checks, a resent event does not push twice. Not run: a real Gotify server, other services, `make check`, e2e.
 
 ### T-0028 · App: notification inbox and preferences
 

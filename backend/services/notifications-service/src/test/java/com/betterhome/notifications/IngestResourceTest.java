@@ -6,14 +6,17 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.betterhome.common.PushSender;
 import com.betterhome.common.PushSender.PushMessage;
 import com.betterhome.notifications.domain.Channel;
 import com.betterhome.notifications.domain.Notification;
 import com.betterhome.notifications.domain.NotificationPreference;
 import com.betterhome.notifications.domain.NotificationType;
+import com.betterhome.notifications.domain.PushState;
 import com.betterhome.notifications.service.PreferenceService;
 import com.betterhome.notifications.support.InMemoryUsersGateway;
 import com.betterhome.notifications.support.RecordingPushSender;
+import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
 import jakarta.inject.Inject;
@@ -126,6 +129,27 @@ class IngestResourceTest {
 
         assertEquals(1, pushSender.sent().size());
         assertEquals(2L, Notification.count("idempotencyKey", "k-dup"));
+    }
+
+    @Test
+    void aPushTheGatewayCouldNotTakeStaysPendingAndAResentEventDoesNotPushAgain() {
+        pushSender.answer(PushSender.Outcome.UNAVAILABLE);
+
+        post(event("k-retry", FRENCH_USER, "task_assigned")).statusCode(201);
+        post(event("k-retry", FRENCH_USER, "task_assigned")).statusCode(200);
+
+        assertEquals(1, pushSender.sent().size());
+        Notification push =
+                QuarkusTransaction.requiringNew()
+                        .call(
+                                () ->
+                                        Notification.<Notification>find(
+                                                        "idempotencyKey = ?1 and channel = ?2",
+                                                        "k-retry",
+                                                        Channel.push)
+                                                .firstResult());
+        assertEquals(PushState.pending, push.pushState);
+        assertEquals(1, push.pushAttempts);
     }
 
     @Test

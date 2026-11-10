@@ -2,8 +2,10 @@ package com.betterhome.notifications;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.betterhome.common.PushSender;
 import com.betterhome.common.PushSender.PushMessage;
 import com.betterhome.notifications.FakeGotifyServer.Received;
 import com.betterhome.notifications.domain.PushTarget;
@@ -162,6 +164,53 @@ class GotifyPushSenderTest {
 
             assertEquals(Optional.of(TOKEN), targets.tokenOf(ALICE), "status " + status);
         }
+    }
+
+    @Test
+    void theOutcomeTellsWhetherAnotherAttemptCouldHelp() {
+        assertEquals(PushSender.Outcome.SKIPPED, sender.send(message()), "no target");
+        targets.register(ALICE, TOKEN);
+        assertEquals(PushSender.Outcome.DELIVERED, sender.send(message()));
+        for (int status : new int[] {500, 503, -1}) {
+            gotify.answer(status);
+            assertEquals(PushSender.Outcome.UNAVAILABLE, sender.send(message()), "" + status);
+        }
+        for (int status : new int[] {400, 429}) {
+            gotify.answer(status);
+            assertEquals(PushSender.Outcome.REFUSED, sender.send(message()), "" + status);
+        }
+        gotify.answer(401);
+        assertEquals(PushSender.Outcome.REFUSED, sender.send(message()));
+        assertEquals(
+                PushSender.Outcome.SKIPPED,
+                new GotifyPushSender(Optional.empty(), targets, json).send(message()));
+        String closed = gotify.url();
+        gotify.close();
+        targets.register(ALICE, TOKEN);
+        assertEquals(
+                PushSender.Outcome.UNAVAILABLE,
+                new GotifyPushSender(Optional.of(closed), targets, json).send(message()));
+    }
+
+    @Test
+    void anInterruptedSendIsUnavailableAndKeepsTheInterruption() {
+        targets.register(ALICE, TOKEN);
+        Thread.currentThread().interrupt();
+        try {
+            assertEquals(PushSender.Outcome.UNAVAILABLE, sender.send(message()));
+            assertTrue(Thread.currentThread().isInterrupted());
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
+    @Test
+    void aPayloadThatIsNotAMapOfStringsIsAProgrammingError() {
+        targets.register(ALICE, TOKEN);
+        PushMessage broken =
+                new PushMessage(ALICE.toString(), "task_assigned", TITLE, BODY, "not json");
+
+        assertThrows(IllegalStateException.class, () -> sender.send(broken));
     }
 
     @Test

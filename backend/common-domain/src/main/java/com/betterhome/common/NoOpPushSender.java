@@ -13,12 +13,13 @@ public class NoOpPushSender implements PushSender {
     private static final Logger LOG = Logger.getLogger(NoOpPushSender.class.getName());
 
     @Override
-    public void send(PushMessage message) {
+    public Outcome send(PushMessage message) {
         LOG.fine(
                 () ->
                         "Push suppressed (no-op): type="
                                 + message.type()
                                 + " user="
                                 + message.userId());
+        return Outcome.SKIPPED;
     }
 }
