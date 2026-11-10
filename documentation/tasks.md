@@ -1235,3 +1235,14 @@ Out of scope of T-0107 to T-0117, to be filed when wanted: Caddy in the dev comp
   4. The phone side: the Gotify Android app needs an unrestricted battery setting and a reachable URL (Tailscale connected), see `deploy/nas/README.md`; a killed Gotify app misses nothing stored but shows it late.
   5. `bell` swallows `ApiException`, so a stale session (T-0121) shows "no unread" instead of an error.
   Diagnosis to run first on the NAS: `GET /v1/notifications` for the user (are the rows created?), `GET /v1/push-target` (registered?), logs of `betterhome-notifications` for "Gotify unreachable", "refused the push target" or "answered status", logs of `betterhome-tasks` for "not delivered" or "refused and parked", and `SELECT type, attempts, processed_at, failed_at FROM notification_outbox` in the tasks database. Likely fixes depending on the result: refresh the bell on app resume and poll while the app is open; show in the settings card whether the last push was accepted (needs a delivery state, T-0105); retry pushes with backoff; keep the relay timeout above the Gotify timeout. Related: T-0105, T-0121, T-0086, T-0114.
+
+### T-0125 · App: dismissed chores are not shown on the chores board
+
+* Status: in-review
+* Issue / PR: — / —
+* Depends on: none
+* Spec: §8.2 (Chores board)
+* Summary: `ChoresScreen` drops `dismissed` tasks when it loads them, so they no longer appear in the "Done" section, the filter counts or the week-strip dots. Reported on a device (superseded and away chores showed as "Dismissed · 10 pts").
+* Decisions and deviations: filtered in the app only; the tasks API still returns dismissed tasks (history). The spec's §8.2 gains one line.
+* Verification: widget test `app/test/chores_dismissed_hidden_test.dart` written. Not run: no Flutter SDK or container runtime in this environment, so `make test-app`, `make check` and `make e2e` were not run; CI must confirm.
+* Follow-ups: none.

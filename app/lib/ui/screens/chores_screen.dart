@@ -71,10 +71,13 @@ class _ChoresScreenState extends State<ChoresScreen> {
   }
 
   void _reload() {
-    _future = widget.session.tasksRepository.listTasks(
-      widget.householdId,
-      mine: widget.mine,
-    );
+    _future = widget.session.tasksRepository
+        .listTasks(widget.householdId, mine: widget.mine)
+        .then(
+          (tasks) => tasks
+              .where((t) => t.status != TaskStatus.dismissed)
+              .toList(),
+        );
     if (widget.mine) {
       _week = _loadWeek();
     }
