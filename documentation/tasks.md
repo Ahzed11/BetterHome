@@ -344,7 +344,7 @@ Milestones in delivery order (vertical slice first). A milestone is reached when
 
 ### T-0033 · Activity log
 
-* Status: todo
+* Status: dismissed (the product owner dropped the activity log on 2026-11-10; reopen with the answers the acceptance criteria ask for)
 * Issue / PR: #26
 * Depends on: —
 * Spec: §6.1, §6.2 ACTIVITY_LOG
