@@ -1405,3 +1405,14 @@ Order: T-0124 and T-0125 are independent; T-0126 needs both; T-0127 and T-0128 n
 * Verification: `flutter pub get --enforce-lockfile` (the release's own step) passes with the new version; `make test-docs`; CI `check` on this pull request. The release run, the APK and the notes: see the follow-up below. Not run: installing it on a phone.
 * Closing note: done: merged in #175; CI `check` green on the pull request's latest commit (run 305) and on `master` (run 306). The tag `v0.1.1` was pushed on `4d1fb94` (`pubspec.yaml` at `0.1.1+2`); the `release` run 40900624419 succeeded and published `betterhome-0.1.1.apk` (59 MB). Downloaded and checked: signed by `CN=BetterHome` (the release key), application id `com.betterhome.betterhome`, version name `0.1.1`, version code `2`; the notes carry the certificate's fingerprint. Not run: installing it on a phone.
 * Follow-ups: the result of the release run (the asset, the signer, the fingerprint in the notes) is to be checked after the tag, and the status of this entry moved to `done` with it.
+
+### T-0135 · App: dismissed chores are not shown on the chores board
+
+* Status: in-review
+* Issue / PR: — / #178
+* Depends on: T-0125
+* Spec: §8.2 (Chores board)
+* Summary: `ChoresScreen` drops `dismissed` tasks from the cached list it reads, so they no longer appear in the "Done" section, the filter counts or the week-strip dots. Reported on a device (superseded and away chores showed as "Dismissed · 10 pts").
+* Decisions and deviations: filtered in the screen only; the cache and the tasks API still carry dismissed tasks (history). The spec's §8.2 gains one line.
+* Verification: widget test `app/test/chores_dismissed_hidden_test.dart` written. Not run: no Flutter SDK or container runtime in this environment, so `make test-app`, `make check` and `make e2e` were not run; CI must confirm.
+* Follow-ups: none.
