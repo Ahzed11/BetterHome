@@ -16,7 +16,7 @@ Gotify has no device registry we can address. A message goes to the owner of the
 
 **Request.** `POST {GOTIFY_URL}/message` with the token in the `X-Gotify-Key` header (Gotify accepts it like `?token=`; a header keeps the secret out of URLs that proxies and access logs record). The body is the rendered `title` and `message`, `priority` 5, and `extras` with a single namespaced key `betterhome::push` holding the notification `type` and the short-string payload entries (IDs and short text, ADR 0017). No user id, email or token is sent.
 
-**Failures.** The notification is stored before the push is attempted, so a failure never reaches the caller. A 401, 403 or 404 means the token is unknown or revoked: the target is deleted, but only if it still holds the refused token (a newer registration is kept). Other statuses (400, 5xx), timeouts and connection errors are logged and the push is dropped; the target stays. Logs carry the type and status, never the token, title or body (AGENTS §8). Delivery stays at most once, as in ADR 0017; retries are a follow-up.
+**Failures.** The notification is stored before the push is attempted, so a failure never reaches the caller. A 401, 403 or 404 means the token is unknown or revoked: the target is deleted, but only if it still holds the refused token (a newer registration is kept). Other 4xx statuses are logged and the push is refused for good; a 5xx, a timeout or a connection error is retried with backoff (ADR 0017, T-0105). In every case the target stays. Logs carry the type and status, never the token, title or body (AGENTS §8). Delivery state and retries are in the ADR 0017 addendum.
 
 ## Consequences
 

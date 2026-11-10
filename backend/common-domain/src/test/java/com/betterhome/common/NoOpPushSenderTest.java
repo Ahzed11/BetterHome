@@ -69,4 +69,9 @@ class NoOpPushSenderTest {
     void sendLogsNothingAtDefaultLevel() {
         assertTrue(sendCollectingLogs(Level.INFO).isEmpty());
     }
+
+    @Test
+    void sendDeliversNothingAndSaysSo() {
+        assertEquals(PushSender.Outcome.SKIPPED, new NoOpPushSender().send(MESSAGE));
+    }
 }

@@ -1,7 +1,6 @@
 package com.betterhome.notifications.service;
 
 import com.betterhome.common.Clock;
-import com.betterhome.common.PushSender;
 import com.betterhome.notifications.directory.UsersGateway;
 import com.betterhome.notifications.domain.Channel;
 import com.betterhome.notifications.domain.Notification;
@@ -23,7 +22,8 @@ import java.util.UUID;
 /**
  * Accepts events from other services (ADR 0017): checks them, applies the recipient's preferences,
  * renders the text in the recipient's language, stores one row per channel and only then hands the
- * push row to the {@link PushSender}.
+ * push row to {@link PushDelivery}, which tries it and, if Gotify cannot take it, keeps it for a
+ * retry.
  */
 @ApplicationScoped
 public class IngestService {
@@ -33,9 +33,11 @@ public class IngestService {
 
     private static final String INSERT =
             "INSERT INTO notification (id, household_id, user_id, type, channel, title, body,"
-                    + " payload, idempotency_key, created_at)"
+                    + " payload, idempotency_key, created_at, push_state, push_available_at)"
                     + " VALUES (:id, :household, :user, :type, :channel, :title, :body,"
-                    + " CAST(:payload AS jsonb), :key, :createdAt)"
+                    + " CAST(:payload AS jsonb), :key, :createdAt,"
+                    + " CASE WHEN :channel = 'push' THEN 'pending' END,"
+                    + " CASE WHEN :channel = 'push' THEN CAST(:createdAt AS TIMESTAMPTZ) END)"
                     + " ON CONFLICT (idempotency_key, channel) DO NOTHING";
 
     /** What a producer sends. */
@@ -62,7 +64,7 @@ public class IngestService {
     private final PreferenceService preferences;
     private final UsersGateway users;
     private final MessageRenderer renderer;
-    private final PushSender pushSender;
+    private final PushDelivery pushDelivery;
     private final Clock clock;
     private final EntityManager entityManager;
     private final ObjectMapper json;
@@ -72,14 +74,14 @@ public class IngestService {
             PreferenceService preferences,
             UsersGateway users,
             MessageRenderer renderer,
-            PushSender pushSender,
+            PushDelivery pushDelivery,
             Clock clock,
             EntityManager entityManager,
             ObjectMapper json) {
         this.preferences = preferences;
         this.users = users;
         this.renderer = renderer;
-        this.pushSender = pushSender;
+        this.pushDelivery = pushDelivery;
         this.clock = clock;
         this.entityManager = entityManager;
         this.json = json;
@@ -110,13 +112,7 @@ public class IngestService {
                         .call(() -> store(event, type, payload, message, missing));
         for (Notification row : stored) {
             if (row.channel == Channel.push) {
-                pushSender.send(
-                        new PushSender.PushMessage(
-                                row.userId.toString(),
-                                row.type.name(),
-                                row.title,
-                                row.body,
-                                payloadJson(row.payload)));
+                pushDelivery.attempt(row.id);
             }
         }
         Outcome outcome = stored.isEmpty() ? Outcome.duplicate : Outcome.created;

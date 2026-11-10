@@ -44,3 +44,16 @@ tasks-service and households-service each keep a `notification_outbox` table, wr
 - **Who produces what:** tasks sends `task_assigned` (spawn, and an admin creating a task for someone else), `task_reassigned` (the new assignee), `due_reminder`, `overdue` (once per task, from a job that claims rows with `SKIP LOCKED`), `dismissed` (the assignee, when someone else dismissed it), `superseded` and `reverted` (only when the task reopens with a future due date, spec §3.3); an action on yourself notifies nobody. households sends `marked_away` (to the member marked away, also for a future-dated period) and `invitation` (only when the invited email already has an account, because the event needs a recipient user). Every type of spec §5 now has a producer.
 - **Boundary:** the shared `NotificationEvent`, `NotificationsGateway`, `NotificationDeliveryException` and `RelayBackoff` live in `common-domain`; each service has its own REST client and `HttpNotificationsGateway`. Tests use a scripted in-memory gateway plus a fake HTTP server for the real client.
 
+## Addendum (T-0105): push delivery state and retries
+
+The "at most once" of the storage paragraph above is replaced. A `push` row carries `push_state` (`pending`, `sent`, `skipped`, `refused`, `gave_up`; `in_app` rows have none), `push_attempts` and, while pending, `push_available_at`. Ingest stores the push row as `pending`, commits, then tries it once through `PushDelivery`, which claims the row with `FOR UPDATE SKIP LOCKED` in its own transaction, calls `PushSender.send` and records the outcome it returns:
+
+| Outcome | When | State |
+|---|---|---|
+| `DELIVERED` | Gotify answered 2xx | `sent` |
+| `SKIPPED` | no Gotify URL, or the user has no target | `skipped` |
+| `REFUSED` | 401, 403, 404 (the target is deleted) or any other 4xx | `refused`, never retried |
+| `UNAVAILABLE` | timeout, connection error or 5xx | stays `pending`, next try after `RelayBackoff` (5 s doubling to 15 min); `gave_up` after 10 attempts (about 35 minutes) |
+
+A scheduler job (every 15 s, 50 rows per run) tries the pending rows that are due. A duplicate event inserts nothing, so it never pushes; a row that is not pending is never pushed. The one repeat left is a crash between Gotify accepting a push and the outcome committing, which pushes again after the restart (at least once for that window). `PushSender.send` therefore returns the outcome instead of `void`. Rows that existed before the migration are `sent`.
+

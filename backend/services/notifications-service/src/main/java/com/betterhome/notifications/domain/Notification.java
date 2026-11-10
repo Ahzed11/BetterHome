@@ -57,6 +57,18 @@ public class Notification extends PanacheEntityBase {
     @Column(name = "read_at")
     public Instant readAt;
 
+    /** How the delivery went; only push rows have one. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "push_state")
+    public PushState pushState;
+
+    @Column(name = "push_attempts", nullable = false)
+    public int pushAttempts;
+
+    /** When a pending push may be tried next. */
+    @Column(name = "push_available_at")
+    public Instant pushAvailableAt;
+
     /** A notification only if it belongs to this user; other users' rows look absent. */
     public static Optional<Notification> findOwned(UUID id, UUID userId) {
         return find("id = ?1 and userId = ?2", id, userId).firstResultOptional();

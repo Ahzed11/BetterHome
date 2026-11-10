@@ -24,8 +24,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 /**
  * Delivers pushes through a Gotify server (ADR 0027): {@code POST /message} with the recipient's
  * own application token. Without {@code betterhome.gotify.url} nothing is sent. A failure is logged
- * without the token, the title or the body and never reaches the caller: the notification is
- * already stored. A refused token (401, 403, 404) means the target is dead and it is removed.
+ * without the token, the title or the body and is reported as an {@link Outcome}: a timeout, a
+ * connection error or a 5xx is {@code UNAVAILABLE} (worth retrying), anything else Gotify refuses
+ * is {@code REFUSED}. A refused token (401, 403, 404) means the target is dead and it is removed.
  */
 @Alternative
 @Priority(1)
@@ -55,32 +56,34 @@ public class GotifyPushSender implements PushSender {
     }
 
     @Override
-    public void send(PushMessage message) {
+    public Outcome send(PushMessage message) {
         if (baseUrl.isEmpty()) {
-            return;
+            return Outcome.SKIPPED;
         }
         UUID userId = UUID.fromString(message.userId());
         Optional<String> token = targets.tokenOf(userId);
         if (token.isEmpty()) {
-            return;
+            return Outcome.SKIPPED;
         }
         try {
             HttpResponse<Void> response =
                     http.send(
                             request(baseUrl.get(), token.get(), message),
                             HttpResponse.BodyHandlers.discarding());
-            handle(response.statusCode(), userId, token.get(), message.type());
+            return handle(response.statusCode(), userId, token.get(), message.type());
         } catch (IOException e) {
-            LOG.warning("Gotify unreachable, push dropped: type=" + message.type());
+            LOG.warning("Gotify unreachable: type=" + message.type());
+            return Outcome.UNAVAILABLE;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            LOG.warning("Interrupted while sending a push, push dropped: type=" + message.type());
+            LOG.warning("Interrupted while sending a push: type=" + message.type());
+            return Outcome.UNAVAILABLE;
         }
     }
 
-    private void handle(int status, UUID userId, String token, String type) {
+    private Outcome handle(int status, UUID userId, String token, String type) {
         if (status >= 200 && status < 300) {
-            return;
+            return Outcome.DELIVERED;
         }
         if (status == 401 || status == 403 || status == 404) {
             boolean removed = targets.removeRefused(userId, token);
@@ -91,9 +94,10 @@ public class GotifyPushSender implements PushSender {
                             + removed
                             + ": user="
                             + userId);
-        } else {
-            LOG.warning("Gotify answered status " + status + ", push dropped: type=" + type);
+            return Outcome.REFUSED;
         }
+        LOG.warning("Gotify answered status " + status + ": type=" + type);
+        return status >= 500 ? Outcome.UNAVAILABLE : Outcome.REFUSED;
     }
 
     /** The smallest message Gotify accepts: the rendered text, and the IDs the app opens. */
