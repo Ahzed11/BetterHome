@@ -1414,5 +1414,5 @@ Order: T-0124 and T-0125 are independent; T-0126 needs both; T-0127 and T-0128 n
 * Spec: §8.2 (Chores board)
 * Summary: `ChoresScreen` drops `dismissed` tasks from the cached list it reads, so they no longer appear in the "Done" section, the filter counts or the week-strip dots. Reported on a device (superseded and away chores showed as "Dismissed · 10 pts").
 * Decisions and deviations: filtered in the screen only; the cache and the tasks API still carry dismissed tasks (history). The spec's §8.2 gains one line.
-* Verification: widget test `app/test/chores_dismissed_hidden_test.dart` written. Not run: no Flutter SDK or container runtime in this environment, so `make test-app`, `make check` and `make e2e` were not run; CI must confirm.
+* Verification: widget test `app/test/chores_dismissed_hidden_test.dart` fails without the change (the dismissed chore is listed twice) and passes with it; `flutter analyze` and the `chores_*` tests pass. Not run here: the full `make check` and `make e2e` (no container runtime); CI runs them.
 * Follow-ups: none.
