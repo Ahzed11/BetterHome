@@ -1346,12 +1346,15 @@ Order: T-0124 and T-0125 are independent; T-0126 needs both; T-0127 and T-0128 n
 
 ### T-0130 · households-service accepts any timezone text
 
-* Status: todo
+* Status: in-review
 * Issue / PR: — (suggested: "Validate the household timezone on create and update") / —
 * Depends on: T-0002
 * Spec: §8 (security: validate all input at the REST boundary), §1 (recurrence in the household timezone)
 * Acceptance criteria: Creating or updating a household with a name that `java.time.ZoneId.of` cannot parse is answered 400 (an `ErrorResponse` like the other validation failures), with tests for a valid zone, a typo, blank text and a legal but odd form (an offset such as `+02:00`; decide with the product owner whether offsets are accepted, the app only offers region names). The same for the user's `timezone` on profile sync. The OpenAPI documents say what is accepted.
 * Notes: `CreateHouseholdRequest` only has `@NotBlank` on `timezone`. A typo is stored and only fails later, as a 400 "Invalid household timezone" when a recurrence is created (`RecurrenceService`), and the app has no screen to correct a household's timezone. The picker of T-0123 removes the typo from the app, not from other clients.
+* Summary: `TimeZones.require` (households-service) parses the name with `ZoneId.of`, the parser the recurrence engine uses, and throws the usual 400 `bad_request`. It runs on household create, household update and profile sync (a blank profile timezone still falls back to UTC; the household's blank stays a 400). Names are stored trimmed. The 400 was already documented, so the OpenAPI documents are unchanged.
+* Decisions and deviations: offsets such as `+02:00` are accepted, because that is what `ZoneId.of` and so the recurrence engine accept; the alternative (region names only) needs the product owner's word and would be a one-line change. Rows already stored with a bad zone are not migrated.
+* Verification: `./mvnw verify` for households-service and common-domain (102 tests, Spotless, Checkstyle, JaCoCo) with Podman as the container runtime; `HouseholdPhase1Test` covers a typo, a made-up region, free text and blank text on create and profile sync, a typo on update, a padded valid name stored trimmed, an offset accepted, and a valid update. Not run: the other services, `make check`, e2e.
 
 ### T-0131 · App: Lists screen v2
 

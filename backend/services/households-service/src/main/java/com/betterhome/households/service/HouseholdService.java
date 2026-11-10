@@ -43,7 +43,7 @@ public class HouseholdService {
         Household household = new Household();
         household.id = UUID.randomUUID();
         household.name = name.trim();
-        household.timezone = timezone.trim();
+        household.timezone = TimeZones.require(timezone);
         household.reminderDaysBefore = 0;
         household.reminderTime = LocalTime.of(8, 0);
         household.createdBy = creator.id;
@@ -96,7 +96,7 @@ public class HouseholdService {
             if (timezone.isBlank()) {
                 throw new HouseholdException.BadRequest("timezone must not be blank");
             }
-            household.timezone = timezone.trim();
+            household.timezone = TimeZones.require(timezone);
         }
         if (reminderDaysBefore != null) {
             if (reminderDaysBefore < 0) {

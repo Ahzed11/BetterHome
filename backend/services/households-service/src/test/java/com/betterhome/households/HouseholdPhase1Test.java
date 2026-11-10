@@ -111,6 +111,73 @@ class HouseholdPhase1Test {
     }
 
     @Test
+    @TestSecurity(user = "11111111-1111-1111-1111-111111111111", roles = "member")
+    void aTimeZoneThatIsNotOneIsRefusedOnCreateUpdateAndProfileSync() {
+        for (String bad : new String[] {"Europe/Pariss", "Mars/Olympus", "not a zone", " "}) {
+            given().contentType(ContentType.JSON)
+                    .body(Map.of("name", "Flatshare", "timezone", bad))
+                    .when()
+                    .post("/v1/households")
+                    .then()
+                    .statusCode(400)
+                    .body("code", is("bad_request"));
+            given().contentType(ContentType.JSON)
+                    .body(
+                            Map.of(
+                                    "email", "tz@example.com",
+                                    "givenName", "Tess",
+                                    "familyName", "Zone",
+                                    "language", "en",
+                                    "timezone", bad.isBlank() ? "Europe/Pariss" : bad))
+                    .when()
+                    .put("/v1/me")
+                    .then()
+                    .statusCode(400)
+                    .body("code", is("bad_request"));
+        }
+
+        given().contentType(ContentType.JSON)
+                .body(
+                        Map.of(
+                                "email", "tz@example.com",
+                                "givenName", "Tess",
+                                "familyName", "Zone",
+                                "language", "en",
+                                "timezone", " Europe/Paris "))
+                .when()
+                .put("/v1/me")
+                .then()
+                .statusCode(200)
+                .body("timezone", is("Europe/Paris"));
+
+        String householdId =
+                given().contentType(ContentType.JSON)
+                        .body(Map.of("name", "Flatshare", "timezone", "+02:00"))
+                        .when()
+                        .post("/v1/households")
+                        .then()
+                        .statusCode(201)
+                        .body("timezone", is("+02:00"))
+                        .extract()
+                        .path("id");
+
+        given().contentType(ContentType.JSON)
+                .body(Map.of("timezone", "Europe/Pariss"))
+                .when()
+                .patch("/v1/households/" + householdId)
+                .then()
+                .statusCode(400)
+                .body("code", is("bad_request"));
+        given().contentType(ContentType.JSON)
+                .body(Map.of("timezone", "America/New_York"))
+                .when()
+                .patch("/v1/households/" + householdId)
+                .then()
+                .statusCode(200)
+                .body("timezone", is("America/New_York"));
+    }
+
+    @Test
     void inviteAcceptRoleAwayAndLastAdminGuard() {
         var admin =
                 security.asUser(
