@@ -57,7 +57,8 @@ public class CurrentUserService {
             user.givenName = givenName == null ? "" : givenName.trim();
             user.familyName = familyName == null ? "" : familyName.trim();
             user.language = normalizeLanguage(language);
-            user.timezone = timezone == null || timezone.isBlank() ? "UTC" : timezone.trim();
+            user.timezone =
+                    timezone == null || timezone.isBlank() ? "UTC" : TimeZones.require(timezone);
             user.updatedAt = now;
             user.persist();
             return user;
@@ -66,7 +67,8 @@ public class CurrentUserService {
         user.givenName = givenName == null ? "" : givenName.trim();
         user.familyName = familyName == null ? "" : familyName.trim();
         user.language = normalizeLanguage(language);
-        user.timezone = timezone == null || timezone.isBlank() ? "UTC" : timezone.trim();
+        user.timezone =
+                timezone == null || timezone.isBlank() ? "UTC" : TimeZones.require(timezone);
         user.updatedAt = now;
         user.deletedAt = null;
         return user;
