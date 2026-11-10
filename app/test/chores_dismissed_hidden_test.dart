@@ -1,6 +1,7 @@
 import 'package:betterhome/data/households_repository.dart';
 import 'package:betterhome/state/app_session.dart';
 import 'package:betterhome/ui/screens/chores_screen.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/screen_harness.dart';
@@ -43,6 +44,7 @@ void main() {
         householdId: household.id,
         now: () => _now,
       ),
+      locale: const Locale('en'),
     );
 
     expect(find.text('Vacuum'), findsOneWidget);
